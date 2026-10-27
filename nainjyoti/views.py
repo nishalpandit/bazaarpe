@@ -249,10 +249,10 @@ def page_view(request, page_name):
         q = request.GET.get('q', '').strip()
         account = request.GET.get('account', '').strip()
         city = request.GET.get('city', '').strip()
-        settlement = request.GET.get('settlement', '').strip()
+        from_date = request.GET.get('from', '').strip()
         page_num = request.GET.get('page', 1)
 
-        users_qs = UserProfile.objects.all().order_by('-created_at')
+        users_qs = UserProfile.objects.all().select_related('service_zone', 'service_zone__city', 'user').prefetch_related('saved_addresses').order_by('-created_at')
 
         if q:
             id_match = None
@@ -263,7 +263,14 @@ def page_view(request, page_name):
             elif q.isdigit():
                 id_match = int(q)
 
-            q_filter = Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(email__icontains=q) | Q(address__icontains=q)
+            q_filter = (
+                Q(full_name__icontains=q) |
+                Q(phone__icontains=q) |
+                Q(email__icontains=q) |
+                Q(address__icontains=q) |
+                Q(pincode__icontains=q) |
+                Q(city__icontains=q)
+            )
             if id_match is not None:
                 q_filter |= Q(id=id_match)
             users_qs = users_qs.filter(q_filter)
@@ -279,8 +286,35 @@ def page_view(request, page_name):
         if city:
             users_qs = users_qs.filter(city__iexact=city)
 
-        if settlement:
-            users_qs = users_qs.filter(settlement_status__iexact=settlement)
+        if from_date:
+            try:
+                users_qs = users_qs.filter(created_at__date__gte=from_date)
+            except Exception:
+                pass
+
+        # CSV Export for user data
+        if request.GET.get('export') == 'csv':
+            import csv
+            from django.http import HttpResponse
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = 'attachment; filename="bazaarpe_users.csv"'
+            writer = csv.writer(response)
+            writer.writerow(['User ID', 'Full Name', 'Mobile Number', 'Email', 'Primary Address', 'Pincode', 'City', 'Service Zone', 'Status', 'Registered Date'])
+            for u in users_qs:
+                zone_str = u.service_zone.name if u.service_zone else ''
+                writer.writerow([
+                    u.display_user_id,
+                    u.full_name,
+                    u.phone,
+                    u.email or '',
+                    u.address or '',
+                    u.pincode or '',
+                    u.city or '',
+                    zone_str,
+                    u.account_status,
+                    u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else ''
+                ])
+            return response
 
         total_count = UserProfile.objects.count()
         active_count = UserProfile.objects.filter(account_status='Active').count()
@@ -304,7 +338,7 @@ def page_view(request, page_name):
             current_q=q,
             current_account=account,
             current_city=city,
-            current_settlement=settlement,
+            current_from=from_date,
         )
         return render(request, 'users.html', ctx)
 
@@ -317,10 +351,15 @@ def page_view(request, page_name):
         if not profile:
             profile = UserProfile.objects.first()
 
+        saved_addresses = []
+        if profile:
+            saved_addresses = profile.saved_addresses.all().order_by('-is_default', '-created_at')
+
         ctx = admin_context(
             request,
             page_name=clean_name,
             profile=profile,
+            saved_addresses=saved_addresses,
         )
         return render(request, 'user-detail.html', ctx)
 
