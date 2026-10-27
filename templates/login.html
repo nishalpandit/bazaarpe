@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin sign in · Bazaarpe</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/images/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/tailwind.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <style>
+    .login-banner-col {
+      width: 70%;
+      flex: 0 0 70%;
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+    }
+    .login-form-col {
+      width: 30%;
+      flex: 0 0 30%;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @media (max-width: 991.98px) {
+      .login-banner-col {
+        display: none !important;
+      }
+      .login-form-col {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-full bg-white">
+  <main class="min-h-screen">
+    <div class="d-flex flex-wrap min-h-screen">
+      
+      <!-- Left Column: 70% Area Banner -->
+      <div class="login-banner-col d-none d-lg-flex flex-column justify-content-between p-4 p-xl-5 text-white">
+        <!-- Background Banner Image & Crisp, Subtle Overlay -->
+        <img src="/static/images/login_banner.png" alt="Bazaarpe Scrap Pickup" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 45%, rgba(0,0,0,0.35) 100%); z-index: 2;"></div>
+        
+        <!-- Top Left Brand -->
+        <div class="d-flex align-items-center gap-3" style="position: relative; z-index: 3;">
+          <img src="/static/images/logo.png" alt="Bazaarpe Logo" style="height: 48px; width: auto; max-height: 48px; object-fit: contain; border-radius: 8px; background: #000; padding: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4);">
+          <span class="fs-4 fw-bold text-white tracking-tight" style="letter-spacing: -0.02em; text-shadow: 0 1px 3px rgba(0,0,0,0.6);">Bazaarpe</span>
+        </div>
+
+        <!-- Center Text: Fully Centered, Sharp and Legible without Blur -->
+        <div class="my-auto text-center px-4" style="position: relative; z-index: 3;">
+          <div class="mx-auto" style="max-width: 720px;">
+            <h1 class="display-5 fw-bold text-white mb-3" style="letter-spacing: -0.02em; text-shadow: 0 2px 4px rgba(0,0,0,0.7); line-height: 1.25;">
+              Smart scrap pickup &amp; vendor marketplace
+            </h1>
+            <p class="fs-5 text-white mx-auto mb-0" style="max-width: 620px; line-height: 1.6; text-shadow: 0 1px 3px rgba(0,0,0,0.7); font-weight: 500;">
+              Verify vendors, track pickup requests, record final weights, reconcile vendor payments and manage settlements.
+            </p>
+          </div>
+        </div>
+
+        <!-- Empty Bottom Placeholder to balance justify-content-between (© Bazaarpe removed) -->
+        <div style="position: relative; z-index: 3; height: 48px;"></div>
+      </div>
+
+      <!-- Right Column: 30% Area Login Form -->
+      <div class="login-form-col p-4 p-sm-5 bg-slate-50/50">
+        <div class="w-100 bg-white p-4 p-sm-5 rounded-4 shadow-sm border border-slate-100" style="max-width: 400px;">
+          
+          <div class="d-flex align-items-center gap-3 mb-4">
+            <img src="/static/images/logo.png" alt="Bazaarpe Logo" style="height: 48px; width: auto; max-height: 48px; object-fit: contain; border-radius: 8px; background: #000; padding: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div>
+              <h2 class="fs-5 fw-bold text-ink-900 mb-0 leading-tight">Bazaarpe</h2>
+              <p class="mb-0 text-slate-500 text-uppercase fw-semibold" style="font-size: 0.6875rem; letter-spacing: 0.05em;">Admin Portal</p>
+            </div>
+          </div>
+
+          <h1 class="fs-4 fw-bold text-ink-900 mb-1" style="letter-spacing: -0.02em;">Admin sign in</h1>
+
+          {% if messages %}
+            <div class="mb-3">
+              {% for message in messages %}
+                <div class="alert alert-danger py-2 px-3 rounded-3" style="font-size: 0.875rem;">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% if error %}
+            <div class="alert alert-danger py-2 px-3 mb-3 rounded-3" style="font-size: 0.875rem;">
+              {{ error }}
+            </div>
+          {% endif %}
+
+          <form class="space-y-4" method="post" action="" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="bm-label mb-1" for="f-email">Work email or username <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <input class="bm-input form-control py-2" id="f-email" name="email" type="text" value="" placeholder="Enter your email or username" required autocomplete="username" autofocus>
+            </div>
+            <div class="mb-3">
+              <label class="bm-label mb-1" for="f-password">Password <span class="text-rose-600" aria-hidden="true">*</span></label>
+              <div class="position-relative">
+                <input class="bm-input form-control py-2 pe-5" id="f-password" name="password" type="password" value="" placeholder="Enter your password" required autocomplete="current-password">
+                <button type="button" id="togglePasswordBtn" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-slate-400 p-0 me-3 border-0 bg-transparent shadow-none" aria-label="Show password" style="cursor: pointer; z-index: 5; color: #94a3b8;">
+                  <!-- Eye Icon (shown when password is hidden) -->
+                  <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px; display: block;">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <!-- Eye-off Icon (shown when password is visible) -->
+                  <svg id="eyeOffIcon" class="d-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width: 18px; height: 18px;">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" x2="22" y1="2" y2="22"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="d-flex align-items-center justify-content-between mb-4">
+              <div class="form-check mb-0">
+                <input class="form-check-input" id="f-remember" name="remember" type="checkbox" value="1">
+                <label class="form-check-label text-slate-700" for="f-remember" style="font-size: 0.875rem; cursor: pointer;">Keep me signed in</label>
+              </div>
+              <a class="bm-link text-decoration-none" href="#" style="font-size: 0.8125rem;">Forgot password?</a>
+            </div>
+            <button type="submit" class="bm-btn-primary btn w-100 py-2.5 fw-semibold d-flex align-items-center justify-content-center gap-2">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width: 16px; height: 16px;"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></svg> Sign in
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+  <script src="/static/js/app.js"></script>
+  <script>
+    document.getElementById('togglePasswordBtn')?.addEventListener('click', function() {
+      const passwordInput = document.getElementById('f-password');
+      const eyeIcon = document.getElementById('eyeIcon');
+      const eyeOffIcon = document.getElementById('eyeOffIcon');
+      if (!passwordInput) return;
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon?.classList.add('d-none');
+        eyeOffIcon?.classList.remove('d-none');
+        this.setAttribute('aria-label', 'Hide password');
+      } else {
+        passwordInput.type = 'password';
+        eyeIcon?.classList.remove('d-none');
+        eyeOffIcon?.classList.add('d-none');
+        this.setAttribute('aria-label', 'Show password');
+      }
+    });
+  </script>
+</body>
+</html>

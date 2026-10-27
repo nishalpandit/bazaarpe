@@ -1,0 +1,336 @@
+BAZAARPE API DOCUMENTATION
+
+Base URL: http://127.0.0.1:8000
+Content-Type: application/json
+Auth: Bearer token or Cookie (auth_token). Tokens do not expire.
+
+
+1. SEND OTP
+POST /api/user/send-otp/
+
+Request:
+{
+  "mobile_number": "9876543210"
+}
+
+Response (New User):
+{
+  "success": true,
+  "action": "REGISTER",
+  "otp_debug": "123456"
+}
+
+Response (Existing User):
+{
+  "success": true,
+  "action": "LOGIN",
+  "otp_debug": "123456"
+}
+
+
+2. REGISTER USER
+POST /api/user/register/
+
+Request:
+{
+  "full_name": "Ramesh Patel",
+  "mobile_number": "9876543210",
+  "email": "ramesh@example.com",
+  "address": "Plot 45, Sector 18",
+  "pincode": "400703",
+  "city": "Mumbai",
+  "otp": "123456"
+}
+
+Response:
+{
+  "success": true,
+  "token": "TOKEN_KEY",
+  "user": {
+    "id": 1,
+    "user_id": "USR-1001",
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com",
+    "address": "Plot 45, Sector 18",
+    "pincode": "400703",
+    "city": "Mumbai"
+  }
+}
+Note: Sets cookie "auth_token" automatically (non-expiring).
+
+
+3. LOGIN (VERIFY OTP)
+POST /api/user/verify-otp-login/
+
+Request:
+{
+  "mobile_number": "9876543210",
+  "otp": "123456"
+}
+
+Response:
+{
+  "success": true,
+  "token": "TOKEN_KEY",
+  "user": {
+    "id": 1,
+    "user_id": "USR-1001",
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com",
+    "address": "Plot 45, Sector 18",
+    "pincode": "400703",
+    "city": "Mumbai"
+  }
+}
+Note: Sets cookie "auth_token" automatically (non-expiring).
+
+
+4. GET PROFILE
+GET /api/user/profile/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Response:
+{
+  "success": true,
+  "user": {
+    "id": 1,
+    "user_id": "USR-1001",
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com",
+    "address": "Plot 45, Sector 18",
+    "pincode": "400703",
+    "city": "Mumbai"
+  }
+}
+
+
+5. UPDATE PROFILE
+PUT /api/user/profile/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Request:
+{
+  "full_name": "Ramesh Patel",
+  "email": "ramesh@example.com",
+  "address": "Flat 204, Royal Palms",
+  "pincode": "400065",
+  "city": "Mumbai"
+}
+
+Response:
+{
+  "success": true,
+  "user": {
+    "id": 1,
+    "user_id": "USR-1001",
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com",
+    "address": "Flat 204, Royal Palms",
+    "pincode": "400065",
+    "city": "Mumbai"
+  }
+}
+
+
+6. LOGOUT
+POST /api/user/logout/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Response:
+{
+  "success": true,
+  "message": "User successfully logged out"
+}
+Note: Clears cookie and deletes token.
+
+
+7. AUTO-DETECT LOCATION (GPS)
+POST /api/user/location/detect/
+
+Request:
+{
+  "latitude": 12.9784,
+  "longitude": 77.6408
+}
+
+Response:
+{
+  "success": true,
+  "is_serviceable": true,
+  "location": {
+    "latitude": 12.9784,
+    "longitude": 77.6408,
+    "formatted_address": "12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
+    "house_no": "",
+    "street_address": "12th Main Road",
+    "area": "Indiranagar",
+    "landmark": "",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560038"
+  },
+  "service_zone": {
+    "id": 1,
+    "name": "Zone 1 - Indiranagar",
+    "code": "ZN-BLR-01",
+    "city": "Bengaluru",
+    "distance_km": 0.0,
+    "is_serviceable": true
+  },
+  "available_zones_in_city": [
+    {
+      "id": 1,
+      "name": "Zone 1 - Indiranagar",
+      "code": "ZN-BLR-01",
+      "city": "Bengaluru",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "name": "Zone 2 - Koramangala",
+      "code": "ZN-BLR-02",
+      "city": "Bengaluru",
+      "is_active": true
+    }
+  ]
+}
+
+
+8. GET SERVICE ZONES & CITIES
+GET /api/user/service-zones/
+Optional query: ?city=Bengaluru
+
+Response:
+{
+  "success": true,
+  "cities": [
+    {
+      "id": 1,
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "is_active": true,
+      "zones": [
+        {
+          "id": 1,
+          "name": "Zone 1 - Indiranagar",
+          "code": "ZN-BLR-01",
+          "pincodes": ["560038", "560008", "560075"],
+          "radius_km": 6.0
+        }
+      ]
+    }
+  ]
+}
+
+
+9. CONFIRM LOCATION (SAVE ADDRESS)
+POST /api/user/location/confirm/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Request:
+{
+  "latitude": 12.9784,
+  "longitude": 77.6408,
+  "house_no": "Flat 402, Oakwood Residency",
+  "street_address": "12th Main Road, HAL 2nd Stage, Indiranagar",
+  "landmark": "Near Sony Center",
+  "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "pincode": "560038",
+  "service_zone_id": 1,
+  "address_type": "Home",
+  "is_default": true
+}
+
+Response:
+{
+  "success": true,
+  "message": "Location and address confirmed successfully",
+  "address": {
+    "id": 1,
+    "address_type": "Home",
+    "house_no": "Flat 402, Oakwood Residency",
+    "street_address": "12th Main Road, HAL 2nd Stage, Indiranagar",
+    "landmark": "Near Sony Center",
+    "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560038",
+    "service_zone": "Zone 1 - Indiranagar",
+    "service_zone_id": 1,
+    "latitude": 12.9784,
+    "longitude": 77.6408,
+    "is_default": true
+  },
+  "user_profile": {
+    "id": 13,
+    "user_id": "USR-1013",
+    "full_name": "Vikram Malhotra",
+    "mobile_number": "9811223344",
+    "address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
+    "pincode": "560038",
+    "city": "Bengaluru"
+  }
+}
+
+
+10. GET SAVED ADDRESSES
+GET /api/user/addresses/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Response:
+{
+  "success": true,
+  "count": 2,
+  "addresses": [
+    {
+      "id": 1,
+      "address_type": "Home",
+      "house_no": "Flat 402, Oakwood Residency",
+      "street_address": "12th Main Road, Indiranagar",
+      "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, Indiranagar, Bengaluru 560038",
+      "city": "Bengaluru",
+      "pincode": "560038",
+      "is_default": true
+    }
+  ]
+}
+
+
+11. UPDATE SAVED ADDRESS
+PUT /api/user/addresses/<id>/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Request:
+{
+  "house_no": "Penthouse 501, Oakwood Residency",
+  "landmark": "Opposite Starbucks, 100 Feet Road"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Address updated successfully",
+  "address": {
+    "id": 1,
+    "house_no": "Penthouse 501, Oakwood Residency",
+    "landmark": "Opposite Starbucks, 100 Feet Road"
+  }
+}
+
+
+12. DELETE SAVED ADDRESS
+DELETE /api/user/addresses/<id>/
+Header: Authorization: Bearer <token> (or automatic via cookie)
+
+Response:
+{
+  "success": true,
+  "message": "Address deleted successfully"
+}
+
