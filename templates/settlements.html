@@ -77,6 +77,14 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
+    {% if live_pickup_enabled %}
+      <div class="mb-3 flex items-center justify-between gap-3"><div><h1 class="text-[1.0625rem] font-bold text-slate-800">User Payouts</h1><p class="text-[0.8125rem] text-slate-500">Completed pickups whose vendor payment reached the platform.</p></div><span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ settlement_count }} eligible</span></div>
+      <div class="mb-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">Payouts are enabled only after a paid vendor invoice. The exact transfer reference is retained on the order audit record.</div>
+      <section class="bm-card overflow-hidden"><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1120px]">
+        <thead><tr><th>Recipient</th><th>Order</th><th class="text-right">Amount due</th><th>Status</th><th>Bank details</th><th>UPI</th><th>Paid on</th><th>Method / reference</th><th></th></tr></thead>
+        <tbody>{% for order in settlement_orders %}<tr><td>{{ order.user.profile.full_name|default:order.user.username }}</td><td><a class="bm-link bm-mono" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a></td><td class="text-right font-semibold">₹{{ order.payout_amount }}</td><td>{% if order.payout_status == 'DISBURSED' %}<span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">Disbursed</span>{% else %}<span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">Pending</span>{% endif %}</td><td>{% if order.user.bank_details %}<span class="font-medium">{{ order.user.bank_details.bank_name }}</span><div class="bm-mono text-xs">{{ order.user.bank_details.masked_account_number }} · {{ order.user.bank_details.ifsc_code }}</div>{% else %}<span class="text-rose-700">Bank details missing</span>{% endif %}</td><td>{{ order.user.bank_details.upi_id|default:"—" }}</td><td>{{ order.payout_disbursed_at|date:"Y-m-d H:i"|default:"—" }}</td><td>{{ order.payout_method|default:"—" }}<div class="bm-mono text-xs">{{ order.payout_reference|default:"" }}</div></td><td>{% if order.payout_status != 'DISBURSED' and order.user.bank_details %}<form class="grid min-w-[240px] gap-2" method="post" action="/admin/settlements/{{ order.order_id }}/disburse">{% csrf_token %}<input type="hidden" name="amount" value="{{ order.payout_amount }}"><select class="bm-select" name="method" required><option value="">Method</option><option>NEFT</option><option>IMPS</option><option>RTGS</option><option>UPI</option></select><input class="bm-input" name="reference" placeholder="Bank / UTR reference" required><button class="bm-btn-primary bm-btn-sm" type="submit">Mark Disbursed</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="9" class="py-8 text-center text-slate-500">No completed, vendor-paid pickups are eligible for payout.</td></tr>{% endfor %}</tbody>
+      </table></div></section>
+    {% else %}
       
     
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -232,6 +240,7 @@
         </form>
       </div>
     </div>
+    {% endif %}
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">

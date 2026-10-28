@@ -101,6 +101,17 @@
     </header>
 
     <main class="px-3 pb-8 pt-2.5 sm:px-6 sm:pt-3" id="bmMain">
+    {% if live_invoice_enabled %}
+      {% if invoice %}
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><a class="bm-link text-xs" href="order-detail.html?id={{ invoice.order.order_id }}">← Back to order</a><h1 class="bm-mono text-xl font-bold text-slate-800">{{ invoice.invoice_number }}</h1><p class="text-sm text-slate-500">GST invoice for {{ invoice.order.order_id }}</p></div><button class="bm-btn-primary" type="button" onclick="window.print()">Print / Save PDF</button></div>
+      <section class="bm-card mx-auto max-w-4xl p-6 sm:p-8">
+        <div class="flex flex-wrap justify-between gap-5 border-b pb-5"><div><h2 class="text-2xl font-bold text-slate-900">Bazaarpe</h2><p class="text-sm text-slate-500">Digital scrap pickup invoice</p></div><dl class="text-sm"><div><dt class="inline text-slate-500">Invoice: </dt><dd class="bm-mono inline font-semibold">{{ invoice.invoice_number }}</dd></div><div><dt class="inline text-slate-500">Paid at: </dt><dd class="inline">{{ invoice.paid_at|date:"Y-m-d H:i:s" }}</dd></div><div><dt class="inline text-slate-500">Status: </dt><dd class="inline font-semibold text-emerald-700">{{ invoice.get_payment_status_display }}</dd></div></dl></div>
+        <div class="grid gap-5 border-b py-5 sm:grid-cols-2"><div><p class="text-xs font-bold uppercase text-slate-500">Customer</p><p class="font-semibold">{{ invoice.order.user.profile.full_name|default:invoice.order.user.username }}</p><p class="text-sm text-slate-600">{{ invoice.order.address.formatted_address|default:"Address unavailable" }}</p></div><div><p class="text-xs font-bold uppercase text-slate-500">Pickup</p><p>{{ invoice.order.category.name }} / {{ invoice.order.subcategory.name }}</p><p class="text-sm text-slate-600">Final weight: {{ invoice.order.final_weight }} kg</p></div></div>
+        <table class="mt-5 w-full text-sm"><thead><tr class="border-b text-left text-slate-500"><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead><tbody><tr class="border-b"><td class="py-3">Scrap value before GST</td><td class="py-3 text-right">₹{{ invoice.subtotal }}</td></tr><tr class="border-b"><td class="py-3">GST ({{ invoice.order.subcategory.gst_percent }}%)</td><td class="py-3 text-right">₹{{ invoice.gst_amount }}</td></tr><tr class="border-b"><td class="py-3">Platform fee</td><td class="py-3 text-right">₹{{ invoice.platform_fee }}</td></tr><tr class="text-base font-bold"><td class="py-4">Total paid by vendor</td><td class="py-4 text-right">₹{{ invoice.total_paid_by_vendor }}</td></tr></tbody></table>
+        <div class="mt-5 rounded-lg bg-slate-50 p-4 text-sm"><span class="text-slate-500">Payment gateway reference:</span> <span class="bm-mono">{{ invoice.payment_gateway_ref }}</span></div>
+      </section>
+      {% else %}<section class="bm-card p-8 text-center"><h1 class="font-semibold text-slate-800">Invoice not found</h1><p class="mt-1 text-sm text-slate-500">Open an invoice from a live pickup order.</p><a class="bm-link mt-3 inline-block" href="orders.html">View orders</a></section>{% endif %}
+    {% else %}
       <!-- Breadcrumb & Top Action Toolbar -->
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2">
@@ -496,6 +507,7 @@
           </div>
         </div>
       </div>
+    {% endif %}
     </main>
 
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">

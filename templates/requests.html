@@ -77,6 +77,30 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
+    {% if live_pickup_enabled %}
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <div><h1 class="text-[1.0625rem] font-bold text-slate-800">Pickup Requests &amp; Negotiation</h1><p class="text-[0.8125rem] text-slate-500">Live orders awaiting an agreed price.</p></div>
+        <span class="rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800">{{ request_count }} pending</span>
+      </div>
+      <form class="bm-card mb-3 p-4" method="get"><label class="bm-label" for="live-request-q">Search requests</label><div class="flex gap-2"><input class="bm-input" id="live-request-q" name="q" value="{{ request.GET.q }}" placeholder="Order, customer, or category"><button class="bm-btn-primary" type="submit">Search</button></div></form>
+      <section class="bm-card overflow-hidden">
+        <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1050px]">
+          <thead><tr><th>Order</th><th>User / address</th><th>Scrap</th><th>Weight</th><th>Pickup slot</th><th class="text-right">Estimate</th><th>Status</th><th>Negotiation / publication</th></tr></thead>
+          <tbody>
+          {% for order in pickup_requests %}
+            <tr>
+              <td><a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a><div class="text-xs text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</div></td>
+              <td><a class="bm-link" href="user-detail.html?id={{ order.user.profile.id }}">{{ order.user.profile.full_name|default:order.user.username }}</a><div class="max-w-[16rem] text-xs text-slate-500">{{ order.address.formatted_address|default:"Address unavailable" }}</div></td>
+              <td>{{ order.subcategory.name|default:"Unavailable" }}<div class="text-xs text-slate-500">{{ order.category.name }}</div></td>
+              <td>{{ order.approx_weight }} kg</td><td>{{ order.pickup_date|date:"Y-m-d" }}<div class="text-xs text-slate-500">{{ order.time_slot }}</div></td>
+              <td class="text-right font-semibold">₹{{ order.approx_price }}</td><td><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">{{ order.get_status_display }}</span></td>
+              <td>{% if order.final_agreed_price %}<form method="post" action="/admin/orders/{{ order.order_id }}/publish">{% csrf_token %}<div class="text-xs text-emerald-700">User accepted ₹{{ order.final_agreed_price }}</div><button class="bm-btn-primary bm-btn-sm mt-1" type="submit">Publish to Vendors</button></form>{% else %}<form method="post" action="/admin/orders/{{ order.order_id }}/negotiate">{% csrf_token %}<div class="flex min-w-[230px] gap-2"><input class="bm-input" type="number" name="final_agreed_price" min="0.01" step="0.01" value="{{ order.approx_price }}" required><button class="bm-btn-primary bm-btn-sm" type="submit">Send Proposal</button></div></form>{% endif %}</td>
+            </tr>
+          {% empty %}<tr><td colspan="8" class="py-8 text-center text-slate-500">No pickup requests are awaiting negotiation.</td></tr>{% endfor %}
+          </tbody>
+        </table></div>
+      </section>
+    {% else %}
       
     
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200">
@@ -142,6 +166,7 @@
     </div>
 
     <div class="mt-3"><details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">GET /admin/pickup-requests</code> Request list should be a paginated server query: filters are GET parameters, ordering by created_at desc. Agreement/negotiation values come from the negotiation record, one per request.</p></div></details></div>
+    {% endif %}
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">

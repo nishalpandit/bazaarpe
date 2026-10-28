@@ -77,6 +77,26 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
+    {% if live_pickup_enabled %}
+      <div class="mb-3 flex items-center justify-between gap-3"><div><h1 class="text-[1.0625rem] font-bold text-slate-800">Pickup Orders</h1><p class="text-[0.8125rem] text-slate-500">Live lifecycle, payment, and payout state.</p></div><span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ order_count }} orders</span></div>
+      <form class="bm-card mb-3 grid gap-3 p-4 sm:grid-cols-[1fr_240px_auto]" method="get">
+        <div><label class="bm-label" for="live-order-q">Search</label><input class="bm-input" id="live-order-q" name="q" value="{{ request.GET.q }}" placeholder="Order, user, vendor, phone"></div>
+        <div><label class="bm-label" for="live-order-status">Status</label><select class="bm-select" id="live-order-status" name="order_status"><option value="">Any status</option><option>NEGOTIATION_PENDING</option><option>SEARCHING_VENDOR</option><option>VENDOR_ASSIGNED</option><option>VENDOR_ON_THE_WAY</option><option>REACHED_LOCATION</option><option>PICKUP_IN_PROGRESS</option><option>INVOICE_GENERATED</option><option>COMPLETED</option><option>USER_REVIEW</option><option>USER_PAYOUT</option><option>CANCELLED</option></select></div>
+        <button class="bm-btn-primary self-end" type="submit">Filter</button>
+      </form>
+      <section class="bm-card overflow-hidden"><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1180px]">
+        <thead><tr><th>Order</th><th>User</th><th>Vendor</th><th>Category / zone</th><th>Weight</th><th class="text-right">Agreed</th><th>Status</th><th>OTP</th><th>Vendor payment</th><th>User payout</th><th></th></tr></thead>
+        <tbody>{% for order in pickup_orders %}<tr>
+          <td><a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a><div class="text-xs text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</div></td>
+          <td>{{ order.user.profile.full_name|default:order.user.username }}</td><td>{{ order.assigned_vendor_name|default:"Unassigned" }}<div class="text-xs text-slate-500">{{ order.assigned_vendor_phone|default:"" }}</div></td>
+          <td>{{ order.subcategory.name|default:"Unavailable" }}<div class="text-xs text-slate-500">{{ order.address.service_zone.name|default:order.address.city }}</div></td>
+          <td>{{ order.approx_weight }} kg<div class="text-xs text-slate-500">final: {{ order.final_weight|default:"—" }}</div></td><td class="text-right font-semibold">₹{{ order.final_agreed_price|default:order.approx_price }}</td>
+          <td><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">{{ order.get_status_display }}</span></td><td>{% if order.is_otp_verified %}<span class="text-emerald-700">Verified</span>{% else %}<span class="text-amber-700">Pending</span>{% endif %}</td>
+          <td>{% if order.invoice.payment_status == 'PAID' %}<span class="text-emerald-700">Paid</span>{% else %}<span class="text-slate-500">Pending</span>{% endif %}</td><td>{{ order.get_payout_status_display }}</td>
+          <td><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html?id={{ order.order_id }}">Open</a></td>
+        </tr>{% empty %}<tr><td colspan="11" class="py-8 text-center text-slate-500">No pickup orders match these filters.</td></tr>{% endfor %}</tbody>
+      </table></div></section>
+    {% else %}
       
     
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -165,6 +185,7 @@
     </div>
 
     <div class="mt-3"><details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">GET /admin/orders</code> List query must join order, vendor payment and settlement as separate aggregates — never derive one status from another.</p></div></details></div>
+    {% endif %}
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
