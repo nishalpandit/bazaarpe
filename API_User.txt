@@ -1,210 +1,252 @@
-BAZAARPE API DOCUMENTATION
+API for Send User OTP
+url: http://127.0.0.1:8000/api/user/send-otp/
+method: POST
 
-Base URL: http://127.0.0.1:8000
-Content-Type: application/json
-Auth: Bearer token or Cookie (auth_token). Tokens do not expire.
+params:
+mobile_number: 9876543210
 
-
-1. SEND OTP
-POST /api/user/send-otp/
-
-Request:
-{
-  "mobile_number": "9876543210"
-}
-
-Response (New User):
+response:
 {
   "success": true,
+  "message": "OTP sent successfully",
   "action": "REGISTER",
   "otp_debug": "123456"
 }
 
-Response (Existing User):
+API for Register User
+url: http://127.0.0.1:8000/api/user/register/
+method: POST
+
+params:
+full_name: Ramesh Patel
+mobile_number: 9876543210
+email: ramesh@example.com (optional)
+address: Plot 45, Sector 18
+pincode: 400703
+city: Bengaluru
+otp: 123456
+accept_privacy: true
+privacy_version: 2026.1
+accept_terms: true
+terms_version: 2026.1
+
+response:
 {
   "success": true,
-  "action": "LOGIN",
-  "otp_debug": "123456"
-}
-
-
-2. REGISTER USER
-POST /api/user/register/
-
-Request:
-{
-  "full_name": "Ramesh Patel",
-  "mobile_number": "9876543210",
-  "email": "ramesh@example.com",
-  "address": "Plot 45, Sector 18",
-  "pincode": "400703",
-  "city": "Mumbai",
-  "otp": "123456"
-}
-
-Response:
-{
-  "success": true,
-  "token": "TOKEN_KEY",
+  "message": "User registered successfully",
+  "is_registered": true,
+  "token": "authentication-token",
   "user": {
-    "id": 1,
-    "user_id": "USR-1001",
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com",
+    "city": "Bengaluru"
+  }
+}
+
+API for User OTP Login
+url: http://127.0.0.1:8000/api/user/login-otp/
+method: POST
+
+params:
+mobile_number: 9876543210
+otp: 123456
+
+response:
+{
+  "success": true,
+  "message": "Login successful",
+  "is_registered": true,
+  "token": "authentication-token",
+  "user": {
+    "full_name": "Ramesh Patel",
+    "mobile_number": "9876543210"
+  }
+}
+
+API for Get User Profile
+url: http://127.0.0.1:8000/api/user/profile/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "user": {
     "full_name": "Ramesh Patel",
     "mobile_number": "9876543210",
     "email": "ramesh@example.com",
     "address": "Plot 45, Sector 18",
     "pincode": "400703",
-    "city": "Mumbai"
+    "city": "Bengaluru",
+    "profile_photo": null,
+    "onboarding_completed": true
   }
 }
-Note: Sets cookie "auth_token" automatically (non-expiring).
 
+API for Update User Profile
+url: http://127.0.0.1:8000/api/user/profile/
+method: PATCH
 
-3. LOGIN (VERIFY OTP)
-POST /api/user/verify-otp-login/
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+full_name: Ramesh Patel
+email: ramesh@example.com
+address: Plot 45, Sector 18
+pincode: 400703
+city: Bengaluru
+profile_photo: <image file> (optional, max 5 MB)
 
-Request:
-{
-  "mobile_number": "9876543210",
-  "otp": "123456"
-}
-
-Response:
+response:
 {
   "success": true,
-  "token": "TOKEN_KEY",
+  "message": "Profile updated successfully",
   "user": {
-    "id": 1,
-    "user_id": "USR-1001",
     "full_name": "Ramesh Patel",
     "mobile_number": "9876543210",
-    "email": "ramesh@example.com",
-    "address": "Plot 45, Sector 18",
-    "pincode": "400703",
-    "city": "Mumbai"
-  }
-}
-Note: Sets cookie "auth_token" automatically (non-expiring).
-
-
-4. GET PROFILE
-GET /api/user/profile/
-Header: Authorization: Bearer <token> (or automatic via cookie)
-
-Response:
-{
-  "success": true,
-  "user": {
-    "id": 1,
-    "user_id": "USR-1001",
-    "full_name": "Ramesh Patel",
-    "mobile_number": "9876543210",
-    "email": "ramesh@example.com",
-    "address": "Plot 45, Sector 18",
-    "pincode": "400703",
-    "city": "Mumbai"
+    "profile_photo": "/media/profile_photos/photo.jpg"
   }
 }
 
+API for User Logout
+url: http://127.0.0.1:8000/api/user/logout/
+method: POST
 
-5. UPDATE PROFILE
-PUT /api/user/profile/
-Header: Authorization: Bearer <token> (or automatic via cookie)
+params:
+Authorization: Bearer <token> (header)
 
-Request:
-{
-  "full_name": "Ramesh Patel",
-  "email": "ramesh@example.com",
-  "address": "Flat 204, Royal Palms",
-  "pincode": "400065",
-  "city": "Mumbai"
-}
-
-Response:
-{
-  "success": true,
-  "user": {
-    "id": 1,
-    "user_id": "USR-1001",
-    "full_name": "Ramesh Patel",
-    "mobile_number": "9876543210",
-    "email": "ramesh@example.com",
-    "address": "Flat 204, Royal Palms",
-    "pincode": "400065",
-    "city": "Mumbai"
-  }
-}
-
-
-6. LOGOUT
-POST /api/user/logout/
-Header: Authorization: Bearer <token> (or automatic via cookie)
-
-Response:
+response:
 {
   "success": true,
   "message": "User successfully logged out"
 }
-Note: Clears cookie and deletes token.
 
+API for List Legal Documents
+url: http://127.0.0.1:8000/api/legal/documents/
+method: GET
 
-7. AUTO-DETECT LOCATION (GPS)
-POST /api/user/location/detect/
+params:
+none
 
-Request:
-{
-  "latitude": 12.9784,
-  "longitude": 77.6408
-}
-
-Response:
+response:
 {
   "success": true,
-  "is_serviceable": true,
-  "location": {
-    "latitude": 12.9784,
-    "longitude": 77.6408,
-    "formatted_address": "12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
-    "house_no": "",
-    "street_address": "12th Main Road",
-    "area": "Indiranagar",
-    "landmark": "",
-    "city": "Bengaluru",
-    "state": "Karnataka",
-    "pincode": "560038"
-  },
-  "service_zone": {
-    "id": 1,
-    "name": "Zone 1 - Indiranagar",
-    "code": "ZN-BLR-01",
-    "city": "Bengaluru",
-    "distance_km": 0.0,
-    "is_serviceable": true
-  },
-  "available_zones_in_city": [
+  "documents": [
     {
-      "id": 1,
-      "name": "Zone 1 - Indiranagar",
-      "code": "ZN-BLR-01",
-      "city": "Bengaluru",
-      "is_active": true
+      "document_type": "PRIVACY",
+      "version": "2026.1",
+      "title": "Privacy Policy"
     },
     {
-      "id": 2,
-      "name": "Zone 2 - Koramangala",
-      "code": "ZN-BLR-02",
-      "city": "Bengaluru",
-      "is_active": true
+      "document_type": "TERMS",
+      "version": "2026.1",
+      "title": "Terms and Conditions"
     }
   ]
 }
 
+API for Get User Consents
+url: http://127.0.0.1:8000/api/user/consents/
+method: GET
 
-8. GET SERVICE ZONES & CITIES
-GET /api/user/service-zones/
-Optional query: ?city=Bengaluru
+params:
+Authorization: Bearer <token> (header)
 
-Response:
+response:
+{
+  "success": true,
+  "consent_complete": true,
+  "consents": [
+    {
+      "document_type": "PRIVACY",
+      "version": "2026.1"
+    }
+  ]
+}
+
+API for Accept User Consents
+url: http://127.0.0.1:8000/api/user/consents/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+accept_privacy: true
+privacy_version: 2026.1
+accept_terms: true
+terms_version: 2026.1
+
+response:
+{
+  "success": true,
+  "consents": [
+    {
+      "document_type": "PRIVACY",
+      "version": "2026.1",
+      "is_current": true
+    }
+  ],
+  "consent_complete": true
+}
+
+API for Request User Phone Change
+url: http://127.0.0.1:8000/api/user/change-phone/request/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+new_phone: 9000012345
+
+response:
+{
+  "success": true,
+  "message": "OTP sent to the new mobile number."
+}
+
+API for Confirm User Phone Change
+url: http://127.0.0.1:8000/api/user/change-phone/confirm/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+new_phone: 9000012345
+otp: 123456
+
+response:
+{
+  "success": true,
+  "message": "Mobile number updated successfully.",
+  "mobile_number": "9000012345"
+}
+
+API for Detect User Location
+url: http://127.0.0.1:8000/api/user/location/detect/
+method: POST
+
+params:
+latitude: 12.9716
+longitude: 77.5946
+
+response:
+{
+  "success": true,
+  "is_serviceable": true,
+  "service_zone": {
+    "id": 1,
+    "name": "Zone 1 - Indiranagar"
+  }
+}
+
+API for List User Service Zones
+url: http://127.0.0.1:8000/api/user/service-zones/
+method: GET
+
+params:
+none
+
+response:
 {
   "success": true,
   "cities": [
@@ -212,125 +254,564 @@ Response:
       "id": 1,
       "city": "Bengaluru",
       "state": "Karnataka",
-      "is_active": true,
       "zones": [
         {
           "id": 1,
-          "name": "Zone 1 - Indiranagar",
-          "code": "ZN-BLR-01",
-          "pincodes": ["560038", "560008", "560075"],
-          "radius_km": 6.0
+          "name": "Zone 1 - Indiranagar"
         }
       ]
     }
   ]
 }
 
+API for Save User Address
+url: http://127.0.0.1:8000/api/user/address/save/
+method: POST
 
-9. CONFIRM LOCATION (SAVE ADDRESS)
-POST /api/user/location/confirm/
-Header: Authorization: Bearer <token> (or automatic via cookie)
+params:
+Authorization: Bearer <token> (header)
+address_type: Home
+house_no: Flat 402
+street_address: 100 Feet Road
+landmark: Opposite Metro Station
+formatted_address: Flat 402, 100 Feet Road, Bengaluru
+city: Bengaluru
+state: Karnataka
+pincode: 560038
+service_zone_id: 1
+latitude: 12.9784
+longitude: 77.6408
+is_default: true
 
-Request:
-{
-  "latitude": 12.9784,
-  "longitude": 77.6408,
-  "house_no": "Flat 402, Oakwood Residency",
-  "street_address": "12th Main Road, HAL 2nd Stage, Indiranagar",
-  "landmark": "Near Sony Center",
-  "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
-  "city": "Bengaluru",
-  "state": "Karnataka",
-  "pincode": "560038",
-  "service_zone_id": 1,
-  "address_type": "Home",
-  "is_default": true
-}
-
-Response:
+response:
 {
   "success": true,
   "message": "Location and address confirmed successfully",
   "address": {
     "id": 1,
     "address_type": "Home",
-    "house_no": "Flat 402, Oakwood Residency",
-    "street_address": "12th Main Road, HAL 2nd Stage, Indiranagar",
-    "landmark": "Near Sony Center",
-    "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
-    "city": "Bengaluru",
-    "state": "Karnataka",
+    "formatted_address": "Flat 402, 100 Feet Road, Bengaluru",
     "pincode": "560038",
-    "service_zone": "Zone 1 - Indiranagar",
-    "service_zone_id": 1,
-    "latitude": 12.9784,
-    "longitude": 77.6408,
     "is_default": true
-  },
-  "user_profile": {
-    "id": 13,
-    "user_id": "USR-1013",
-    "full_name": "Vikram Malhotra",
-    "mobile_number": "9811223344",
-    "address": "Flat 402, Oakwood Residency, 12th Main Road, HAL 2nd Stage, Indiranagar, Bengaluru, Karnataka 560038",
-    "pincode": "560038",
-    "city": "Bengaluru"
   }
 }
 
+API for List User Addresses
+url: http://127.0.0.1:8000/api/user/addresses/
+method: GET
 
-10. GET SAVED ADDRESSES
-GET /api/user/addresses/
-Header: Authorization: Bearer <token> (or automatic via cookie)
+params:
+Authorization: Bearer <token> (header)
 
-Response:
+response:
 {
   "success": true,
-  "count": 2,
+  "count": 1,
   "addresses": [
     {
       "id": 1,
       "address_type": "Home",
-      "house_no": "Flat 402, Oakwood Residency",
-      "street_address": "12th Main Road, Indiranagar",
-      "formatted_address": "Flat 402, Oakwood Residency, 12th Main Road, Indiranagar, Bengaluru 560038",
-      "city": "Bengaluru",
-      "pincode": "560038",
+      "formatted_address": "Flat 402, 100 Feet Road, Bengaluru",
       "is_default": true
     }
   ]
 }
 
+API for Get User Address Details
+url: http://127.0.0.1:8000/api/user/addresses/1/
+method: GET
 
-11. UPDATE SAVED ADDRESS
-PUT /api/user/addresses/<id>/
-Header: Authorization: Bearer <token> (or automatic via cookie)
+params:
+Authorization: Bearer <token> (header)
 
-Request:
+response:
 {
-  "house_no": "Penthouse 501, Oakwood Residency",
-  "landmark": "Opposite Starbucks, 100 Feet Road"
+  "success": true,
+  "address": {
+    "id": 1,
+    "address_type": "Home",
+    "formatted_address": "Flat 402, 100 Feet Road, Bengaluru"
+  }
 }
 
-Response:
+API for Update User Address
+url: http://127.0.0.1:8000/api/user/addresses/1/
+method: PATCH
+
+params:
+Authorization: Bearer <token> (header)
+address_type: Work
+formatted_address: Office 12, MG Road, Bengaluru
+city: Bengaluru
+state: Karnataka
+pincode: 560001
+service_zone_id: 1
+latitude: 12.9750
+longitude: 77.6060
+
+response:
 {
   "success": true,
   "message": "Address updated successfully",
   "address": {
     "id": 1,
-    "house_no": "Penthouse 501, Oakwood Residency",
-    "landmark": "Opposite Starbucks, 100 Feet Road"
+    "address_type": "Work"
   }
 }
 
+API for Delete User Address
+url: http://127.0.0.1:8000/api/user/addresses/1/
+method: DELETE
 
-12. DELETE SAVED ADDRESS
-DELETE /api/user/addresses/<id>/
-Header: Authorization: Bearer <token> (or automatic via cookie)
+params:
+Authorization: Bearer <token> (header)
 
-Response:
+response:
 {
   "success": true,
   "message": "Address deleted successfully"
 }
 
+API for Set Default User Address
+url: http://127.0.0.1:8000/api/user/addresses/1/set-default/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Default address updated successfully"
+}
+
+API for List Scrap Categories
+url: http://127.0.0.1:8000/api/categories/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "categories": [
+    {
+      "id": 1,
+      "name": "Metal",
+      "subcategories": [
+        {
+          "id": 2,
+          "name": "Iron Scrap",
+          "rate_per_kg": 40.0,
+          "gst_percent": 18.0,
+          "min_weight_kg": 5.0
+        }
+      ]
+    }
+  ]
+}
+
+API for Calculate Pickup Price
+url: http://127.0.0.1:8000/api/pricing/calculate/
+method: POST
+
+params:
+subcategory_id: 2
+approx_weight: 30.0
+
+response:
+{
+  "success": true,
+  "rate_per_kg": 40.0,
+  "base_price": 1200.0,
+  "gst_percent": 18.0,
+  "gst_amount": 216.0,
+  "total_approx_price": 1416.0
+}
+
+API for Create User Pickup Order
+url: http://127.0.0.1:8000/api/user/orders/create/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+address_id: 1
+subcategory_id: 2
+approx_weight: 30.0
+pickup_date: 2026-10-29
+time_slot: 10:00 AM - 01:00 PM
+notes: Gate code is 4021
+
+response:
+{
+  "success": true,
+  "message": "Pickup order created and sent for negotiation.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "NEGOTIATION_PENDING",
+    "pickup_otp": "481920",
+    "approx_weight": 30.0
+  }
+}
+
+API for Confirm Negotiated Price
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/confirm-price/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Price accepted. Awaiting admin publication to vendors.",
+  "awaiting_admin_publication": true,
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": 1250.0
+  }
+}
+
+API for Get Order Negotiations
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/negotiations/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "order_id": "ORD-2026-123456",
+  "final_agreed_price": 1250.0,
+  "proposals": [
+    {
+      "proposer_role": "ADMIN",
+      "amount": 1250.0,
+      "is_accepted": true
+    }
+  ]
+}
+
+API for Track User Order
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/tracking/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "order_id": "ORD-2026-123456",
+  "status": "VENDOR_ON_THE_WAY",
+  "pickup_otp": "481920",
+  "assigned_vendor": {
+    "name": "GreenLoop Scrap Traders",
+    "phone": "9876512345"
+  },
+  "vendor_location": {
+    "latitude": 12.9784,
+    "longitude": 77.6408
+  }
+}
+
+API for Get User Order Invoice
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/invoice/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "invoice": {
+    "invoice_number": "INV-2026-123456",
+    "order_id": "ORD-2026-123456",
+    "subtotal": 1300.0,
+    "gst_amount": 234.0,
+    "platform_fee": 50.0,
+    "total_paid_by_vendor": 1584.0,
+    "payment_status": "PAID"
+  }
+}
+
+API for Submit User Order Review
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/review/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+rating: 5
+comments: Prompt arrival and fair digital scale weighing
+
+response:
+{
+  "success": true,
+  "message": "Review submitted and awaiting admin approval.",
+  "review": {
+    "id": 1,
+    "rating": 5,
+    "comments": "Prompt arrival and fair digital scale weighing",
+    "is_approved_by_admin": false
+  }
+}
+
+API for Get User Order Review
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/review/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "review": {
+    "id": 1,
+    "order_id": "ORD-2026-123456",
+    "rating": 5,
+    "comments": "Prompt arrival and fair digital scale weighing"
+  }
+}
+
+API for List User Reviews
+url: http://127.0.0.1:8000/api/user/reviews/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "reviews": [
+    {
+      "order_id": "ORD-2026-123456",
+      "rating": 5,
+      "comments": "Prompt arrival and fair digital scale weighing"
+    }
+  ]
+}
+
+API for List Approved Public Reviews
+url: http://127.0.0.1:8000/api/reviews/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "reviews": [
+    {
+      "order_id": "ORD-2026-123456",
+      "rating": 5,
+      "comments": "Prompt arrival and fair digital scale weighing",
+      "comment_visible": true
+    }
+  ]
+}
+
+API for List User Order History
+url: http://127.0.0.1:8000/api/user/orders/history/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+type: active (optional, active or past or completed)
+page: 1 (optional)
+page_size: 10 (optional, maximum 100)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "page": 1,
+  "total_pages": 1,
+  "orders": [
+    {
+      "order_id": "ORD-2026-123456",
+      "status": "COMPLETED"
+    }
+  ]
+}
+
+API for Get User Bank Details
+url: http://127.0.0.1:8000/api/user/bank-details/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "bank_details": {
+    "account_holder_name": "Ramesh Patel",
+    "bank_name": "HDFC Bank",
+    "account_number": "XXXXXXXXXX8234",
+    "ifsc_code": "HDFC0001234",
+    "upi_id": "ramesh@okhdfcbank"
+  }
+}
+
+API for Save User Bank Details
+url: http://127.0.0.1:8000/api/user/bank-details/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+account_holder_name: Ramesh Patel
+bank_name: HDFC Bank
+account_number: 50100234918234
+ifsc_code: HDFC0001234
+upi_id: ramesh@okhdfcbank (optional)
+
+response:
+{
+  "success": true,
+  "message": "Bank details saved successfully.",
+  "bank_details": {
+    "account_holder_name": "Ramesh Patel",
+    "account_number": "XXXXXXXXXX8234"
+  }
+}
+
+API for Update User Bank Details
+url: http://127.0.0.1:8000/api/user/bank-details/
+method: PUT
+
+params:
+Authorization: Bearer <token> (header)
+account_holder_name: Ramesh Patel
+bank_name: HDFC Bank
+account_number: 50100234918234
+ifsc_code: HDFC0001234
+upi_id: ramesh@okhdfcbank (optional)
+
+response:
+{
+  "success": true,
+  "message": "Bank details saved successfully.",
+  "bank_details": {
+    "account_holder_name": "Ramesh Patel",
+    "account_number": "XXXXXXXXXX8234"
+  }
+}
+
+API for Get User Home Summary
+url: http://127.0.0.1:8000/api/user/home/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "current_address": {
+    "id": 1,
+    "formatted_address": "Flat 402, 100 Feet Road, Bengaluru"
+  },
+  "active_orders": [
+    {
+      "order_id": "ORD-2026-123456",
+      "status": "VENDOR_ON_THE_WAY"
+    }
+  ],
+  "completed_orders": [],
+  "unread_notifications": 3
+}
+
+API for List User Notifications
+url: http://127.0.0.1:8000/api/user/notifications/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "unread_count": 1,
+  "notifications": [
+    {
+      "id": 1,
+      "event_type": "STATUS_UPDATED",
+      "title": "Vendor on the way",
+      "message": "Your pickup vendor is on the way.",
+      "is_read": false
+    }
+  ]
+}
+
+API for Mark User Notification Read
+url: http://127.0.0.1:8000/api/user/notifications/1/read/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Notification marked as read."
+}
+
+API for Mark All User Notifications Read
+url: http://127.0.0.1:8000/api/user/notifications/read-all/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "updated": 3
+}
+
+API for Get Authorized Shared Order Tracking
+url: http://127.0.0.1:8000/api/orders/ORD-2026-123456/tracking/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "VENDOR_ON_THE_WAY"
+  },
+  "vendor_location": {
+    "latitude": 12.9784,
+    "longitude": 77.6408
+  }
+}
+
+API for Get Support Details
+url: http://127.0.0.1:8000/api/support/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "support": {
+    "phone": "+91 80000 00000",
+    "email": "support@bazaarpe.local",
+    "whatsapp": "+91 80000 00000",
+    "hours": "09:00 AM - 06:00 PM IST"
+  }
+}

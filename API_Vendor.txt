@@ -1,0 +1,919 @@
+API for Send Vendor OTP
+url: http://127.0.0.1:8000/api/vendor/auth/send-otp/
+method: POST
+
+params:
+mobile_number: 9876543210
+
+response:
+{
+  "success": true,
+  "message": "OTP sent successfully",
+  "action": "REGISTER",
+  "otp_debug": "123456"
+}
+
+API for Register Vendor
+url: http://127.0.0.1:8000/api/vendor/auth/register/
+method: POST
+
+params:
+full_name: Ravi Kumar
+mobile_number: 9876543210
+email: ravi@example.com (optional)
+address: Indiranagar, Bengaluru
+pincode: 560038
+city: Bengaluru
+otp: 123456
+accept_privacy: true
+privacy_version: 2026.1
+accept_terms: true
+terms_version: 2026.1
+
+response:
+{
+  "success": true,
+  "message": "User registered successfully",
+  "is_registered": true,
+  "token": "authentication-token",
+  "user": {
+    "full_name": "Ravi Kumar",
+    "mobile_number": "9876543210"
+  }
+}
+
+API for Vendor OTP Login
+url: http://127.0.0.1:8000/api/vendor/auth/login-otp/
+method: POST
+
+params:
+mobile_number: 9876543210
+otp: 123456
+
+response:
+{
+  "success": true,
+  "message": "Login successful",
+  "is_registered": true,
+  "token": "authentication-token",
+  "user": {
+    "full_name": "Ravi Kumar",
+    "mobile_number": "9876543210"
+  }
+}
+
+API for Vendor Logout
+url: http://127.0.0.1:8000/api/vendor/auth/logout/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "User successfully logged out"
+}
+
+API for List Vendor Terms
+url: http://127.0.0.1:8000/api/vendor/terms/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "documents": [
+    {
+      "document_type": "PRIVACY",
+      "version": "2026.1",
+      "title": "Privacy Policy"
+    },
+    {
+      "document_type": "TERMS",
+      "version": "2026.1",
+      "title": "Terms and Conditions"
+    }
+  ]
+}
+
+API for Accept Vendor Terms
+url: http://127.0.0.1:8000/api/user/consents/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+accept_privacy: true
+privacy_version: 2026.1
+accept_terms: true
+terms_version: 2026.1
+
+response:
+{
+  "success": true,
+  "consents": [
+    {
+      "document_type": "PRIVACY",
+      "version": "2026.1",
+      "is_current": true
+    }
+  ],
+  "consent_complete": true
+}
+
+API for Request Vendor Phone Change
+url: http://127.0.0.1:8000/api/user/change-phone/request/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+new_phone: 9000012345
+
+response:
+{
+  "success": true,
+  "message": "OTP sent to the new mobile number."
+}
+
+API for Confirm Vendor Phone Change
+url: http://127.0.0.1:8000/api/user/change-phone/confirm/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+new_phone: 9000012345
+otp: 123456
+
+response:
+{
+  "success": true,
+  "message": "Mobile number updated successfully.",
+  "mobile_number": "9000012345"
+}
+
+API for Create Vendor Profile
+url: http://127.0.0.1:8000/api/vendor/profile/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+shop_name: GreenLoop Scrap Traders
+owner_name: Ravi Kumar
+profile_picture: <image file> (optional, max 5 MB)
+full_address: 12, Indiranagar, Bengaluru
+city: Bengaluru
+state: Karnataka
+pincode: 560038
+latitude: 12.9784 (optional)
+longitude: 77.6408 (optional)
+
+response:
+{
+  "success": true,
+  "message": "Vendor profile saved.",
+  "vendor": {
+    "id": 1,
+    "shop_name": "GreenLoop Scrap Traders",
+    "owner_name": "Ravi Kumar",
+    "registered_mobile_number": "9876543210",
+    "kyc_status": "DRAFT",
+    "is_online": false
+  }
+}
+
+API for Get Vendor Profile
+url: http://127.0.0.1:8000/api/vendor/profile/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "vendor": {
+    "id": 1,
+    "shop_name": "GreenLoop Scrap Traders",
+    "owner_name": "Ravi Kumar",
+    "profile_picture": "/media/vendor_profiles/photo.jpg",
+    "registered_mobile_number": "9876543210",
+    "full_address": "12, Indiranagar, Bengaluru",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "pincode": "560038",
+    "is_online": false,
+    "kyc_status": "DRAFT"
+  }
+}
+
+API for Update Vendor Profile
+url: http://127.0.0.1:8000/api/vendor/profile/
+method: PATCH
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+shop_name: GreenLoop Scrap Traders
+owner_name: Ravi Kumar
+profile_picture: <image file> (optional, max 5 MB)
+full_address: 12, Indiranagar, Bengaluru
+city: Bengaluru
+state: Karnataka
+pincode: 560038
+latitude: 12.9784 (optional)
+longitude: 77.6408 (optional)
+
+response:
+{
+  "success": true,
+  "message": "Vendor profile saved.",
+  "vendor": {
+    "id": 1,
+    "shop_name": "GreenLoop Scrap Traders",
+    "registered_mobile_number": "9876543210"
+  }
+}
+
+API for List Vendor States and Zones
+url: http://127.0.0.1:8000/api/vendor/states-zones/
+method: GET
+
+params:
+state: Karnataka (optional)
+
+response:
+{
+  "success": true,
+  "states": [
+    "Karnataka"
+  ],
+  "zones": [
+    {
+      "id": 1,
+      "name": "Zone 1 - Indiranagar",
+      "city": "Bengaluru"
+    }
+  ]
+}
+
+API for Get Vendor Operating Zones
+url: http://127.0.0.1:8000/api/vendor/operating-zones/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "zones": [
+    {
+      "id": 1,
+      "name": "Zone 1 - Indiranagar"
+    }
+  ]
+}
+
+API for Update Vendor Operating Zones
+url: http://127.0.0.1:8000/api/vendor/operating-zones/
+method: PUT
+
+params:
+Authorization: Bearer <token> (header)
+zone_ids: [1, 2]
+
+response:
+{
+  "success": true,
+  "zones": [
+    {
+      "id": 1,
+      "name": "Zone 1 - Indiranagar"
+    },
+    {
+      "id": 2,
+      "name": "Zone 2 - Koramangala"
+    }
+  ]
+}
+
+API for Update Vendor Availability
+url: http://127.0.0.1:8000/api/vendor/availability/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+is_online: true
+
+response:
+{
+  "success": true,
+  "is_online": true
+}
+
+API for Initiate Vendor Aadhaar Verification
+url: http://127.0.0.1:8000/api/vendor/kyc/aadhaar/initiate/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+aadhaar_last4: 1234
+
+response:
+{
+  "success": true,
+  "reference": "aad_provider_reference",
+  "status": "PENDING"
+}
+
+API for Confirm Vendor Aadhaar Verification
+url: http://127.0.0.1:8000/api/vendor/kyc/aadhaar/confirm/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+reference: aad_provider_reference
+otp: 123456
+
+response:
+{
+  "success": true,
+  "status": "VERIFIED"
+}
+
+API for Submit Vendor KYC
+url: http://127.0.0.1:8000/api/vendor/kyc/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+pan_last4: AB12
+aadhaar_document: <PDF or JPEG or PNG file, max 10 MB>
+pan_document: <PDF or JPEG or PNG file, max 10 MB>
+gst_certificate: <PDF or JPEG or PNG file, max 10 MB> (optional)
+
+response:
+{
+  "success": true,
+  "message": "KYC submitted for admin review.",
+  "status": "UNDER_REVIEW"
+}
+
+API for Get Vendor KYC Status
+url: http://127.0.0.1:8000/api/vendor/kyc/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "kyc": {
+    "status": "APPROVED",
+    "rejection_reason": "",
+    "aadhaar_status": "VERIFIED",
+    "aadhaar_masked": "XXXXXXXX1234",
+    "pan_masked": "XXXXXXAB12",
+    "aadhaar_document_uploaded": true,
+    "pan_document_uploaded": true,
+    "gst_certificate_uploaded": false
+  }
+}
+
+API for Admin Approve Vendor KYC
+url: http://127.0.0.1:8000/admin/vendors/1/kyc/approve
+method: POST
+
+params:
+Admin session: required
+
+response:
+{
+  "success": true,
+  "message": "Vendor KYC approved.",
+  "status": "APPROVED"
+}
+
+API for Admin Reject Vendor KYC
+url: http://127.0.0.1:8000/admin/vendors/1/kyc/reject
+method: POST
+
+params:
+Admin session: required
+reason: Aadhaar document is unclear
+
+response:
+{
+  "success": true,
+  "message": "Vendor KYC rejected.",
+  "status": "REJECTED"
+}
+
+API for Get Vendor Dashboard
+url: http://127.0.0.1:8000/api/vendor/dashboard/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "summary": {
+    "available_orders": 2,
+    "active_orders": 1,
+    "completed_orders": 5,
+    "unread_notifications": 3,
+    "is_online": true,
+    "kyc_status": "APPROVED"
+  }
+}
+
+API for List Available Vendor Orders
+url: http://127.0.0.1:8000/api/vendor/orders/available/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+page: 1 (optional)
+page_size: 20 (optional, maximum 100)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "page": 1,
+  "total_pages": 1,
+  "orders": [
+    {
+      "order_id": "ORD-2026-123456",
+      "status": "SEARCHING_VENDOR",
+      "category": "Metal",
+      "subcategory": "Iron Scrap",
+      "approx_weight": 30.0,
+      "final_agreed_price": 1250.0,
+      "service_zone": "Zone 1 - Indiranagar",
+      "coordinates": {
+        "latitude": 12.9784,
+        "longitude": 77.6408
+      },
+      "distance_km": 2.4,
+      "distance_method": "haversine_great_circle"
+    }
+  ]
+}
+
+API for Get Vendor Order Details
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "VENDOR_ASSIGNED",
+    "category": "Metal",
+    "subcategory": "Iron Scrap",
+    "approx_weight": 30.0,
+    "final_agreed_price": 1250.0,
+    "pickup_address": "Flat 402, Indiranagar, Bengaluru",
+    "customer": {
+      "name": "Ramesh Patel",
+      "phone": "9811223344"
+    }
+  }
+}
+
+API for Accept Vendor Order
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/accept/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Order assigned to vendor.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "VENDOR_ASSIGNED",
+    "arrival_deadline": "2026-10-28T15:30:00+05:30"
+  }
+}
+
+API for Reject Vendor Order
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/reject/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+reason: Schedule conflict (optional)
+
+response:
+{
+  "success": true,
+  "message": "Offer rejected for this vendor only.",
+  "already_rejected": false
+}
+
+API for Update Vendor Order Status
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/status/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+status: VENDOR_ON_THE_WAY (next value can be REACHED_LOCATION)
+
+response:
+{
+  "success": true,
+  "message": "Order status updated.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "VENDOR_ON_THE_WAY"
+  }
+}
+
+API for Update Vendor Live Location
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/update-location/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+latitude: 12.9784
+longitude: 77.6408
+
+response:
+{
+  "success": true,
+  "message": "Vendor location updated.",
+  "vendor_location": {
+    "latitude": 12.9784,
+    "longitude": 77.6408
+  }
+}
+
+API for Verify Pickup OTP
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/verify-otp/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+otp: 481920
+
+response:
+{
+  "success": true,
+  "message": "Pickup OTP verified.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "PICKUP_IN_PROGRESS",
+    "is_otp_verified": true
+  }
+}
+
+API for Create Vendor Payment
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/billing/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+final_weight: 32.50
+
+response:
+{
+  "success": true,
+  "message": "Sandbox payment created. Invoice remains unavailable until signature verification succeeds.",
+  "payment": {
+    "payment_id": "pay_sbx_123456",
+    "order_id": "ORD-2026-123456",
+    "amount": 1584.0,
+    "currency": "INR",
+    "status": "CREATED",
+    "item_amount": 1300.0,
+    "gst_amount": 234.0,
+    "commission_rate": 0.0,
+    "commission_amount": 0.0,
+    "commission_tax_amount": 0.0,
+    "fixed_platform_fee": 50.0,
+    "final_payable_amount": 1584.0
+  }
+}
+
+API for Verify Vendor Payment
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/payment/verify/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+payment_id: pay_sbx_123456
+signature: payment-signature
+
+response:
+{
+  "success": true,
+  "message": "Payment verified and invoice generated.",
+  "invoice": {
+    "invoice_number": "INV-2026-123456",
+    "payment_status": "PAID",
+    "total_paid_by_vendor": 1584.0
+  }
+}
+
+API for Payment Webhook
+url: http://127.0.0.1:8000/api/payments/webhook/
+method: POST
+
+params:
+X-Payment-Signature: <webhook signature> (header)
+event_id: evt_unique_1001
+payment_id: pay_sbx_123456
+status: PAID
+
+response:
+{
+  "success": true,
+  "message": "Webhook processed.",
+  "invoice": {
+    "invoice_number": "INV-2026-123456",
+    "payment_status": "PAID"
+  }
+}
+
+API for Complete Vendor Pickup
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/complete/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+final_weight: 32.50
+item_images: <image file, max 8 MB> (repeat key for multiple images)
+
+response:
+{
+  "success": true,
+  "message": "Pickup completed with photo proof.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "COMPLETED"
+  },
+  "pickup_summary": {
+    "final_weight": 32.5,
+    "invoice_number": "INV-2026-123456",
+    "proof_count": 1
+  }
+}
+
+API for Get Vendor Invoice
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/invoice/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "invoice": {
+    "invoice_number": "INV-2026-123456",
+    "order_id": "ORD-2026-123456",
+    "subtotal": 1300.0,
+    "gst_amount": 234.0,
+    "platform_fee": 50.0,
+    "total_paid_by_vendor": 1584.0,
+    "payment_status": "PAID"
+  }
+}
+
+API for List Vendor Order History
+url: http://127.0.0.1:8000/api/vendor/orders/history/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+status: COMPLETED (optional)
+from: 2026-10-01 (optional, YYYY-MM-DD)
+to: 2026-10-31 (optional, YYYY-MM-DD)
+page: 1 (optional)
+page_size: 20 (optional, maximum 100)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "page": 1,
+  "total_pages": 1,
+  "orders": [
+    {
+      "order_id": "ORD-2026-123456",
+      "status": "COMPLETED",
+      "final_weight": 32.5
+    }
+  ]
+}
+
+API for List Vendor Reviews
+url: http://127.0.0.1:8000/api/vendor/reviews/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "reviews": [
+    {
+      "order_id": "ORD-2026-123456",
+      "rating": 5,
+      "comments": "Prompt arrival and fair weighing.",
+      "comment_visible": true
+    }
+  ]
+}
+
+API for List Vendor Notifications
+url: http://127.0.0.1:8000/api/vendor/notifications/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "unread_count": 1,
+  "notifications": [
+    {
+      "id": 1,
+      "event_type": "VENDOR_ASSIGNED",
+      "title": "Pickup assigned",
+      "message": "You accepted ORD-2026-123456.",
+      "is_read": false
+    }
+  ]
+}
+
+API for Mark Vendor Notification Read
+url: http://127.0.0.1:8000/api/vendor/notifications/1/read/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Notification marked as read."
+}
+
+API for Mark All Vendor Notifications Read
+url: http://127.0.0.1:8000/api/vendor/notifications/read-all/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "updated": 3
+}
+
+API for Create Vendor Refund Request
+url: http://127.0.0.1:8000/api/vendor/refunds/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+order_id: ORD-2026-123456
+amount: 10.00
+reason: Duplicate payment
+
+response:
+{
+  "success": true,
+  "message": "Refund requested for admin review; no automatic approval or transfer occurred.",
+  "refund": {
+    "id": 1,
+    "order_id": "ORD-2026-123456",
+    "amount": 10.0,
+    "status": "REQUESTED",
+    "reason": "Duplicate payment"
+  }
+}
+
+API for List Vendor Refund Requests
+url: http://127.0.0.1:8000/api/vendor/refunds/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "count": 1,
+  "refunds": [
+    {
+      "id": 1,
+      "order_id": "ORD-2026-123456",
+      "amount": 10.0,
+      "status": "REQUESTED"
+    }
+  ]
+}
+
+API for Get Vendor Refund Details
+url: http://127.0.0.1:8000/api/vendor/refunds/1/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "refund": {
+    "id": 1,
+    "order_id": "ORD-2026-123456",
+    "payment_id": "pay_sbx_123456",
+    "amount": 10.0,
+    "status": "REQUESTED",
+    "reason": "Duplicate payment"
+  }
+}
+
+API for Admin Approve Vendor Refund
+url: http://127.0.0.1:8000/admin/refunds/1/approve
+method: POST
+
+params:
+Admin session: required
+note: Refund approved (optional)
+
+response:
+{
+  "success": true,
+  "status": "APPROVED",
+  "gateway_refund_ref": ""
+}
+
+API for Admin Reject Vendor Refund
+url: http://127.0.0.1:8000/admin/refunds/1/reject
+method: POST
+
+params:
+Admin session: required
+reason: Refund is not eligible
+
+response:
+{
+  "success": true,
+  "status": "REJECTED",
+  "gateway_refund_ref": ""
+}
+
+API for Admin Process Vendor Refund
+url: http://127.0.0.1:8000/admin/refunds/1/process
+method: POST
+
+params:
+Admin session: required
+
+response:
+{
+  "success": true,
+  "status": "SUCCEEDED",
+  "gateway_refund_ref": "refund_sbx_1_123456"
+}
+
+API for Get Vendor Support Details
+url: http://127.0.0.1:8000/api/support/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "support": {
+    "phone": "+91 80000 00000",
+    "email": "support@bazaarpe.local",
+    "whatsapp": "+91 80000 00000",
+    "hours": "09:00 AM - 06:00 PM IST"
+  }
+}
