@@ -1,5 +1,59 @@
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, ScrapCategory, ScrapSubCategory
+
+
+DEFAULT_SCRAP_CATEGORIES = {
+    'Paper': {
+        'icon': 'newspaper',
+        'subcategories': [
+            ('Newspaper', '18.00', '18.00', '5.00'),
+            ('Corrugated Cardboard', '12.00', '18.00', '5.00'),
+            ('Office Paper', '16.00', '18.00', '5.00'),
+        ],
+    },
+    'Metal': {
+        'icon': 'recycle',
+        'subcategories': [
+            ('Copper Wire', '650.00', '18.00', '2.00'),
+            ('Iron Scrap', '40.00', '18.00', '5.00'),
+            ('Aluminium', '145.00', '18.00', '3.00'),
+        ],
+    },
+    'Plastic': {
+        'icon': 'bottle',
+        'subcategories': [
+            ('PET Bottles', '22.00', '18.00', '5.00'),
+            ('Hard Plastic', '28.00', '18.00', '5.00'),
+        ],
+    },
+    'E-waste': {
+        'icon': 'cpu',
+        'subcategories': [
+            ('Mixed Electronics', '75.00', '18.00', '2.00'),
+            ('Computer Components', '180.00', '18.00', '1.00'),
+        ],
+    },
+}
+
+
+def seed_scrap_categories():
+    """Idempotently create the default active scrap catalogue and rates."""
+    for category_name, config in DEFAULT_SCRAP_CATEGORIES.items():
+        category, _ = ScrapCategory.objects.update_or_create(
+            name=category_name,
+            defaults={'icon': config['icon'], 'is_active': True},
+        )
+        for name, rate, gst, min_weight in config['subcategories']:
+            ScrapSubCategory.objects.update_or_create(
+                category=category,
+                name=name,
+                defaults={
+                    'rate_per_kg': rate,
+                    'gst_percent': gst,
+                    'min_weight_kg': min_weight,
+                    'is_active': True,
+                },
+            )
 
 
 def seed_initial_users():

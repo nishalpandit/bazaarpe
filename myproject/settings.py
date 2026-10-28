@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -118,7 +119,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -130,6 +131,21 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+PLATFORM_FEE = os.environ.get('PLATFORM_FEE', '50.00')
+PAYMENT_SANDBOX_SECRET = os.environ.get('PAYMENT_SANDBOX_SECRET', 'local-sandbox-secret')
+PAYMENT_SANDBOX_WEBHOOK_SECRET = os.environ.get('PAYMENT_SANDBOX_WEBHOOK_SECRET', 'local-webhook-secret')
+SUPPORT_PHONE = os.environ.get('SUPPORT_PHONE', '+91 80000 00000')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@bazaarpe.local')
+SUPPORT_WHATSAPP = os.environ.get('SUPPORT_WHATSAPP', SUPPORT_PHONE)
+SUPPORT_HOURS = os.environ.get('SUPPORT_HOURS', '09:00 AM - 06:00 PM IST')
+AADHAAR_PROVIDER_MODE = os.environ.get('AADHAAR_PROVIDER_MODE', 'unconfigured')
+AADHAAR_LOCAL_TEST_OTP = os.environ.get('AADHAAR_LOCAL_TEST_OTP', '123456')
+PAYMENT_REFUND_MODE = os.environ.get('PAYMENT_REFUND_MODE', 'unconfigured')
+ORDER_ACCEPTANCE_MINUTES = int(os.environ.get('ORDER_ACCEPTANCE_MINUTES', '30'))
+VENDOR_ARRIVAL_MINUTES = int(os.environ.get('VENDOR_ARRIVAL_MINUTES', '90'))
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
