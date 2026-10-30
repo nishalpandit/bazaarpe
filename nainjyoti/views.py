@@ -650,10 +650,24 @@ def page_view(request, page_name):
 
         assigned_orders = []
         vendor_reviews = []
+        vendor_payments = []
         all_zones = ServiceZone.objects.filter(is_active=True).select_related('city')
+        completed_orders_count = 0
+        total_payouts = Decimal('0.00')
+        total_weight = Decimal('0.0')
+        avg_rating = 4.8
         if vendor and vendor.user:
-            assigned_orders = PickupOrder.objects.filter(assigned_vendor=vendor.user).select_related('category', 'subcategory', 'address').order_by('-created_at')[:20]
+            orders_qs = PickupOrder.objects.filter(assigned_vendor=vendor.user)
+            assigned_orders = orders_qs.select_related('category', 'subcategory', 'address', 'user', 'user__profile').order_by('-created_at')[:20]
             vendor_reviews = OrderReview.objects.filter(order__assigned_vendor=vendor.user).select_related('order', 'user', 'user__profile').order_by('-created_at')
+            vendor_payments = PaymentTransaction.objects.filter(order__assigned_vendor=vendor.user).select_related('order').order_by('-created_at')[:10]
+            completed_orders = orders_qs.filter(status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT])
+            completed_orders_count = completed_orders.count()
+            total_payouts = completed_orders.aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
+            total_weight = completed_orders.aggregate(w=Sum('final_weight'))['w'] or Decimal('0.0')
+            calc_rating = vendor_reviews.filter(is_approved_by_admin=True).aggregate(r=Avg('rating'))['r']
+            if calc_rating:
+                avg_rating = round(float(calc_rating), 1)
 
         ctx = admin_context(
             request,
@@ -661,7 +675,12 @@ def page_view(request, page_name):
             vendor=vendor,
             assigned_orders=assigned_orders,
             vendor_reviews=vendor_reviews,
+            vendor_payments=vendor_payments,
             all_zones=all_zones,
+            completed_orders_count=completed_orders_count,
+            total_payouts=total_payouts,
+            total_weight=total_weight,
+            avg_rating=avg_rating,
         )
         return render(request, 'vendor-detail.html', ctx)
 

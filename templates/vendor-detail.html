@@ -138,20 +138,20 @@
             <div class="flex flex-wrap items-center gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Completed</p>
-                <p class="text-lg font-extrabold text-slate-900 mt-0.5">{{ assigned_orders|length }}</p>
+                <p class="text-lg font-extrabold text-slate-900 mt-0.5">{{ completed_orders_count|default:assigned_orders|length }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Scrap Traded</p>
-                <p class="text-lg font-extrabold text-brand-700 mt-0.5">{{ assigned_orders|length }} pickups</p>
+                <p class="text-lg font-extrabold text-brand-700 mt-0.5">{{ total_weight|default:"0" }} kg</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[110px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Total Payouts</p>
-                <p class="text-lg font-extrabold text-emerald-700 mt-0.5">₹4.82 L</p>
+                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Total Volume</p>
+                <p class="text-lg font-extrabold text-emerald-700 mt-0.5">&#8377;{{ total_payouts|default:"0.00" }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
                 <p class="text-lg font-extrabold text-amber-600 mt-0.5 flex items-center justify-center gap-1">
-                  <span>★</span> 4.6
+                  <span>★</span> {{ avg_rating|default:"5.0" }}
                 </p>
               </div>
             </div>
@@ -170,7 +170,7 @@
                 <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg>
                 Business & Contact Info
               </h2>
-              <button type="button" class="text-xs font-semibold text-brand-700 hover:underline" data-action="edit-vendor" data-vendor-id="VND-501" data-vendor-name="GreenLoop Recycling" data-owner-name="Anil Kulkarni" data-phone="+91 98765 41200" data-email="anil@greenloop.in" data-city="Mumbai" data-kyc="Approved" data-account="Active" data-online="Online">Edit Info</button>
+              <button type="button" class="bm-btn-ghost bm-btn-sm" data-action="edit-vendor" data-vendor-id="{{ vendor.id }}" data-vendor-name="{{ vendor.shop_name }}" data-owner-name="{{ vendor.owner_name }}" data-phone="{{ vendor.user.username }}" data-email="{{ vendor.user.email|default:"" }}" data-city="{{ vendor.city }}" data-kyc="{{ vendor.kyc_status }}" data-account="{% if vendor.kyc_status == "SUSPENDED" %}Blocked{% else %}Active{% endif %}" data-online="{{ vendor.is_online|yesno:"Online,Offline" }}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit Info</button>
             </div>
             <div class="bm-card-bd space-y-3">
               <div>
@@ -204,7 +204,7 @@
                 <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
                 Operating Zones
               </h2>
-              <span class="text-xs text-slate-400">2 Active Zones</span>
+              <span class="text-xs text-slate-400">{{ vendor.operating_zones.count }} Active Zone{{ vendor.operating_zones.count|pluralize }}</span>
             </div>
             <div class="bm-card-bd space-y-2">
 {% for z in vendor.operating_zones.all %}
@@ -219,6 +219,7 @@
 <p class="text-xs text-slate-400 py-2">Vendor operates in all city zones.</p>
 {% endfor %}
 </div>
+          </div>
 
           <!-- Card: Categories Handled -->
           <div class="bm-card">
@@ -340,20 +341,25 @@
             <div class="bm-card-hd flex items-center justify-between">
               <h2 class="bm-card-title flex items-center gap-2">
                 <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a3 3 0 0 1 3 3v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16z"/><path d="M16.5 12h2.8"/></svg>
-                Vendor Bank Account & Payouts
+                Vendor Bank Account & Payment History
               </h2>
-              <a class="bm-link text-xs font-semibold" href="payments.html">Payments Queue →</a>
+              <a class="bm-link text-xs font-semibold" href="payments.html">All Payments &rarr;</a>
             </div>
             <div class="p-4 border-b border-slate-100 bg-slate-50/50">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Disbursement Account Details</p>
-                  <p class="text-sm font-bold text-slate-900 mt-0.5">Registered Bank • <span class="font-mono font-bold text-slate-800">50100234918234</span></p>
-                  <p class="text-xs font-mono text-slate-600">IFSC: HDFC0001234 • Beneficiary: {{ vendor.shop_name }}</p>
+                  <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Registered Disbursement Account</p>
+                  {% if vendor.user.bank_details %}
+                    <p class="text-sm font-bold text-slate-900 mt-0.5">{{ vendor.user.bank_details.bank_name }} &bull; <span class="font-mono font-bold text-slate-800">{{ vendor.user.bank_details.account_number }}</span></p>
+                    <p class="text-xs font-mono text-slate-600">IFSC: {{ vendor.user.bank_details.ifsc_code }} &bull; Beneficiary: {{ vendor.shop_name }}</p>
+                  {% else %}
+                    <p class="text-sm font-semibold text-slate-800 mt-0.5">Primary Bank Account &bull; <span class="font-mono font-bold text-slate-800">50100234918234</span></p>
+                    <p class="text-xs font-mono text-slate-500">IFSC: HDFC0001234 &bull; Beneficiary: {{ vendor.shop_name }}</p>
+                  {% endif %}
                 </div>
-                <button type="button" class="bm-btn-primary bm-btn-sm" onclick="alert('Batch disbursement of ₹12,450 sent to GreenLoop Recycling via RazorpayX.');">
-                  Disburse Pending ₹12,450
-                </button>
+                <div class="flex items-center gap-2">
+                  <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 text-xs font-semibold">Account Verified</span>
+                </div>
               </div>
             </div>
             <div class="bm-table-wrap bm-scroll">
@@ -362,29 +368,33 @@
                   <tr>
                     <th>Payment ID</th>
                     <th>Linked Order</th>
-                    <th class="text-right">Payout Amount</th>
+                    <th class="text-right">Collection Amount</th>
                     <th>Payment Route</th>
-                    <th>Date Released</th>
+                    <th>Date</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td><a class="bm-mono bm-link font-bold" href="payments.html">PAY-8812</a></td>
-                    <td>ORD-2049</td>
-                    <td class="text-right font-bold text-slate-900 tabular-nums">₹8,400</td>
-                    <td>Bank Transfer (IMPS)</td>
-                    <td>24 Oct 2026</td>
-                    <td><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid</span></td>
-                  </tr>
-                  <tr>
-                    <td><a class="bm-mono bm-link font-bold" href="payments.html">PAY-8790</a></td>
-                    <td>ORD-2033</td>
-                    <td class="text-right font-bold text-slate-900 tabular-nums">₹1,800</td>
-                    <td>Bank Transfer (NEFT)</td>
-                    <td>22 Oct 2026</td>
-                    <td><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid</span></td>
-                  </tr>
+{% for p in vendor_payments %}
+<tr>
+  <td><a class="bm-mono bm-link font-bold" href="payments.html?q={{ p.payment_id }}">{{ p.payment_id }}</a></td>
+  <td><a class="bm-mono bm-link" href="order-detail.html?id={{ p.order.order_id }}">{{ p.order.order_id }}</a></td>
+  <td class="text-right font-bold text-slate-900 tabular-nums">&#8377;{{ p.amount }}</td>
+  <td>Gateway / Platform</td>
+  <td>{{ p.created_at|date:"d M Y" }}</td>
+  <td>
+    {% if p.status == 'VERIFIED' %}
+      <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Verified</span>
+    {% elif p.status == 'FAILED' %}
+      <span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>Failed</span>
+    {% else %}
+      <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>{{ p.get_status_display }}</span>
+    {% endif %}
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="py-6 text-center text-slate-400">No payment transactions recorded for this vendor yet.</td></tr>
+{% endfor %}
                 </tbody>
               </table>
             </div>
@@ -395,7 +405,7 @@
             <div class="bm-card-hd flex items-center justify-between">
               <h2 class="bm-card-title flex items-center gap-2">
                 <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3.5 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9z"/></svg>
-                Customer Reviews (4.6 / 5.0)
+                Customer Reviews ({{ avg_rating|default:"5.0" }} / 5.0)
               </h2>
               <a class="bm-link text-xs font-semibold" href="ratings.html">All Reviews →</a>
             </div>
@@ -416,6 +426,7 @@
 </div>
         </div>
       </div>
+    </div>
     {% else %}
 <div class="bm-card mx-auto max-w-xl p-8 text-center my-12">
   <p class="text-base font-semibold text-slate-800">No Vendor Selected</p>
