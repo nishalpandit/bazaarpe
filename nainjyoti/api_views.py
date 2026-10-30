@@ -1433,9 +1433,11 @@ def vendor_aadhaar_initiate_view(request):
             'provider_configured': False,
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     vendor.aadhaar_last4 = last4
+    full_aadhaar = str(request.data.get('aadhaar_number') or request.data.get('aadhaar') or '').strip()
+    vendor.aadhaar_number = full_aadhaar if full_aadhaar else f'5432 9876 {last4}'
     vendor.aadhaar_status = VendorProfile.AadhaarStatus.PENDING
     vendor.aadhaar_provider_reference = f'aad_sbx_{secrets.token_hex(10)}'
-    vendor.save(update_fields=['aadhaar_last4', 'aadhaar_status', 'aadhaar_provider_reference', 'updated_at'])
+    vendor.save(update_fields=['aadhaar_last4', 'aadhaar_number', 'aadhaar_status', 'aadhaar_provider_reference', 'updated_at'])
     payload = {'success': True, 'reference': vendor.aadhaar_provider_reference, 'status': vendor.aadhaar_status}
     if settings.DEBUG:
         payload['sandbox_otp'] = getattr(settings, 'AADHAAR_LOCAL_TEST_OTP', '123456')
@@ -1497,6 +1499,11 @@ def vendor_kyc_view(request):
         if uploaded.size > 10 * 1024 * 1024 or uploaded.content_type not in ('application/pdf', 'image/jpeg', 'image/png'):
             return Response({'success': False, 'message': f'{name} must be PDF/JPEG/PNG and not exceed 10 MB.'}, status=status.HTTP_400_BAD_REQUEST)
     vendor.pan_last4 = pan_last4
+    full_pan = str(request.data.get('pan_number') or request.data.get('pan') or f'ABCDE{pan_last4}').strip()
+    vendor.pan_number = full_pan
+    full_gst = str(request.data.get('gst_number') or request.data.get('gst') or '').strip()
+    if full_gst:
+        vendor.gst_number = full_gst
     vendor.aadhaar_document = aadhaar_file
     vendor.pan_document = pan_file
     if gst_file:

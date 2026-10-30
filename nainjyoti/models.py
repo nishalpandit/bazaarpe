@@ -654,6 +654,9 @@ class VendorProfile(models.Model):
     aadhaar_document = models.FileField(upload_to='vendor_kyc/aadhaar/%Y/%m/', blank=True, null=True)
     pan_document = models.FileField(upload_to='vendor_kyc/pan/%Y/%m/', blank=True, null=True)
     gst_certificate = models.FileField(upload_to='vendor_kyc/gst/%Y/%m/', blank=True, null=True)
+    aadhaar_number = models.CharField(max_length=20, blank=True, default='')
+    pan_number = models.CharField(max_length=20, blank=True, default='')
+    gst_number = models.CharField(max_length=30, blank=True, default='')
     aadhaar_last4 = models.CharField(max_length=4, blank=True, default='')
     pan_last4 = models.CharField(max_length=4, blank=True, default='')
     aadhaar_status = models.CharField(max_length=20, choices=AadhaarStatus.choices, default=AadhaarStatus.NOT_STARTED)
@@ -661,6 +664,10 @@ class VendorProfile(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def display_vendor_id(self):
+        return f"VND-{1000 + self.id}"
 
     class Meta:
         ordering = ['shop_name']

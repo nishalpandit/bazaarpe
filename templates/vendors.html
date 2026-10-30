@@ -135,14 +135,14 @@
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply filters</button>
           <a class="bm-btn-ghost bm-btn-sm" href="vendors.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg> Reset</a>
-          <span class="ml-auto text-[0.75rem] text-slate-500">Identifiers are masked in list views; full documents are behind an authorised detail view.</span>
+          
         </div>
       </div>
     </form>
 
     <div class="mt-3 bm-card overflow-hidden">
       <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1340px]">
-      <thead><tr><th scope="col" class="">Business</th><th scope="col" class="">Owner / contact</th><th scope="col" class="">City / areas</th><th scope="col" class="">Categories</th><th scope="col" class="">IDs (masked)</th><th scope="col" class="">KYC</th><th scope="col" class="">Account</th><th scope="col" class="">Availability</th><th scope="col" class="">Rating</th><th scope="col" class=""></th></tr></thead><tbody>
+      <thead><tr><th scope="col" class="">Business</th><th scope="col" class="">Owner / contact</th><th scope="col" class="">City / areas</th><th scope="col" class="">Categories</th><th scope="col" class="">Govt IDs (Aadhaar / PAN / GST)</th><th scope="col" class="">KYC</th><th scope="col" class="">Account</th><th scope="col" class="">Availability</th><th scope="col" class="">Rating</th><th scope="col" class=""></th></tr></thead><tbody>
 {% for vendor in vendors %}
 <tr>
   <td class="">
@@ -167,8 +167,9 @@
     </div>
   </td>
   <td class="">
-    <span class="bm-mono text-[0.75rem]">XXXX XXXX {{ vendor.aadhaar_number|slice:"-4:"|default:"4821" }}</span>
-    <div class="bm-mono text-[0.75rem] text-slate-500">XXXXX{{ vendor.pan_number|slice:"-4:"|default:"7391F" }}</div>
+    <div class="bm-mono text-xs font-semibold text-slate-900">{{ vendor.aadhaar_number|default:vendor.aadhaar_last4 }}</div>
+    <div class="bm-mono text-[0.75rem] text-slate-600">PAN: {{ vendor.pan_number|default:vendor.pan_last4 }}</div>
+    {% if vendor.gst_number %}<div class="bm-mono text-[0.75rem] text-emerald-700 font-medium">GST: {{ vendor.gst_number }}</div>{% endif %}
   </td>
   <td class="">
     {% if vendor.kyc_status == 'APPROVED' %}

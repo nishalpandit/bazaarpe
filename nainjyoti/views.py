@@ -1629,6 +1629,16 @@ def admin_action_view(request, action_path):
                 }
             )
 
+            aadhaar_number = str(data.get('aadhaar') or data.get('aadhaar_number') or '').strip()
+            pan_number = str(data.get('pan') or data.get('pan_number') or '').strip()
+            gst_number = str(data.get('gst') or data.get('gst_number') or '').strip()
+            if not aadhaar_number:
+                aadhaar_number = f"5432 9876 {phone[-4:]}"
+            if not pan_number:
+                pan_number = f"ABCDE{phone[-4:]}"
+            if not gst_number:
+                gst_number = f"29ABCDE{phone[-4:]}1Z5"
+
             vendor_profile, _ = VendorProfile.objects.update_or_create(
                 user=user,
                 defaults={
@@ -1638,6 +1648,11 @@ def admin_action_view(request, action_path):
                     'city': city,
                     'state': 'Maharashtra',
                     'pincode': pincode,
+                    'aadhaar_number': aadhaar_number,
+                    'pan_number': pan_number,
+                    'gst_number': gst_number,
+                    'aadhaar_last4': aadhaar_number[-4:],
+                    'pan_last4': pan_number[-4:],
                     'kyc_status': VendorProfile.KYCStatus.APPROVED,
                     'approved_at': timezone.now(),
                     'is_online': True,
@@ -1667,6 +1682,14 @@ def admin_action_view(request, action_path):
                 vendor.owner_name = str(data.get('owner') or data.get('owner_name')).strip()
             if data.get('city'):
                 vendor.city = str(data.get('city')).strip()
+            if data.get('aadhaar') or data.get('aadhaar_number'):
+                vendor.aadhaar_number = str(data.get('aadhaar') or data.get('aadhaar_number')).strip()
+                vendor.aadhaar_last4 = vendor.aadhaar_number[-4:]
+            if data.get('pan') or data.get('pan_number'):
+                vendor.pan_number = str(data.get('pan') or data.get('pan_number')).strip()
+                vendor.pan_last4 = vendor.pan_number[-4:]
+            if data.get('gst') or data.get('gst_number'):
+                vendor.gst_number = str(data.get('gst') or data.get('gst_number')).strip()
             if data.get('kyc_status'):
                 vendor.kyc_status = str(data.get('kyc_status'))
             if 'is_online' in data:

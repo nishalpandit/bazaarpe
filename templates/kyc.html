@@ -100,7 +100,7 @@
         <div class="flex gap-2"><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">Oldest 3 days</span><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20">SLA 48 h</span></div>
       </div>
       <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1120px]">
-      <thead><tr><th scope="col" class="">Vendor</th><th scope="col" class="">Owner / city</th><th scope="col" class="">Submitted</th><th scope="col" class="">Aadhaar</th><th scope="col" class="">PAN</th><th scope="col" class="">GST (optional)</th><th scope="col" class="">Aadhaar no. (masked)</th><th scope="col" class="text-right">Orders</th><th scope="col" class=""></th></tr></thead><tbody>
+      <thead><tr><th scope="col" class="">Vendor</th><th scope="col" class="">Owner / Contact</th><th scope="col" class="">Submitted</th><th scope="col" class="">Aadhaar Card</th><th scope="col" class="">PAN Card</th><th scope="col" class="">GST Registration</th><th scope="col" class="text-right">Status</th><th scope="col" class="">Actions</th></tr></thead><tbody>
 {% for vendor in pending_vendors %}
 <tr>
   <td class="">
@@ -108,15 +108,39 @@
     <div class="bm-mono text-[0.75rem] text-slate-500">{{ vendor.display_vendor_id }}</div>
   </td>
   <td class="">
-    {{ vendor.owner_name }}
-    <div class="text-[0.75rem] text-slate-500">{{ vendor.city }}</div>
+    <div class="font-medium text-slate-900">{{ vendor.owner_name }}</div>
+    <div class="text-[0.75rem] font-mono text-slate-500">{{ vendor.user.username }} · {{ vendor.city }}</div>
   </td>
   <td class="">{{ vendor.created_at|date:"Y-m-d H:i" }}</td>
-  <td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Aadhaar: Submitted</span></td>
-  <td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>PAN: Submitted</span></td>
-  <td class="">{% if vendor.gst_number %}<span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>GST: {{ vendor.gst_number }}</span>{% else %}<span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>GST: not provided</span>{% endif %}</td>
-  <td class=""><span class="bm-mono text-[0.75rem] text-slate-500">XXXX XXXX {{ vendor.aadhaar_number|slice:"-4:"|default:"0000" }}</span></td>
-  <td class="text-right">0</td>
+  <td class="">
+    <div class="bm-mono text-xs font-bold text-slate-800">{{ vendor.aadhaar_number|default:vendor.aadhaar_last4 }}</div>
+    {% if vendor.aadhaar_document %}
+      <a href="{{ vendor.aadhaar_document.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View Aadhaar</a>
+    {% else %}
+      <span class="text-[0.6875rem] text-slate-400">Doc Pending</span>
+    {% endif %}
+  </td>
+  <td class="">
+    <div class="bm-mono text-xs font-bold text-slate-800">{{ vendor.pan_number|default:vendor.pan_last4 }}</div>
+    {% if vendor.pan_document %}
+      <a href="{{ vendor.pan_document.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View PAN</a>
+    {% else %}
+      <span class="text-[0.6875rem] text-slate-400">Doc Pending</span>
+    {% endif %}
+  </td>
+  <td class="">
+    {% if vendor.gst_number %}
+      <div class="bm-mono text-xs font-bold text-emerald-800">{{ vendor.gst_number }}</div>
+      {% if vendor.gst_certificate %}
+        <a href="{{ vendor.gst_certificate.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View GST</a>
+      {% endif %}
+    {% else %}
+      <span class="text-xs text-slate-400">Not provided</span>
+    {% endif %}
+  </td>
+  <td class="text-right">
+    <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Under Review</span>
+  </td>
   <td class="">
     <div class="flex items-center gap-1.5">
       <a class="bm-btn-ghost bm-btn-sm" href="vendor-detail.html?id={{ vendor.id }}">Review</a>
