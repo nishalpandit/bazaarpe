@@ -125,12 +125,12 @@
           <form class="space-y-4" method="post" action="/admin/settings/deadlines" data-admin-form>
             <div>
       <label class="bm-label" for="f-accept_deadline_hours">Vendor acceptance deadline (hours) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-accept_deadline_hours" name="accept_deadline_hours" type="number" value="{{ current_setting.accept_deadline_hours|default:"12" }}" placeholder="" required aria-describedby="f-accept_deadline_hours-help" >
+      <input class="bm-input" id="f-accept_deadline_hours" name="accept_deadline_hours" type="number" value="{{ acceptance_hours }}" placeholder="" required aria-describedby="f-accept_deadline_hours-help" min="0.1" step="0.1">
       <p class="bm-help" id="f-accept_deadline_hours-help">Measured from publish time. Highlight orders unaccepted after this window.</p>
     </div>
             <div>
       <label class="bm-label" for="f-arrival_deadline_hours">Vendor arrival deadline (hours) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-arrival_deadline_hours" name="arrival_deadline_hours" type="number" value="{{ current_setting.arrival_deadline_hours|default:"4" }}" placeholder="" required aria-describedby="f-arrival_deadline_hours-help" >
+      <input class="bm-input" id="f-arrival_deadline_hours" name="arrival_deadline_hours" type="number" value="{{ arrival_hours }}" placeholder="" required aria-describedby="f-arrival_deadline_hours-help" min="0.1" step="0.1">
       <p class="bm-help" id="f-arrival_deadline_hours-help">Measured from acceptance. Deadlines are only displayed on an order when a value is configured.</p>
     </div>
             <div>
@@ -151,12 +151,12 @@
           <form class="space-y-4" method="post" action="/admin/settings/settlement" data-admin-form>
             <div>
       <label class="bm-label" for="f-settlement_window_days">User settlement window (days)</label>
-      <input class="bm-input" id="f-settlement_window_days" name="settlement_window_days" type="number" value="3" placeholder="" aria-describedby="f-settlement_window_days-help" >
+      <input class="bm-input" id="f-settlement_window_days" name="settlement_window_days" type="number" value="{{ platform_config.settlement_days }}" placeholder="" aria-describedby="f-settlement_window_days-help" min="1">
       <p class="bm-help" id="f-settlement_window_days-help">Starts after the vendor's payment to the platform is confirmed. Timing rule unconfirmed.</p>
     </div>
             <div>
       <label class="bm-label" for="f-refund_window_hours">Refund window (hours)</label>
-      <input class="bm-input" id="f-refund_window_hours" name="refund_window_hours" type="number" value="24" placeholder="" aria-describedby="f-refund_window_hours-help" >
+      <input class="bm-input" id="f-refund_window_hours" name="refund_window_hours" type="number" value="{{ platform_config.refund_hours }}" placeholder="" aria-describedby="f-refund_window_hours-help" min="1">
       <p class="bm-help" id="f-refund_window_hours-help">The stated 24-hour policy does not define its start event, eligibility or deductions.</p>
     </div>
             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">

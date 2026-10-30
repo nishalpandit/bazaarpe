@@ -346,7 +346,7 @@ def run_audit():
         record('Online toggle before KYC rejected', '/api/vendor/availability/', 'POST', s, s == 403)
 
         # Vendor A Aadhaar verification
-        s, r, _ = http_req('POST', '/api/vendor/kyc/aadhaar/initiate/', {'aadhaar_last4': '1234'}, token=vendor_a_token)
+        s, r, _ = http_req('POST', '/api/vendor/kyc/aadhaar/initiate/', {'aadhaar_last4': '1234', 'aadhaar_number': '543298761234'}, token=vendor_a_token)
         ref = r.get('reference')
         record('Vendor A initiate Aadhaar', '/api/vendor/kyc/aadhaar/initiate/', 'POST', s, s == 200 and bool(ref))
 
@@ -356,15 +356,15 @@ def run_audit():
         # Vendor A KYC multipart submission
         dummy_file = b'%PDF-1.4 dummy pdf content'
         mp_data, mp_ct = multipart_encode(
-            {'pan_last4': 'ABCD'},
+            {'pan_last4': 'ABCD', 'pan_number': 'ABCDE1234F', 'gst_number': '29ABCDE1234F1Z5'},
             {'aadhaar_document': ('aadhaar.pdf', dummy_file, 'application/pdf'), 'pan_document': ('pan.pdf', dummy_file, 'application/pdf')}
         )
         s, r, _ = http_req('POST', '/api/vendor/kyc/', data=mp_data, token=vendor_a_token, headers={'Content-Type': mp_ct})
         record('Vendor A KYC submitted', '/api/vendor/kyc/', 'POST', s, s == 201 and r.get('status') == 'UNDER_REVIEW')
 
-        # Vendor A KYC masked retrieval
+        # Vendor A KYC full-value retrieval on the authenticated owner surface
         s, r, _ = http_req('GET', '/api/vendor/kyc/', token=vendor_a_token)
-        record('Vendor A KYC status masked', '/api/vendor/kyc/', 'GET', s, s == 200 and r.get('kyc', {}).get('pan_masked') == 'XXXXXXABCD')
+        record('Vendor A KYC values unmasked', '/api/vendor/kyc/', 'GET', s, s == 200 and r.get('kyc', {}).get('pan_number') == 'ABCDE1234F')
 
         # Admin approves Vendor A KYC
         v_a_prof = VendorProfile.objects.get(user__username='9870000001')
@@ -376,6 +376,9 @@ def run_audit():
         v_b_prof.aadhaar_status = VendorProfile.AadhaarStatus.VERIFIED
         v_b_prof.kyc_status = VendorProfile.KYCStatus.APPROVED
         v_b_prof.save()
+        for profile in (v_a_prof, v_b_prof):
+            profile.categories.add(subcat.category)
+            profile.subcategories.add(subcat)
 
         # Vendor A & B Go Online
         s, r, _ = http_req('POST', '/api/vendor/availability/', {'is_online': True}, token=vendor_a_token)
@@ -483,6 +486,11 @@ def run_audit():
         s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/status/', {'status': 'REACHED_LOCATION'}, token=vendor_a_token)
         record('Advance status to REACHED_LOCATION', f'/api/vendor/orders/{order_id}/status/', 'POST', s, s == 200)
 
+        # Stage final weight and proof before OTP/payment
+        mp_data, mp_ct = multipart_encode({'final_weight': '30.0'}, {'item_images': ('scale.png', photo_bytes, 'image/png')})
+        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/pickup-details/', data=mp_data, token=vendor_a_token, headers={'Content-Type': mp_ct})
+        record('Vendor stages final weight and proof', f'/api/vendor/orders/{order_id}/pickup-details/', 'POST', s, s == 201 and r.get('order', {}).get('final_weight') == 30.0)
+
         # 13. PICKUP OTP VERIFICATION
         # Wrong OTP rejected
         s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/verify-otp/', {'otp': '000000'}, token=vendor_a_token)
@@ -542,13 +550,11 @@ def run_audit():
 
         # 15. COMPLETION & PROOF IMAGES
         # Completion with mismatched weight rejected
-        mp_data, mp_ct = multipart_encode({'final_weight': '99.0'}, {'item_images': ('scale.png', photo_bytes, 'image/png')})
-        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', data=mp_data, token=vendor_a_token, headers={'Content-Type': mp_ct})
+        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', {'final_weight': '99.0'}, token=vendor_a_token)
         record('Mismatched final weight completion rejected', f'/api/vendor/orders/{order_id}/complete/', 'POST', s, s == 409)
 
         # Valid completion with multipart image
-        mp_data, mp_ct = multipart_encode({'final_weight': '30.0'}, {'item_images': ('scale.png', photo_bytes, 'image/png')})
-        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', data=mp_data, token=vendor_a_token, headers={'Content-Type': mp_ct})
+        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', {'final_weight': '30.0'}, token=vendor_a_token)
         record('Vendor completes pickup with photo proof', f'/api/vendor/orders/{order_id}/complete/', 'POST', s, s == 200 and r.get('order', {}).get('status') == 'COMPLETED')
 
         # User A tracking now shows pickup summary and proof images
@@ -557,7 +563,7 @@ def run_audit():
         record('User A sees authorized pickup summary & proofs', f'/api/user/orders/{order_id}/tracking/', 'GET', s, s == 200 and summary.get('final_weight') == 30.0 and len(summary.get('item_images', [])) == 1)
 
         # Duplicate completion rejected
-        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', data=mp_data, token=vendor_a_token, headers={'Content-Type': mp_ct})
+        s, r, _ = http_req('POST', f'/api/vendor/orders/{order_id}/complete/', {'final_weight': '30.0'}, token=vendor_a_token)
         record('Duplicate pickup completion rejected', f'/api/vendor/orders/{order_id}/complete/', 'POST', s, s == 409)
 
         # 16. REVIEWS & MODERATION
@@ -598,11 +604,11 @@ def run_audit():
             'account_holder_name': 'Ramesh Kumar', 'bank_name': 'State Bank of India',
             'account_number': '123456789012', 'ifsc_code': 'SBIN0001234', 'upi_id': 'ramesh@sbi'
         }, token=user_a_token)
-        record('User A adds bank details', '/api/user/bank-details/', 'POST', s, s == 201 and r.get('bank_details', {}).get('account_number') == 'XXXXXXXX9012')
+        record('User A adds bank details', '/api/user/bank-details/', 'POST', s, s == 201 and r.get('bank_details', {}).get('account_number') == '123456789012')
 
-        # Get bank details (masked)
+        # Get complete bank details on the authenticated owner surface
         s, r, _ = http_req('GET', '/api/user/bank-details/', token=user_a_token)
-        record('Get bank details (masked account number)', '/api/user/bank-details/', 'GET', s, s == 200 and r.get('bank_details', {}).get('account_number') == 'XXXXXXXX9012')
+        record('Get complete bank account number', '/api/user/bank-details/', 'GET', s, s == 200 and r.get('bank_details', {}).get('account_number') == '123456789012')
 
         # Admin disburses user payout (matching negotiated amount 1150.00)
         s, r, _ = http_req('POST', f'/admin/settlements/{order_id}/disburse', {

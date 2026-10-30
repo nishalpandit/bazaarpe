@@ -496,6 +496,31 @@ response:
   ]
 }
 
+API for Submit User Counter Offer
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/counter-price/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+proposed_price: 1325.50
+note: Includes sorted copper (optional)
+
+response:
+{
+  "success": true,
+  "message": "Counter-offer submitted for admin review.",
+  "proposal": {
+    "id": 3,
+    "amount": 1325.5,
+    "note": "Includes sorted copper"
+  },
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": null
+  }
+}
+
 API for Track User Order
 url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/tracking/
 method: GET
@@ -676,7 +701,7 @@ response:
   "bank_details": {
     "account_holder_name": "Ramesh Patel",
     "bank_name": "HDFC Bank",
-    "account_number": "XXXXXXXXXX8234",
+    "account_number": "50100234918234",
     "ifsc_code": "HDFC0001234",
     "upi_id": "ramesh@okhdfcbank"
   }
@@ -700,7 +725,7 @@ response:
   "message": "Bank details saved successfully.",
   "bank_details": {
     "account_holder_name": "Ramesh Patel",
-    "account_number": "XXXXXXXXXX8234"
+    "account_number": "50100234918234"
   }
 }
 
@@ -722,7 +747,7 @@ response:
   "message": "Bank details saved successfully.",
   "bank_details": {
     "account_holder_name": "Ramesh Patel",
-    "account_number": "XXXXXXXXXX8234"
+    "account_number": "50100234918234"
   }
 }
 

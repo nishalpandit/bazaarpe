@@ -10,7 +10,8 @@ from decimal import Decimal
 from nainjyoti.models import (
     ScrapCategory, ScrapSubCategory, ServiceCity, ServiceZone, VendorProfile,
     UserProfile, PickupOrder, UserAddress, LegalDocument,
-    VendorBillingSetting, OrderReview, RefundRequest, PaymentTransaction, OrderInvoice
+    VendorBillingSetting, OrderReview, RefundRequest, PaymentTransaction, OrderInvoice,
+    UserBankDetail,
 )
 
 def run_verification():
@@ -208,6 +209,26 @@ def run_verification():
     test_order.final_amount = Decimal('4000.00')
     test_order.payout_status = PickupOrder.PayoutStatus.PENDING
     test_order.save()
+    UserBankDetail.objects.update_or_create(
+        user=created_u,
+        defaults={
+            'account_holder_name': created_u.profile.full_name,
+            'bank_name': 'Verification Bank',
+            'account_number': '123456789012',
+            'ifsc_code': 'HDFC0001234',
+            'is_verified': True,
+        },
+    )
+    OrderInvoice.objects.get_or_create(
+        order=test_order,
+        defaults={
+            'subtotal': Decimal('4000.00'),
+            'gst_amount': Decimal('0.00'),
+            'platform_fee': Decimal('0.00'),
+            'total_paid_by_vendor': Decimal('4000.00'),
+            'payment_status': OrderInvoice.PaymentStatus.PAID,
+        },
+    )
 
     disburse_resp = client.post(f'/admin/settlements/{test_order.order_id}/disburse', {'reference': 'UTR99881122'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     test_order.refresh_from_db()

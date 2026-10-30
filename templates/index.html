@@ -80,8 +80,8 @@
       
     <section class="bm-dashboard-controls" aria-label="Dashboard controls" data-reveal>
       <form class="bm-dashboard-filter" method="get" action="index.html">
-        <label class="bm-filter-field" for="f-from"><span>From</span><input class="bm-input" id="f-from" name="from" type="date" value="2026-10-01"></label>
-        <label class="bm-filter-field" for="f-to"><span>To</span><input class="bm-input" id="f-to" name="to" type="date" value="2026-10-26"></label>
+        <label class="bm-filter-field" for="f-from"><span>From</span><input class="bm-input" id="f-from" name="from" type="date" value="{{ date_from|date:'Y-m-d' }}"></label>
+        <label class="bm-filter-field" for="f-to"><span>To</span><input class="bm-input" id="f-to" name="to" type="date" value="{{ date_to|date:'Y-m-d' }}"></label>
         <label class="bm-filter-field bm-filter-field--range" for="f-preset"><span>Range</span><select class="bm-select" id="f-preset" name="preset"><option value="custom" selected>Custom range</option><option value="today">Today</option><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="month">This month</option></select></label>
         <div class="bm-filter-actions">
           <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply</button>
@@ -315,7 +315,7 @@
       <div>
         <span class="bm-section-kicker">Financial overview</span>
         <h2>Money movement</h2>
-        <p>Selected period: 1–26 October 2026. Amounts are shown independently.</p>
+        <p>Selected period: {{ selected_period_label }}. Amounts are shown independently.</p>
       </div>
       <span class="bm-period-chip">INR · ₹</span>
     </div>
@@ -348,7 +348,7 @@
           <div class="bm-bar-row">
             <div class="bm-bar-meta"><span>Commission earned</span><strong>₹{{ commission_earned|default:"0.00" }}</strong></div>
             <div class="bm-bar-track"><i class="bm-bar bm-bar--commission" style="--bar-size:2%"></i></div>
-            <small>At proposed 2.00% rate</small>
+            <small>At configured {{ current_commission.commission_percent|default:"0.00" }}% rate</small>
           </div>
         </div>
         <div class="bm-money-note"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"/><path d="M10 9v5M10 6.5h.01"/></svg><span>Collections, revenue, commission, and payouts represent different transaction stages and are intentionally not added together.</span></div>
@@ -366,7 +366,7 @@
           </div>
           <div class="bm-insight">
             <span class="bm-insight-icon bm-insight-icon--neutral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"/><path d="m14 6 6 6-6 6"/></svg></span>
-            <div><span>Pending settlements</span><strong>₹1,42,600</strong><small>11 users require finance action</small></div>
+            <div><span>Pending settlements</span><strong>₹{{ pending_settlements_amount|default:"0.00" }}</strong><small>{{ pending_payouts_count }} users require finance action</small></div>
           </div>
           <div class="bm-insight">
             <span class="bm-insight-icon bm-insight-icon--warn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4M12 17h.01"/></svg></span>
@@ -440,7 +440,7 @@
       <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-sky-700">₹{{ refunded_payments_amount|default:"0.00" }}</p>
       <p class="text-[0.6875rem] text-slate-500">{{ refunded_payments_count|default:"0" }} processed</p></div>
           </div>
-          <p class="bm-help mt-3">Amounts are vendor→platform gateway settlements (item amount + proposed 2% commission). They are not platform revenue.</p></div></section>
+          <p class="bm-help mt-3">Amounts are vendor→platform gateway settlements (item amount, GST and the configured commission/fee). They are not platform revenue.</p></div></section>
       </div>
       <div class="col-12 col-lg-6">
         <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">User settlements (manual, recorded by admin)</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="settlements.html">Settlement queue →</a></div></div><div class="bm-card-bd ">
@@ -496,7 +496,7 @@
           </div></div></section>
       </div>
       <div class="col-12 col-xl-5">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Configuration in effect</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="settings.html">Edit →</a></div></div><div class="bm-card-bd "><dl class="bm-kv grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-1"><div><dt>Commission rate</dt><dd>2.00% <span class='text-[0.75rem] font-medium text-amber-700'>(proposed)</span></dd></div><div><dt>Commission basis</dt><dd>Item amount — GST basis unconfirmed</dd></div><div><dt>Acceptance deadline</dt><dd>12 hours after publish</dd></div><div><dt>Arrival deadline</dt><dd>4 hours after acceptance</dd></div><div><dt>Settlement window</dt><dd>3 days after confirmed vendor payment</dd></div><div><dt>Refund window</dt><dd>24 hours — eligibility unresolved</dd></div></dl></div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Values are read from platform settings; all remain provisional until confirmed by the business.</p></div></section>
+        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Configuration in effect</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="settings.html">Edit →</a></div></div><div class="bm-card-bd "><dl class="bm-kv grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-1"><div><dt>Commission rate</dt><dd>{{ current_commission.commission_percent|default:"Not configured" }}{% if current_commission %}%{% endif %}</dd></div><div><dt>Commission basis</dt><dd>{{ current_commission.get_commission_basis_display|default:"Not configured" }}</dd></div><div><dt>Acceptance deadline</dt><dd>{{ platform_config.acceptance_minutes }} minutes after publish</dd></div><div><dt>Arrival deadline</dt><dd>{{ platform_config.arrival_minutes }} minutes after acceptance</dd></div><div><dt>Settlement window</dt><dd>{{ platform_config.settlement_days }} days after confirmed vendor payment</dd></div><div><dt>Refund window</dt><dd>{{ platform_config.refund_hours }} hours</dd></div></dl></div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Values are read from persisted platform settings.</p></div></section>
       </div>
     </div>
     </main>

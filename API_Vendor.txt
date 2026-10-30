@@ -314,6 +314,36 @@ response:
   "is_online": true
 }
 
+API for Get Vendor Categories
+url: http://127.0.0.1:8000/api/vendor/categories/
+method: GET
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "categories": [{"id": 1, "name": "Metal"}],
+  "subcategories": [{"id": 2, "category_id": 1, "name": "Iron Scrap"}]
+}
+
+API for Update Vendor Categories
+url: http://127.0.0.1:8000/api/vendor/categories/
+method: PUT
+
+params:
+Authorization: Bearer <token> (header)
+category_ids: [1]
+subcategory_ids: [2]
+
+response:
+{
+  "success": true,
+  "categories": [{"id": 1, "name": "Metal"}],
+  "subcategories": [{"id": 2, "category_id": 1, "name": "Iron Scrap"}]
+}
+
 API for Initiate Vendor Aadhaar Verification
 url: http://127.0.0.1:8000/api/vendor/kyc/aadhaar/initiate/
 method: POST
@@ -321,6 +351,7 @@ method: POST
 params:
 Authorization: Bearer <token> (header)
 aadhaar_last4: 1234
+aadhaar_number: 543298761234
 
 response:
 {
@@ -352,6 +383,8 @@ params:
 Authorization: Bearer <token> (header)
 Content-Type: multipart/form-data (header)
 pan_last4: AB12
+pan_number: ABCDE1234F
+gst_number: 29ABCDE1234F1Z5 (optional)
 aadhaar_document: <PDF or JPEG or PNG file, max 10 MB>
 pan_document: <PDF or JPEG or PNG file, max 10 MB>
 gst_certificate: <PDF or JPEG or PNG file, max 10 MB> (optional)
@@ -377,8 +410,9 @@ response:
     "status": "APPROVED",
     "rejection_reason": "",
     "aadhaar_status": "VERIFIED",
-    "aadhaar_masked": "XXXXXXXX1234",
-    "pan_masked": "XXXXXXAB12",
+    "aadhaar_number": "543298761234",
+    "pan_number": "ABCDE1234F",
+    "gst_number": "29ABCDE1234F1Z5",
     "aadhaar_document_uploaded": true,
     "pan_document_uploaded": true,
     "gst_certificate_uploaded": false
@@ -565,6 +599,27 @@ response:
   }
 }
 
+API for Submit Final Weight and Pickup Proof
+url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/pickup-details/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: multipart/form-data (header)
+final_weight: 32.50
+item_images: <image file, max 8 MB> (repeat key for multiple images)
+
+response:
+{
+  "success": true,
+  "message": "Final weight and pickup proof saved. Verify the customer OTP next.",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "PICKUP_IN_PROGRESS",
+    "final_weight": 32.5
+  }
+}
+
 API for Verify Pickup OTP
 url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/verify-otp/
 method: POST
@@ -660,7 +715,6 @@ params:
 Authorization: Bearer <token> (header)
 Content-Type: multipart/form-data (header)
 final_weight: 32.50
-item_images: <image file, max 8 MB> (repeat key for multiple images)
 
 response:
 {

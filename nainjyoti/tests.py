@@ -12,13 +12,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 
 from .views import PAGES, ensure_demo_user
-from .api_views import payment_signature
+from .api_views import payment_signature, webhook_signature
 from .models import (
     UserProfile, UserAddress, ScrapCategory, ScrapSubCategory, PickupOrder,
     OrderInvoice, OrderReview, PickupImage, UserBankDetail,
     LegalDocument, UserConsent, PaymentTransaction, UserNotification,
     OTPVerification, ServiceCity, ServiceZone, VendorProfile,
     VendorBillingSetting, VendorOfferRejection, RefundRequest,
+    NegotiationProposal, PlatformConfiguration, MarketplaceAuditLog,
 )
 
 
@@ -153,6 +154,8 @@ class PickupOrderFlowTests(APITestCase):
             category=category, name='Iron Scrap',
             defaults={'rate_per_kg': '40.00', 'gst_percent': '18.00', 'min_weight_kg': '5.00'},
         )
+        self.vendor_profile.categories.add(category)
+        self.vendor_profile.subcategories.add(self.subcategory)
         for doc in LegalDocument.objects.filter(is_active=True):
             UserConsent.objects.get_or_create(user=self.user, document=doc)
             UserConsent.objects.get_or_create(user=self.vendor, document=doc)
@@ -226,6 +229,11 @@ class PickupOrderFlowTests(APITestCase):
             'latitude': '12.9784', 'longitude': '77.6408',
         }, format='json')
         self.assertEqual(response.status_code, 200, response.data)
+        proof = SimpleUploadedFile('scale.gif', b'GIF89a\x01\x00\x01\x00\x00\x00\x00\x00\x00;', content_type='image/gif')
+        response = self.client.post(f'/api/vendor/orders/{order.order_id}/pickup-details/', {
+            'item_images': proof, 'final_weight': '32.50',
+        }, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
         response = self.client.post(f'/api/vendor/orders/{order.order_id}/verify-otp/', {'otp': order.pickup_otp}, format='json')
         self.assertEqual(response.status_code, 200, response.data)
         response = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {
@@ -239,9 +247,8 @@ class PickupOrderFlowTests(APITestCase):
         }, format='json')
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.data['invoice']['payment_status'], 'PAID')
-        proof = SimpleUploadedFile('scale.gif', b'GIF89a\x01\x00\x01\x00\x00\x00\x00\x00\x00;', content_type='image/gif')
         response = self.client.post(f'/api/vendor/orders/{order.order_id}/complete/', {
-            'item_images': proof, 'final_weight': '32.50',
+            'final_weight': '32.50',
         }, format='multipart')
         self.assertEqual(response.status_code, 200, response.data)
 
@@ -261,7 +268,7 @@ class PickupOrderFlowTests(APITestCase):
             'upi_id': 'vikram@okhdfcbank',
         }, format='json')
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertEqual(response.data['bank_details']['account_number'], 'XXXXXXXXXX8234')
+        self.assertEqual(response.data['bank_details']['account_number'], '50100234918234')
 
         self.client.credentials()
         self.client.force_login(self.admin)
@@ -325,7 +332,10 @@ class PickupOrderFlowTests(APITestCase):
         order.assigned_vendor_phone = '9876512345'
         order.is_otp_verified = True
         order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.final_weight = '10.00'
+        order.proof_submitted_at = timezone.now()
         order.save()
+        PickupImage.objects.create(order=order, image='forged-test-proof.jpg')
         self.authenticate(self.vendor_token)
         response = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {'final_weight': '10.00'}, format='json')
         self.assertEqual(response.status_code, 201, response.data)
@@ -414,6 +424,8 @@ class PickupOrderFlowTests(APITestCase):
             is_online=True, kyc_status=VendorProfile.KYCStatus.APPROVED,
         )
         second_vendor.operating_zones.add(self.zone)
+        second_vendor.categories.add(self.subcategory.category)
+        second_vendor.subcategories.add(self.subcategory)
         for doc in LegalDocument.objects.filter(is_active=True):
             UserConsent.objects.create(user=second_user, document=doc)
         second_token = Token.objects.create(user=second_user)
@@ -452,7 +464,10 @@ class PickupOrderFlowTests(APITestCase):
         order.assigned_vendor_phone = self.vendor.profile.phone
         order.is_otp_verified = True
         order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.final_weight = '10.00'
+        order.proof_submitted_at = timezone.now()
         order.save()
+        PickupImage.objects.create(order=order, image='billing-policy-proof.jpg')
         VendorBillingSetting.objects.all().delete()
         self.authenticate(self.vendor_token)
         response = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {'final_weight': '10.00'}, format='json')
@@ -508,6 +523,97 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(invalid_zones.status_code, 400, invalid_zones.data)
         invalid_date = self.client.get('/api/vendor/orders/history/?from=2026-99-99')
         self.assertEqual(invalid_date.status_code, 400, invalid_date.data)
+
+    def test_user_counter_offer_persists_and_is_audited(self):
+        order = self.create_order()
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        self.client.post(f'/admin/orders/{order.order_id}/negotiate', {'final_agreed_price': '1250.00'})
+        self.client.logout()
+        self.authenticate(self.user_token)
+        response = self.client.post(f'/api/user/orders/{order.order_id}/counter-price/', {
+            'proposed_price': '1325.50', 'note': 'Includes sorted copper.',
+        }, format='json')
+        self.assertEqual(response.status_code, 201, response.data)
+        proposal = NegotiationProposal.objects.get(id=response.data['proposal']['id'])
+        self.assertEqual(proposal.proposer_role, NegotiationProposal.ProposerRole.USER)
+        self.assertTrue(MarketplaceAuditLog.objects.filter(order=order, action='PRICE_COUNTERED').exists())
+
+    def test_vendor_category_selection_controls_marketplace_matching(self):
+        order = self.publish_order(self.create_order())
+        self.vendor_profile.categories.clear()
+        self.vendor_profile.subcategories.clear()
+        self.authenticate(self.vendor_token)
+        self.assertEqual(self.client.get('/api/vendor/orders/available/').data['count'], 0)
+        selected = self.client.put('/api/vendor/categories/', {
+            'category_ids': [self.subcategory.category_id], 'subcategory_ids': [self.subcategory.id],
+        }, format='json')
+        self.assertEqual(selected.status_code, 200, selected.data)
+        self.assertEqual(self.client.get('/api/vendor/orders/available/').data['count'], 1)
+
+    def test_admin_deadlines_and_cms_content_are_persisted(self):
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        response = self.client.post('/admin/settings/deadlines', {
+            'accept_deadline_hours': '2', 'arrival_deadline_hours': '3',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        config = PlatformConfiguration.current()
+        self.assertEqual((config.acceptance_minutes, config.arrival_minutes), (120, 180))
+        response = self.client.post('/admin/cms/create', {
+            'title': 'Pickup FAQ', 'type': 'FAQ', 'version': 'flow-1',
+            'content': 'How pickup works.', 'status': 'published',
+        }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.client.logout()
+        content = self.client.get('/api/content/?type=FAQ')
+        self.assertEqual(content.status_code, 200, content.data)
+        self.assertEqual(content.data['documents'][0]['title'], 'Pickup FAQ')
+
+    def test_failed_vendor_payment_can_be_retried_and_is_audited(self):
+        order = self.create_order()
+        order.assigned_vendor = self.vendor
+        order.assigned_vendor_name = self.vendor_profile.shop_name
+        order.assigned_vendor_phone = self.vendor.profile.phone
+        order.is_otp_verified = True
+        order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.final_weight = '10.00'
+        order.proof_submitted_at = timezone.now()
+        order.save()
+        PickupImage.objects.create(order=order, image='payment-retry-proof.jpg')
+        self.authenticate(self.vendor_token)
+        created = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {'final_weight': '10.00'}, format='json')
+        self.assertEqual(created.status_code, 201, created.data)
+        payment_id = created.data['payment']['payment_id']
+        event_id = 'evt-payment-failed-test'
+        signature = webhook_signature(event_id, payment_id, 'FAILED')
+        self.client.credentials()
+        failed = self.client.post('/api/payments/webhook/', {
+            'event_id': event_id, 'payment_id': payment_id, 'status': 'FAILED',
+        }, format='json', HTTP_X_PAYMENT_SIGNATURE=signature)
+        self.assertEqual(failed.status_code, 200, failed.data)
+        self.authenticate(self.vendor_token)
+        retried = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {'final_weight': '10.00'}, format='json')
+        self.assertEqual(retried.status_code, 201, retried.data)
+        self.assertNotEqual(retried.data['payment']['payment_id'], payment_id)
+        self.assertTrue(MarketplaceAuditLog.objects.filter(order=order, action='PAYMENT_FAILED').exists())
+
+    def test_authenticated_vendor_and_admin_receive_full_kyc_values(self):
+        self.vendor_profile.aadhaar_number = '543298761234'
+        self.vendor_profile.pan_number = 'ABCDE1234F'
+        self.vendor_profile.gst_number = '29ABCDE1234F1Z5'
+        self.vendor_profile.save(update_fields=['aadhaar_number', 'pan_number', 'gst_number'])
+        self.authenticate(self.vendor_token)
+        response = self.client.get('/api/vendor/profile/')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['vendor']['aadhaar_number'], '543298761234')
+        self.assertEqual(response.data['vendor']['pan_number'], 'ABCDE1234F')
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        html = self.client.get(f'/vendor-detail.html?id={self.vendor_profile.id}')
+        self.assertEqual(html.status_code, 200)
+        self.assertContains(html, '543298761234')
+        self.assertContains(html, 'ABCDE1234F')
 
 
 class OTPControlTests(APITestCase):

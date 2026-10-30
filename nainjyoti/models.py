@@ -304,6 +304,8 @@ class LegalDocument(models.Model):
     class DocumentType(models.TextChoices):
         PRIVACY = 'PRIVACY', 'Privacy Policy'
         TERMS = 'TERMS', 'Terms and Conditions'
+        FAQ = 'FAQ', 'Frequently Asked Questions'
+        STATIC = 'STATIC', 'Static Page'
 
     document_type = models.CharField(max_length=20, choices=DocumentType.choices)
     version = models.CharField(max_length=30)
@@ -415,6 +417,7 @@ class PickupOrder(models.Model):
     pickup_otp_expires_at = models.DateTimeField(null=True, blank=True)
     pickup_otp_attempts = models.PositiveSmallIntegerField(default=0)
     pickup_otp_verified_at = models.DateTimeField(null=True, blank=True)
+    proof_submitted_at = models.DateTimeField(null=True, blank=True)
     payout_status = models.CharField(max_length=20, choices=PayoutStatus.choices, default=PayoutStatus.PENDING)
     payout_reference = models.CharField(max_length=100, blank=True, default='')
     payout_method = models.CharField(max_length=30, blank=True, default='')
@@ -648,6 +651,8 @@ class VendorProfile(models.Model):
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     operating_zones = models.ManyToManyField(ServiceZone, related_name='vendors', blank=True)
+    categories = models.ManyToManyField(ScrapCategory, related_name='vendors', blank=True)
+    subcategories = models.ManyToManyField(ScrapSubCategory, related_name='vendors', blank=True)
     is_online = models.BooleanField(default=False, db_index=True)
     kyc_status = models.CharField(max_length=20, choices=KYCStatus.choices, default=KYCStatus.DRAFT, db_index=True)
     kyc_rejection_reason = models.TextField(blank=True, default='')
@@ -712,6 +717,44 @@ class VendorBillingSetting(models.Model):
     @classmethod
     def current(cls):
         return cls.objects.filter(is_active=True, is_approved=True, effective_from__lte=timezone.now()).first()
+
+
+class PlatformConfiguration(models.Model):
+    """Persisted operational deadlines used by both admin and API workflows."""
+
+    acceptance_minutes = models.PositiveIntegerField(default=30)
+    arrival_minutes = models.PositiveIntegerField(default=90)
+    settlement_days = models.PositiveIntegerField(default=2)
+    refund_hours = models.PositiveIntegerField(default=24)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Platform Configuration'
+        verbose_name_plural = 'Platform Configuration'
+
+    @classmethod
+    def current(cls):
+        config, _ = cls.objects.get_or_create(pk=1)
+        return config
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
+class MarketplaceAuditLog(models.Model):
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='marketplace_audit_events')
+    actor_role = models.CharField(max_length=20)
+    action = models.CharField(max_length=80, db_index=True)
+    entity_type = models.CharField(max_length=40)
+    entity_id = models.CharField(max_length=80)
+    order = models.ForeignKey(PickupOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_events')
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 class RefundRequest(models.Model):

@@ -34,6 +34,7 @@ from .models import (
     LegalDocument, UserConsent, NegotiationProposal, UserNotification,
     PaymentTransaction, PaymentWebhookEvent,
     VendorProfile, VendorOfferRejection, VendorBillingSetting, RefundRequest,
+    PlatformConfiguration, MarketplaceAuditLog,
 )
 from .authentication import BearerTokenAuthentication
 
@@ -113,6 +114,18 @@ def consent_required_response(user):
 def create_notification(user, event_type, title, message, order=None):
     return UserNotification.objects.create(
         user=user, order=order, event_type=event_type, title=title, message=message,
+    )
+
+
+def audit_event(actor, role, action, entity, *, order=None, metadata=None):
+    return MarketplaceAuditLog.objects.create(
+        actor=actor if getattr(actor, 'is_authenticated', False) else None,
+        actor_role=role,
+        action=action,
+        entity_type=entity.__class__.__name__,
+        entity_id=str(getattr(entity, 'order_id', None) or entity.pk),
+        order=order or (entity if isinstance(entity, PickupOrder) else None),
+        metadata=metadata or {},
     )
 
 
@@ -538,6 +551,26 @@ def legal_documents_view(request):
             'published_at': doc.published_at.isoformat(),
         } for doc in docs],
     })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def content_documents_view(request):
+    requested_type = str(request.GET.get('type', '')).strip().upper()
+    allowed = {choice for choice, _ in LegalDocument.DocumentType.choices}
+    documents = LegalDocument.objects.filter(is_active=True).order_by('document_type', '-published_at')
+    if requested_type:
+        if requested_type not in allowed:
+            return Response({'success': False, 'message': 'Invalid content type.', 'allowed_types': sorted(allowed)}, status=status.HTTP_400_BAD_REQUEST)
+        documents = documents.filter(document_type=requested_type)
+    return Response({'success': True, 'documents': [{
+        'id': doc.id,
+        'document_type': doc.document_type,
+        'version': doc.version,
+        'title': doc.title,
+        'content': doc.content,
+        'published_at': doc.published_at.isoformat(),
+    } for doc in documents]})
 
 
 @api_view(['GET', 'POST'])
@@ -1204,7 +1237,9 @@ def vendor_can_manage(order, user):
 
 
 def get_vendor_profile(user):
-    return VendorProfile.objects.filter(user=user).select_related('user__profile').prefetch_related('operating_zones').first()
+    return VendorProfile.objects.filter(user=user).select_related('user__profile').prefetch_related(
+        'operating_zones', 'categories', 'subcategories',
+    ).first()
 
 
 def vendor_block_reason(vendor, *, require_online=False):
@@ -1235,6 +1270,10 @@ def vendor_order_eligibility(order, vendor):
         return False, 'Order does not have a serviceable pickup zone.'
     if order.address.service_zone_id not in set(vendor.operating_zones.values_list('id', flat=True)):
         return False, 'Order is outside the vendor operating zones.'
+    if order.category_id not in set(vendor.categories.values_list('id', flat=True)):
+        return False, 'Order category is not enabled for this vendor.'
+    if order.subcategory_id not in set(vendor.subcategories.values_list('id', flat=True)):
+        return False, 'Order subcategory is not enabled for this vendor.'
     if VendorOfferRejection.objects.filter(vendor=vendor, order=order).exists():
         return False, 'Vendor rejected this offer.'
     return True, None
@@ -1267,9 +1306,15 @@ def serialize_vendor_profile(vendor):
         'kyc_status': vendor.kyc_status,
         'kyc_rejection_reason': vendor.kyc_rejection_reason,
         'aadhaar_status': vendor.aadhaar_status,
-        'aadhaar_masked': f'XXXXXXXX{vendor.aadhaar_last4}' if vendor.aadhaar_last4 else None,
-        'pan_masked': f'XXXXXX{vendor.pan_last4}' if vendor.pan_last4 else None,
+        'aadhaar_number': vendor.aadhaar_number or None,
+        'pan_number': vendor.pan_number or None,
+        'gst_number': vendor.gst_number or None,
         'operating_zones': [zone.to_dict() for zone in vendor.operating_zones.all()],
+        'categories': [{'id': item.id, 'name': item.name} for item in vendor.categories.all()],
+        'subcategories': [
+            {'id': item.id, 'category_id': item.category_id, 'name': item.name}
+            for item in vendor.subcategories.select_related('category').all()
+        ],
     }
 
 
@@ -1401,6 +1446,49 @@ def vendor_operating_zones_view(request):
     return Response({'success': True, 'zones': [zone.to_dict() for zone in vendor.operating_zones.all()]})
 
 
+@api_view(['GET', 'PUT'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def vendor_categories_view(request):
+    vendor = get_vendor_profile(request.user)
+    if not vendor:
+        return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
+    if request.method == 'PUT':
+        category_ids = request.data.get('category_ids', [])
+        subcategory_ids = request.data.get('subcategory_ids', [])
+        for key, value in (('category_ids', category_ids), ('subcategory_ids', subcategory_ids)):
+            if isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError:
+                    value = []
+            if not isinstance(value, list) or not value or any(isinstance(item, bool) or not str(item).isdigit() for item in value):
+                return Response({'success': False, 'message': f'{key} must be a non-empty JSON list of positive integers.'}, status=status.HTTP_400_BAD_REQUEST)
+            if key == 'category_ids':
+                category_ids = [int(item) for item in value]
+            else:
+                subcategory_ids = [int(item) for item in value]
+        categories = list(ScrapCategory.objects.filter(id__in=set(category_ids), is_active=True))
+        subcategories = list(ScrapSubCategory.objects.filter(
+            id__in=set(subcategory_ids), is_active=True, category_id__in=set(category_ids), category__is_active=True,
+        ).select_related('category'))
+        if len(categories) != len(set(category_ids)) or len(subcategories) != len(set(subcategory_ids)):
+            return Response({'success': False, 'message': 'Selections contain an invalid, inactive, or mismatched category.'}, status=status.HTTP_400_BAD_REQUEST)
+        vendor.categories.set(categories)
+        vendor.subcategories.set(subcategories)
+        audit_event(request.user, 'VENDOR', 'VENDOR_CLASSIFICATIONS_UPDATED', vendor, metadata={
+            'category_ids': category_ids, 'subcategory_ids': subcategory_ids,
+        })
+    return Response({
+        'success': True,
+        'categories': [{'id': item.id, 'name': item.name} for item in vendor.categories.all()],
+        'subcategories': [
+            {'id': item.id, 'category_id': item.category_id, 'name': item.name}
+            for item in vendor.subcategories.select_related('category').all()
+        ],
+    })
+
+
 @api_view(['POST'])
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -1410,6 +1498,8 @@ def vendor_availability_view(request):
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     if vendor.kyc_status != VendorProfile.KYCStatus.APPROVED and truthy(request.data.get('is_online')):
         return Response({'success': False, 'message': 'Only approved vendors can go online.'}, status=status.HTTP_403_FORBIDDEN)
+    if truthy(request.data.get('is_online')) and (not vendor.categories.exists() or not vendor.subcategories.exists()):
+        return Response({'success': False, 'message': 'Select at least one category and subcategory before going online.'}, status=status.HTTP_409_CONFLICT)
     vendor.is_online = truthy(request.data.get('is_online'))
     vendor.save(update_fields=['is_online', 'updated_at'])
     return Response({'success': True, 'is_online': vendor.is_online})
@@ -1475,8 +1565,9 @@ def vendor_kyc_view(request):
             'status': vendor.kyc_status,
             'rejection_reason': vendor.kyc_rejection_reason,
             'aadhaar_status': vendor.aadhaar_status,
-            'aadhaar_masked': f'XXXXXXXX{vendor.aadhaar_last4}' if vendor.aadhaar_last4 else None,
-            'pan_masked': f'XXXXXX{vendor.pan_last4}' if vendor.pan_last4 else None,
+            'aadhaar_number': vendor.aadhaar_number or None,
+            'pan_number': vendor.pan_number or None,
+            'gst_number': vendor.gst_number or None,
             'aadhaar_document_uploaded': bool(vendor.aadhaar_document),
             'pan_document_uploaded': bool(vendor.pan_document),
             'gst_certificate_uploaded': bool(vendor.gst_certificate),
@@ -1687,6 +1778,39 @@ def confirm_order_price_view(request, order_id):
     })
 
 
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def counter_order_price_view(request, order_id):
+    order = order_for_user(order_id, request.user)
+    if not order:
+        return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+    if order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION):
+        return Response({'success': False, 'message': 'This order is no longer open for negotiation.'}, status=status.HTTP_409_CONFLICT)
+    try:
+        amount = decimal_value(request.data.get('proposed_price'), 'proposed_price', positive=True)
+    except ValueError as exc:
+        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    with transaction.atomic():
+        proposal = NegotiationProposal.objects.create(
+            order=order,
+            proposed_by=request.user,
+            proposer_role=NegotiationProposal.ProposerRole.USER,
+            amount=money(amount),
+            note=str(request.data.get('note', '')).strip(),
+        )
+        order.final_agreed_price = None
+        order.status = PickupOrder.Status.ADMIN_NEGOTIATION
+        order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
+        audit_event(request.user, 'USER', 'PRICE_COUNTERED', order, metadata={'proposal_id': proposal.id, 'amount': str(proposal.amount)})
+    return Response({
+        'success': True,
+        'message': 'Counter-offer submitted for admin review.',
+        'proposal': {'id': proposal.id, 'amount': float(proposal.amount), 'note': proposal.note},
+        'order': serialize_order(order),
+    }, status=status.HTTP_201_CREATED)
+
+
 @api_view(['GET'])
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -1754,6 +1878,8 @@ def order_tracking_view(request, order_id):
 
 def eligible_vendor_orders(vendor):
     zone_ids = vendor.operating_zones.values_list('id', flat=True)
+    category_ids = vendor.categories.values_list('id', flat=True)
+    subcategory_ids = vendor.subcategories.values_list('id', flat=True)
     rejected_ids = vendor.offer_rejections.values_list('order_id', flat=True)
     return PickupOrder.objects.filter(
         status=PickupOrder.Status.SEARCHING_VENDOR,
@@ -1761,6 +1887,8 @@ def eligible_vendor_orders(vendor):
         final_agreed_price__isnull=False,
         published_at__isnull=False,
         address__service_zone_id__in=zone_ids,
+        category_id__in=category_ids,
+        subcategory_id__in=subcategory_ids,
     ).exclude(id__in=rejected_ids).select_related('address__service_zone', 'category', 'subcategory')
 
 
@@ -1986,6 +2114,7 @@ def vendor_accept_order_view(request, order_id):
         response_status = status.HTTP_409_CONFLICT if order.status != PickupOrder.Status.SEARCHING_VENDOR or order.assigned_vendor_id else status.HTTP_403_FORBIDDEN
         return Response({'success': False, 'message': reason}, status=response_status)
     now = timezone.now()
+    platform_config = PlatformConfiguration.current()
     with transaction.atomic():
         updated = PickupOrder.objects.filter(
             pk=order.pk,
@@ -1998,7 +2127,7 @@ def vendor_accept_order_view(request, order_id):
             assigned_vendor_name=vendor_name,
             assigned_vendor_phone=vendor_phone,
             status=PickupOrder.Status.VENDOR_ASSIGNED,
-            arrival_deadline=now + timedelta(minutes=int(getattr(settings, 'VENDOR_ARRIVAL_MINUTES', 90))),
+            arrival_deadline=now + timedelta(minutes=platform_config.arrival_minutes),
             updated_at=now,
         )
         if updated != 1:
@@ -2006,6 +2135,7 @@ def vendor_accept_order_view(request, order_id):
         order.refresh_from_db()
         create_notification(order.user, UserNotification.EventType.VENDOR_ASSIGNED, 'Vendor assigned', f'{vendor_name} accepted {order.order_id}.', order)
         create_notification(request.user, UserNotification.EventType.VENDOR_ASSIGNED, 'Pickup assigned', f'You accepted {order.order_id}.', order)
+        audit_event(request.user, 'VENDOR', 'ORDER_ACCEPTED', order)
     return Response({'success': True, 'message': 'Order assigned to vendor.', 'order': serialize_vendor_order(order, vendor, assigned=True)})
 
 
@@ -2062,6 +2192,51 @@ def update_vendor_location_view(request, order_id):
 @api_view(['POST'])
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def submit_pickup_details_view(request, order_id):
+    order = PickupOrder.objects.filter(order_id=order_id).first()
+    if not order:
+        return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+    if not vendor_can_manage(order, request.user):
+        return Response({'success': False, 'message': 'This order is not assigned to you.'}, status=status.HTTP_403_FORBIDDEN)
+    if order.status != PickupOrder.Status.REACHED_LOCATION or order.is_otp_verified:
+        return Response({'success': False, 'message': 'Pickup details must be submitted after arrival and before OTP verification.'}, status=status.HTTP_409_CONFLICT)
+    if order.proof_submitted_at or order.images.exists():
+        return Response({'success': False, 'message': 'Pickup details were already submitted.'}, status=status.HTTP_409_CONFLICT)
+    try:
+        final_weight = decimal_value(request.data.get('final_weight'), 'final_weight', positive=True)
+    except ValueError as exc:
+        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    uploaded_files = request.FILES.getlist('item_images')
+    for uploaded in uploaded_files:
+        if not str(uploaded.content_type).startswith('image/') or uploaded.size > 8 * 1024 * 1024:
+            return Response({'success': False, 'message': 'Each item_images upload must be an image not exceeding 8 MB.'}, status=status.HTTP_400_BAD_REQUEST)
+    image_values = request.data.getlist('item_images') if hasattr(request.data, 'getlist') else request.data.get('item_images', [])
+    if isinstance(image_values, str):
+        try:
+            decoded = json.loads(image_values)
+            image_values = decoded if isinstance(decoded, list) else [image_values]
+        except (json.JSONDecodeError, TypeError):
+            image_values = [image_values]
+    image_values = [str(value).strip() for value in image_values if isinstance(value, str) and str(value).strip()]
+    if not uploaded_files and not image_values:
+        return Response({'success': False, 'message': 'At least one pickup proof image is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    with transaction.atomic():
+        proofs = [PickupImage.objects.create(order=order, image=value) for value in image_values]
+        proofs.extend(PickupImage.objects.create(order=order, image=item.name, uploaded_file=item) for item in uploaded_files)
+        order.final_weight = final_weight
+        order.proof_submitted_at = timezone.now()
+        order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.save(update_fields=['final_weight', 'proof_submitted_at', 'status', 'updated_at'])
+        audit_event(request.user, 'VENDOR', 'PICKUP_PROOF_SUBMITTED', order, metadata={
+            'final_weight': str(final_weight), 'proof_count': len(proofs),
+        })
+    return Response({'success': True, 'message': 'Final weight and pickup proof saved. Verify the customer OTP next.', 'order': serialize_order(order)}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
 def verify_pickup_otp_view(request, order_id):
     order = PickupOrder.objects.filter(order_id=order_id).first()
     if not order:
@@ -2076,6 +2251,8 @@ def verify_pickup_otp_view(request, order_id):
         return Response({'success': False, 'message': 'Pickup OTP has expired.'}, status=status.HTTP_400_BAD_REQUEST)
     if order.pickup_otp_attempts >= OTP_MAX_ATTEMPTS:
         return Response({'success': False, 'message': 'Pickup OTP attempt limit reached.'}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+    if not order.proof_submitted_at or order.final_weight is None or not order.images.exists():
+        return Response({'success': False, 'message': 'Submit final weight and pickup proof before verifying OTP.'}, status=status.HTTP_409_CONFLICT)
     if str(request.data.get('otp', '')).strip() != order.pickup_otp:
         order.pickup_otp_attempts += 1
         order.save(update_fields=['pickup_otp_attempts', 'updated_at'])
@@ -2084,6 +2261,7 @@ def verify_pickup_otp_view(request, order_id):
     order.pickup_otp_verified_at = timezone.now()
     order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
     order.save(update_fields=['is_otp_verified', 'pickup_otp_verified_at', 'status', 'updated_at'])
+    audit_event(request.user, 'VENDOR', 'PICKUP_OTP_VERIFIED', order)
     return Response({'success': True, 'message': 'Pickup OTP verified.', 'order': serialize_order(order)})
 
 
@@ -2100,10 +2278,16 @@ def vendor_billing_view(request, order_id):
         return Response({'success': False, 'message': 'Verify the pickup OTP before billing.'}, status=status.HTTP_409_CONFLICT)
     if not order.subcategory:
         return Response({'success': False, 'message': 'Order subcategory is unavailable.'}, status=status.HTTP_409_CONFLICT)
-    try:
-        final_weight = decimal_value(request.data.get('final_weight'), 'final_weight', positive=True)
-    except ValueError as exc:
-        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    if order.final_weight is None or not order.proof_submitted_at or not order.images.exists():
+        return Response({'success': False, 'message': 'Final weight and pickup proof must be submitted before billing.'}, status=status.HTTP_409_CONFLICT)
+    final_weight = order.final_weight
+    if request.data.get('final_weight') not in (None, ''):
+        try:
+            submitted_weight = decimal_value(request.data.get('final_weight'), 'final_weight', positive=True)
+        except ValueError as exc:
+            return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if submitted_weight != final_weight:
+            return Response({'success': False, 'message': 'final_weight must match the staged pickup weight.'}, status=status.HTTP_409_CONFLICT)
     billing_policy = VendorBillingSetting.current()
     if not billing_policy:
         return Response({
@@ -2135,9 +2319,9 @@ def vendor_billing_view(request, order_id):
                 commission_tax_amount=commission_tax,
                 fixed_platform_fee=fixed_fee,
             )
-            order.final_weight = final_weight
             order.final_amount = breakdown['total_approx_price']
-            order.save(update_fields=['final_weight', 'final_amount', 'updated_at'])
+            order.save(update_fields=['final_amount', 'updated_at'])
+            audit_event(request.user, 'VENDOR', 'PAYMENT_CREATED', order, metadata={'payment_id': payment.payment_id, 'amount': str(payment.amount)})
     except IntegrityError:
         pending = order.payment_transactions.filter(status=PaymentTransaction.Status.CREATED).first()
         return Response({
@@ -2209,6 +2393,7 @@ def finalize_verified_payment(payment, signature):
     create_notification(order.user, UserNotification.EventType.PAYMENT_VERIFIED, 'Vendor payment verified', f'Invoice {invoice.invoice_number} is available.', order)
     if order.assigned_vendor_id:
         create_notification(order.assigned_vendor, UserNotification.EventType.PAYMENT_VERIFIED, 'Platform payment verified', f'Invoice {invoice.invoice_number} is available.', order)
+    audit_event(order.assigned_vendor, 'VENDOR', 'PAYMENT_VERIFIED', order, metadata={'payment_id': payment.payment_id, 'invoice_number': invoice.invoice_number})
     return invoice
 
 
@@ -2264,6 +2449,9 @@ def payment_webhook_view(request):
             payment.status = PaymentTransaction.Status.FAILED
             payment.gateway_signature = submitted
             payment.save(update_fields=['status', 'gateway_signature'])
+            if payment.order.assigned_vendor_id:
+                create_notification(payment.order.assigned_vendor, UserNotification.EventType.STATUS_UPDATED, 'Payment failed', f'Payment {payment.payment_id} failed. Retry billing or contact support.', payment.order)
+            audit_event(payment.order.assigned_vendor, 'VENDOR', 'PAYMENT_FAILED', payment.order, metadata={'payment_id': payment.payment_id, 'event_id': event_id})
             invoice = None
     return Response({'success': True, 'message': 'Webhook processed.', 'invoice': serialize_invoice(invoice) if invoice else None})
 
@@ -2308,7 +2496,7 @@ def complete_pickup_view(request, order_id):
     invoice = getattr(order, 'invoice', None)
     if order.status != PickupOrder.Status.INVOICE_GENERATED or not invoice or invoice.payment_status != OrderInvoice.PaymentStatus.PAID:
         return Response({'success': False, 'message': 'A paid invoice is required before completion.'}, status=status.HTTP_409_CONFLICT)
-    if order.images.exists() or order.status == PickupOrder.Status.COMPLETED:
+    if order.status == PickupOrder.Status.COMPLETED:
         return Response({'success': False, 'message': 'Pickup was already completed.'}, status=status.HTTP_409_CONFLICT)
     if order.final_weight is None or order.final_weight <= 0:
         return Response({'success': False, 'message': 'A positive verified final weight is required.'}, status=status.HTTP_409_CONFLICT)
@@ -2333,15 +2521,17 @@ def complete_pickup_view(request, order_id):
         except (json.JSONDecodeError, TypeError):
             images = [images]
     images = [str(value).strip() for value in images if isinstance(value, str) and str(value).strip()]
-    if not uploaded_files and not images:
-        return Response({'success': False, 'message': 'At least one item_images file or URL is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not order.images.exists() and not uploaded_files and not images:
+        return Response({'success': False, 'message': 'At least one staged pickup proof image is required.'}, status=status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
-        proofs = [PickupImage.objects.create(order=order, image=value) for value in images]
+        proofs = list(order.images.all())
+        proofs.extend(PickupImage.objects.create(order=order, image=value) for value in images)
         proofs.extend(PickupImage.objects.create(order=order, image=uploaded.name, uploaded_file=uploaded) for uploaded in uploaded_files)
         order.status = PickupOrder.Status.COMPLETED
         order.save(update_fields=['status', 'updated_at'])
         create_notification(order.user, UserNotification.EventType.PICKUP_COMPLETED, 'Pickup completed', f'{order.order_id} was completed with {len(proofs)} proof image(s).', order)
         create_notification(request.user, UserNotification.EventType.PICKUP_COMPLETED, 'Pickup completed', f'{order.order_id} was completed successfully.', order)
+        audit_event(request.user, 'VENDOR', 'PICKUP_COMPLETED', order, metadata={'proof_count': len(proofs)})
     return Response({
         'success': True,
         'message': 'Pickup completed with photo proof.',
@@ -2540,7 +2730,7 @@ def serialize_bank_detail(bank):
     return {
         'account_holder_name': bank.account_holder_name,
         'bank_name': bank.bank_name,
-        'account_number': bank.masked_account_number,
+        'account_number': bank.account_number,
         'ifsc_code': bank.ifsc_code,
         'upi_id': bank.upi_id,
         'is_verified': bank.is_verified,

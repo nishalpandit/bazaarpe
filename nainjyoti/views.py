@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404, JsonResponse, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.conf import settings
 from datetime import timedelta
 from functools import wraps
@@ -15,6 +16,7 @@ import json
 import re
 
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q, Sum, Count, Avg
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.authtoken.models import Token
@@ -26,6 +28,7 @@ from .models import (
     VendorProfile, VendorBillingSetting, RefundRequest,
     ScrapCategory, ScrapSubCategory, ServiceCity, ServiceZone,
     LegalDocument, UserConsent, VendorLocationTrack,
+    PlatformConfiguration, MarketplaceAuditLog,
 )
 from .api_views import clean_phone
 
@@ -339,6 +342,23 @@ PAGES = {
 @full_admin_required
 def dashboard_view(request):
     """Operations console dashboard with dynamic database metrics."""
+    date_from = parse_date(str(request.GET.get('from', '')).strip())
+    date_to = parse_date(str(request.GET.get('to', '')).strip())
+    if date_from and date_to and date_from > date_to:
+        date_from, date_to = date_to, date_from
+    order_period = PickupOrder.objects.all()
+    payment_period = PaymentTransaction.objects.all()
+    refund_period = RefundRequest.objects.all()
+    if date_from:
+        order_period = order_period.filter(created_at__date__gte=date_from)
+        payment_period = payment_period.filter(created_at__date__gte=date_from)
+        refund_period = refund_period.filter(requested_at__date__gte=date_from)
+    if date_to:
+        order_period = order_period.filter(created_at__date__lte=date_to)
+        payment_period = payment_period.filter(created_at__date__lte=date_to)
+        refund_period = refund_period.filter(requested_at__date__lte=date_to)
+    platform_config = PlatformConfiguration.current()
+    current_commission = VendorBillingSetting.current()
     total_users_count = UserProfile.objects.count()
     total_vendors_count = VendorProfile.objects.count()
     active_vendors_count = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).count()
@@ -346,17 +366,17 @@ def dashboard_view(request):
     online_vendors_count = VendorProfile.objects.filter(is_online=True).count()
     eligible_vendors_count = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).count()
 
-    active_orders_count = PickupOrder.objects.exclude(status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.CANCELLED, PickupOrder.Status.USER_PAYOUT]).count()
-    assigned_orders_count = PickupOrder.objects.filter(status=PickupOrder.Status.VENDOR_ASSIGNED).count()
-    in_pickup_orders_count = PickupOrder.objects.filter(status__in=[PickupOrder.Status.PICKUP_IN_PROGRESS, PickupOrder.Status.VENDOR_ON_THE_WAY, PickupOrder.Status.REACHED_LOCATION]).count()
-    published_orders_count = PickupOrder.objects.filter(status=PickupOrder.Status.SEARCHING_VENDOR).count()
-    negotiation_orders_count = PickupOrder.objects.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).count()
+    active_orders_count = order_period.exclude(status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.CANCELLED, PickupOrder.Status.USER_PAYOUT]).count()
+    assigned_orders_count = order_period.filter(status=PickupOrder.Status.VENDOR_ASSIGNED).count()
+    in_pickup_orders_count = order_period.filter(status__in=[PickupOrder.Status.PICKUP_IN_PROGRESS, PickupOrder.Status.VENDOR_ON_THE_WAY, PickupOrder.Status.REACHED_LOCATION]).count()
+    published_orders_count = order_period.filter(status=PickupOrder.Status.SEARCHING_VENDOR).count()
+    negotiation_orders_count = order_period.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).count()
 
-    vendor_collections = PaymentTransaction.objects.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
-    payouts_recorded = PickupOrder.objects.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
-    commission_earned = PaymentTransaction.objects.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('commission_amount'))['t'] or Decimal('0.00')
-    platform_revenue = PaymentTransaction.objects.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('commission_amount') + Sum('fixed_platform_fee'))['t'] or Decimal('0.00')
-    pending_settlements_amount = PickupOrder.objects.filter(invoice__payment_status=OrderInvoice.PaymentStatus.PAID, payout_status=PickupOrder.PayoutStatus.PENDING).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
+    vendor_collections = payment_period.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+    payouts_recorded = order_period.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
+    commission_earned = payment_period.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('commission_amount'))['t'] or Decimal('0.00')
+    platform_revenue = payment_period.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('commission_amount') + Sum('fixed_platform_fee'))['t'] or Decimal('0.00')
+    pending_settlements_amount = order_period.filter(invoice__payment_status=OrderInvoice.PaymentStatus.PAID, payout_status=PickupOrder.PayoutStatus.PENDING).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
 
     payments_today = PaymentTransaction.objects.filter(created_at__date=timezone.now().date())
     successful_payments_amount = payments_today.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
@@ -365,8 +385,8 @@ def dashboard_view(request):
     pending_payments_count = payments_today.filter(status=PaymentTransaction.Status.CREATED).count()
     failed_payments_amount = payments_today.filter(status=PaymentTransaction.Status.FAILED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
     failed_payments_count = payments_today.filter(status=PaymentTransaction.Status.FAILED).count()
-    refunded_payments_amount = RefundRequest.objects.filter(status=RefundRequest.Status.SUCCEEDED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
-    refunded_payments_count = RefundRequest.objects.filter(status=RefundRequest.Status.SUCCEEDED).count()
+    refunded_payments_amount = refund_period.filter(status=RefundRequest.Status.SUCCEEDED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
+    refunded_payments_count = refund_period.filter(status=RefundRequest.Status.SUCCEEDED).count()
 
     pending_payouts_count = PickupOrder.objects.filter(invoice__payment_status=OrderInvoice.PaymentStatus.PAID, payout_status=PickupOrder.PayoutStatus.PENDING).count()
     recorded_payouts_count = PickupOrder.objects.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).count()
@@ -453,6 +473,11 @@ def dashboard_view(request):
         completion_rate_pct=completion_rate_pct,
         peak_day_label=peak_day_label,
         peak_day_requests=peak_day_requests,
+        date_from=date_from,
+        date_to=date_to,
+        selected_period_label=(f'{date_from or "Beginning"} to {date_to or "Today"}'),
+        platform_config=platform_config,
+        current_commission=current_commission,
     )
     return render(request, 'index.html', ctx)
 
@@ -1282,8 +1307,11 @@ def page_view(request, page_name):
     # 16. PLATFORM SETTINGS
     if clean_name == 'settings':
         current_setting = VendorBillingSetting.current() or VendorBillingSetting.objects.first()
+        platform_config = PlatformConfiguration.current()
         return render(request, 'settings.html', admin_context(
-            request, page_name=clean_name, current_setting=current_setting,
+            request, page_name=clean_name, current_setting=current_setting, platform_config=platform_config,
+            acceptance_hours=platform_config.acceptance_minutes / 60,
+            arrival_hours=platform_config.arrival_minutes / 60,
         ))
 
     # 17. PICKUP REQUESTS (NEGOTIATIONS)
@@ -1509,7 +1537,7 @@ def admin_action_view(request, action_path):
             if order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.SEARCHING_VENDOR):
                 return JsonResponse({'success': False, 'message': 'Order is no longer in negotiation.'}, status=409)
 
-            NegotiationProposal.objects.create(
+            proposal = NegotiationProposal.objects.create(
                 order=order, proposed_by=request.user,
                 proposer_role=NegotiationProposal.ProposerRole.ADMIN,
                 amount=agreed, note=str(data.get('note') or data.get('message', '')).strip(),
@@ -1523,6 +1551,7 @@ def admin_action_view(request, action_path):
                 title='New pickup price proposal',
                 message=f'Admin proposed ₹{agreed} for {order.order_id}.',
             )
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='PRICE_PROPOSED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'proposal_id': proposal.id, 'amount': str(agreed)})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'Price proposal saved for {order.order_id}.'})
             return redirect('/requests.html')
@@ -1548,7 +1577,7 @@ def admin_action_view(request, action_path):
 
             order.status = PickupOrder.Status.SEARCHING_VENDOR
             order.published_at = timezone.now()
-            order.acceptance_deadline = timezone.now() + timedelta(minutes=int(getattr(settings, 'ORDER_ACCEPTANCE_MINUTES', 30)))
+            order.acceptance_deadline = timezone.now() + timedelta(minutes=PlatformConfiguration.current().acceptance_minutes)
             order.is_escalated = False
             order.escalated_at = None
             order.save(update_fields=['status', 'published_at', 'acceptance_deadline', 'is_escalated', 'escalated_at', 'final_agreed_price', 'updated_at'])
@@ -1557,6 +1586,7 @@ def admin_action_view(request, action_path):
                 event_type=UserNotification.EventType.ORDER_PUBLISHED,
                 title='Searching for vendor', message=f'{order.order_id} was published to active vendors.',
             )
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='ORDER_PUBLISHED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'acceptance_deadline': order.acceptance_deadline.isoformat()})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'{order.order_id} published to vendors.'})
             return redirect('/orders.html')
@@ -1593,10 +1623,11 @@ def admin_action_view(request, action_path):
             order.assigned_vendor_name = vendor_profile.shop_name
             order.assigned_vendor_phone = vendor_profile.user.username if vendor_profile.user else ''
             order.status = PickupOrder.Status.VENDOR_ASSIGNED
-            order.arrival_deadline = timezone.now() + timedelta(minutes=int(getattr(settings, 'VENDOR_ARRIVAL_MINUTES', 90)))
+            order.arrival_deadline = timezone.now() + timedelta(minutes=PlatformConfiguration.current().arrival_minutes)
             order.save(update_fields=['assigned_vendor', 'assigned_vendor_name', 'assigned_vendor_phone', 'status', 'arrival_deadline', 'updated_at'])
 
             UserNotification.objects.create(user=order.user, order=order, event_type=UserNotification.EventType.VENDOR_ASSIGNED, title='Vendor assigned', message=f'{vendor_profile.shop_name} was assigned to {order.order_id}.')
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='VENDOR_MANUALLY_ASSIGNED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'vendor_id': vendor_profile.id})
             if vendor_profile.user:
                 UserNotification.objects.create(user=vendor_profile.user, order=order, event_type=UserNotification.EventType.VENDOR_ASSIGNED, title='Pickup assigned', message=f'Admin assigned {order.order_id} to your business.')
 
@@ -1741,6 +1772,21 @@ def admin_action_view(request, action_path):
             order = PickupOrder.objects.select_related('invoice', 'user__bank_details').filter(order_id=settlement_match.group(1)).first()
             if not order:
                 return JsonResponse({'success': False, 'message': 'Pickup order not found.'}, status=404)
+            if order.payout_status == PickupOrder.PayoutStatus.DISBURSED:
+                return JsonResponse({'success': False, 'message': 'This payout was already disbursed.'}, status=409)
+            invoice = getattr(order, 'invoice', None)
+            if not invoice or invoice.payment_status != OrderInvoice.PaymentStatus.PAID:
+                return JsonResponse({'success': False, 'message': 'A paid vendor invoice is required before user payout.'}, status=409)
+            if not hasattr(order.user, 'bank_details'):
+                return JsonResponse({'success': False, 'message': 'Verified user bank details are required before payout.'}, status=409)
+            submitted_amount = data.get('amount')
+            if submitted_amount not in (None, ''):
+                try:
+                    amount = Decimal(str(submitted_amount))
+                except (InvalidOperation, TypeError, ValueError):
+                    return JsonResponse({'success': False, 'message': 'Payout amount is invalid.'}, status=400)
+                if amount != order.payout_amount:
+                    return JsonResponse({'success': False, 'message': 'Payout amount must match the agreed user amount.'}, status=409)
             reference = str(data.get('reference', '')).strip() or f"UTR-{int(timezone.now().timestamp())}"
             method = str(data.get('method', 'NEFT')).strip().upper()
 
@@ -1751,6 +1797,7 @@ def admin_action_view(request, action_path):
             order.status = PickupOrder.Status.USER_PAYOUT
             order.save(update_fields=['payout_status', 'payout_reference', 'payout_method', 'payout_disbursed_at', 'status', 'updated_at'])
             UserNotification.objects.create(user=order.user, order=order, event_type=UserNotification.EventType.PAYOUT_DISBURSED, title='User payout recorded', message=f'₹{order.payout_amount} payout was recorded via {method}.')
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='USER_PAYOUT_DISBURSED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'amount': str(order.payout_amount), 'method': method, 'reference': reference})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'{order.order_id} payout marked disbursed.'})
             return redirect('/settlements.html')
@@ -2012,6 +2059,7 @@ def admin_action_view(request, action_path):
             else:
                 basis_enum = VendorBillingSetting.CommissionBasis.ITEM_AMOUNT
 
+            VendorBillingSetting.objects.filter(is_active=True).update(is_active=False)
             setting = VendorBillingSetting.objects.create(
                 commission_percent=rate,
                 commission_basis=basis_enum,
@@ -2019,13 +2067,45 @@ def admin_action_view(request, action_path):
                 is_active=True,
                 effective_from=timezone.now(),
             )
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='COMMISSION_POLICY_UPDATED', entity_type='VendorBillingSetting', entity_id=str(setting.id), metadata={'rate': str(rate), 'basis': basis_enum})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f"Commission updated to {rate}%."})
             return redirect('/settings.html')
 
         if action.startswith('settings/deadlines'):
+            try:
+                acceptance_hours = Decimal(str(data.get('accept_deadline_hours')))
+                arrival_hours = Decimal(str(data.get('arrival_deadline_hours')))
+                if acceptance_hours <= 0 or arrival_hours <= 0:
+                    raise ValueError
+            except (InvalidOperation, TypeError, ValueError):
+                return JsonResponse({'success': False, 'message': 'Deadline hours must be positive numbers.'}, status=400)
+            config = PlatformConfiguration.current()
+            config.acceptance_minutes = int(acceptance_hours * 60)
+            config.arrival_minutes = int(arrival_hours * 60)
+            config.updated_by = request.user
+            config.save()
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='DEADLINES_UPDATED', entity_type='PlatformConfiguration', entity_id=str(config.id), metadata={'acceptance_minutes': config.acceptance_minutes, 'arrival_minutes': config.arrival_minutes})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': 'Order deadlines saved successfully.'})
+            return redirect('/settings.html')
+
+        if action.startswith('settings/settlement'):
+            try:
+                settlement_days = int(data.get('settlement_window_days'))
+                refund_hours = int(data.get('refund_window_hours'))
+                if settlement_days <= 0 or refund_hours <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return JsonResponse({'success': False, 'message': 'Settlement days and refund hours must be positive integers.'}, status=400)
+            config = PlatformConfiguration.current()
+            config.settlement_days = settlement_days
+            config.refund_hours = refund_hours
+            config.updated_by = request.user
+            config.save()
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='SETTLEMENT_POLICY_UPDATED', entity_type='PlatformConfiguration', entity_id=str(config.id), metadata={'settlement_days': settlement_days, 'refund_hours': refund_hours})
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': 'Settlement and refund windows saved.'})
             return redirect('/settings.html')
 
         # -------------------------------------------------------------
@@ -2038,19 +2118,29 @@ def admin_action_view(request, action_path):
             content = str(data.get('content', '')).strip() or 'Content body.'
             version = str(data.get('version', '1.0')).strip()
 
-            dtype = LegalDocument.DocumentType.TERMS if 'TERM' in doc_type else LegalDocument.DocumentType.PRIVACY
+            type_map = {
+                'TERMS': LegalDocument.DocumentType.TERMS,
+                'PRIVACY': LegalDocument.DocumentType.PRIVACY,
+                'FAQ': LegalDocument.DocumentType.FAQ,
+                'STATIC': LegalDocument.DocumentType.STATIC,
+                'HELP': LegalDocument.DocumentType.FAQ,
+            }
+            dtype = type_map.get(doc_type, LegalDocument.DocumentType.STATIC)
             if doc_id and str(doc_id).isdigit():
                 doc = LegalDocument.objects.filter(id=int(doc_id)).first()
                 if doc:
                     doc.title = title
                     doc.content = content
                     doc.version = version
+                    doc.document_type = dtype
+                    doc.is_active = str(data.get('status', 'published')).lower() == 'published'
                     doc.save()
             else:
                 doc = LegalDocument.objects.filter(document_type=dtype, version=version).first()
                 if doc:
                     doc.title = title
                     doc.content = content
+                    doc.is_active = str(data.get('status', 'published')).lower() == 'published'
                     doc.save()
                 else:
                     LegalDocument.objects.create(
@@ -2058,7 +2148,7 @@ def admin_action_view(request, action_path):
                         document_type=dtype,
                         content=content,
                         version=version,
-                        is_active=True,
+                        is_active=str(data.get('status', 'published')).lower() == 'published',
                     )
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f"Content page '{title}' saved."})
@@ -2167,25 +2257,17 @@ def admin_action_view(request, action_path):
             if profile:
                 user_name = profile.full_name
                 u = profile.user
-                try:
-                    profile.delete()
-                    if u and not u.is_superuser:
-                        u.delete()
-                except Exception:
-                    if u:
-                        OrderReview.objects.filter(user=u).delete()
-                        for po in PickupOrder.objects.filter(user=u):
-                            PaymentTransaction.objects.filter(order=po).delete()
-                            po.delete()
-                        try:
-                            profile.delete()
-                        except Exception:
-                            pass
-                        if not u.is_superuser:
-                            try:
-                                u.delete()
-                            except Exception:
-                                pass
+                if u and u.is_superuser:
+                    return JsonResponse({'success': False, 'message': 'Superuser accounts cannot be deleted here.'}, status=403)
+                with transaction.atomic():
+                    owned_orders = list(PickupOrder.objects.filter(user=u))
+                    for po in owned_orders:
+                        RefundRequest.objects.filter(payment__order=po).delete()
+                        PaymentWebhookEvent.objects.filter(payment__order=po).delete()
+                        OrderInvoice.objects.filter(order=po).delete()
+                        PaymentTransaction.objects.filter(order=po).delete()
+                        po.delete()
+                    u.delete()
                 if is_ajax:
                     return JsonResponse({'success': True, 'message': f"User '{user_name}' deleted successfully."})
 

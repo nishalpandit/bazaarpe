@@ -6,6 +6,7 @@ from .models import (
     LegalDocument, UserConsent, NegotiationProposal, UserNotification,
     PaymentTransaction, PaymentWebhookEvent,
     VendorProfile, VendorOfferRejection, VendorBillingSetting, RefundRequest,
+    PlatformConfiguration, MarketplaceAuditLog,
 )
 
 
@@ -54,3 +55,5 @@ admin.site.register(VendorProfile)
 admin.site.register(VendorOfferRejection)
 admin.site.register(VendorBillingSetting)
 admin.site.register(RefundRequest)
+admin.site.register(PlatformConfiguration)
+admin.site.register(MarketplaceAuditLog)
