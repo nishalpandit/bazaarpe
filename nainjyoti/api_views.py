@@ -215,7 +215,7 @@ def verify_otp_login_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     # Verify OTP
-    otp_rec = OTPVerification.objects.filter(phone=phone, purpose__in=['LOGIN', 'AUTH'], is_verified=False).order_by('-created_at').first()
+    otp_rec = OTPVerification.objects.filter(phone=phone, is_verified=False).exclude(purpose='CHANGE_PHONE').order_by('-created_at').first()
 
     if not otp_rec:
         return Response({
@@ -1509,6 +1509,7 @@ def vendor_kyc_view(request):
 
 def serialize_order(order, *, include_otp=False):
     address = order.address.formatted_address if order.address else None
+    proof_images = [img.uploaded_file.url if img.uploaded_file else img.image for img in order.images.all()]
     payload = {
         'order_id': order.order_id,
         'status': order.status,
@@ -1533,6 +1534,15 @@ def serialize_order(order, *, include_otp=False):
         'created_at': order.created_at.isoformat(),
         'updated_at': order.updated_at.isoformat(),
     }
+    if proof_images or order.final_weight is not None:
+        payload['pickup_summary'] = {
+            'final_weight': float(order.final_weight) if order.final_weight is not None else None,
+            'final_amount': float(order.final_amount) if order.final_amount is not None else None,
+            'proof_count': len(proof_images),
+            'item_images': proof_images,
+        }
+        if proof_images:
+            payload['item_images'] = proof_images
     if include_otp:
         payload['pickup_otp'] = order.pickup_otp
     return payload
@@ -1702,13 +1712,16 @@ def order_tracking_view(request, order_id):
     if not order:
         return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
     tracking = getattr(order, 'vendor_tracking', None)
-    return Response({
+    proof_images = [img.uploaded_file.url if img.uploaded_file else img.image for img in order.images.all()]
+    response_data = {
         'success': True,
         'order_id': order.order_id,
         'status': order.status,
         'status_display': order.get_status_display(),
         'pickup_otp': order.pickup_otp,
         'is_otp_verified': order.is_otp_verified,
+        'final_weight': float(order.final_weight) if order.final_weight is not None else None,
+        'final_amount': float(order.final_amount) if order.final_amount is not None else None,
         'assigned_vendor': {
             'name': order.assigned_vendor_name,
             'phone': order.assigned_vendor_phone,
@@ -1719,7 +1732,17 @@ def order_tracking_view(request, order_id):
             'updated_at': tracking.updated_at.isoformat(),
         } if tracking else None,
         'pickup_address': order.address.formatted_address if order.address else None,
-    })
+    }
+    if proof_images or order.final_weight is not None:
+        response_data['pickup_summary'] = {
+            'final_weight': float(order.final_weight) if order.final_weight is not None else None,
+            'final_amount': float(order.final_amount) if order.final_amount is not None else None,
+            'proof_count': len(proof_images),
+            'item_images': proof_images,
+        }
+        if proof_images:
+            response_data['item_images'] = proof_images
+    return Response(response_data)
 
 
 def eligible_vendor_orders(vendor):

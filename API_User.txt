@@ -503,7 +503,7 @@ method: GET
 params:
 Authorization: Bearer <token> (header)
 
-response:
+response (in progress):
 {
   "success": true,
   "order_id": "ORD-2026-123456",
@@ -516,6 +516,26 @@ response:
   "vendor_location": {
     "latitude": 12.9784,
     "longitude": 77.6408
+  }
+}
+
+response (completed with pickup summary):
+{
+  "success": true,
+  "order_id": "ORD-2026-123456",
+  "status": "COMPLETED",
+  "final_weight": 30.0,
+  "final_amount": 1200.0,
+  "pickup_summary": {
+    "final_weight": 30.0,
+    "final_amount": 1200.0,
+    "proof_count": 1,
+    "item_images": ["/media/pickup_proofs/scale.png"]
+  },
+  "item_images": ["/media/pickup_proofs/scale.png"],
+  "assigned_vendor": {
+    "name": "GreenLoop Scrap Traders",
+    "phone": "9876512345"
   }
 }
 

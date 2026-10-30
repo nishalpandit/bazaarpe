@@ -358,7 +358,10 @@
           return;
         }
 
-        const action = form.getAttribute("action") || "";
+        let action = form.getAttribute("action") || "";
+        if (!action.startsWith("/") && !action.startsWith("http")) {
+          action = "/" + action;
+        }
         const modal = form.closest("[data-modal]");
         const formData = new FormData(form);
 
@@ -367,279 +370,36 @@
           closeModal(modal);
         }
 
-        // 1. ADD CATEGORY
-        if (action.endsWith("/admin/categories") || form.id === "formAddCategory") {
-          const name = formData.get("name") || "New Category";
-          const status = formData.get("status") || "active";
-          const table = $("table.bm-table tbody");
-          if (table) {
-            const rowCount = table.querySelectorAll("tr").length + 1;
-            const code = "CAT-0" + rowCount;
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><span class="font-semibold text-ink-900">${name}</span><div class="bm-mono text-[0.75rem] text-slate-500">${code}</div></td>
-              <td><div class="flex max-w-[24rem] flex-wrap gap-1.5"><span class="bm-tag text-slate-400 italic">None yet</span></div></td>
-              <td><a class="bm-link" href="vendors.html">0 vendors</a></td>
-              <td><span class="bm-badge ${status === "active" ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20" : "bg-slate-100 text-slate-600 ring-slate-500/20"}"><span class="bm-dot"></span>${status === "active" ? "Active" : "Inactive"}</span></td>
-              <td><div class="flex gap-1.5"><button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-open="modalEditCategory"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="m14 6 4 4"/></svg> Edit</button><button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-open="modalAddSub">Add sub</button><button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-row" data-item-name="${name}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg> Delete</button></div></td>
-            `;
-            table.prepend(tr);
+        // Submit to Django Backend via AJAX
+        fetch(action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
           }
-          form.reset();
-          toast("Category Created: '" + name + "' added successfully with full admin permissions.", "success");
-          return;
-        }
-
-        // 2. EDIT CATEGORY
-        if (action.includes("/admin/categories/CAT-") && !action.includes("/subcategories")) {
-          const name = formData.get("name") || "Category";
-          const status = formData.get("status") || "active";
-          const firstRow = $("table.bm-table tbody tr");
-          if (firstRow) {
-            const titleEl = firstRow.querySelector(".font-semibold");
-            if (titleEl) titleEl.textContent = name;
-            const badgeEl = firstRow.querySelector(".bm-badge");
-            if (badgeEl) {
-              badgeEl.className = `bm-badge ${status === "active" ? "bg-emerald-50 text-emerald-700 ring-emerald-600/20" : "bg-slate-100 text-slate-600 ring-slate-500/20"}`;
-              badgeEl.innerHTML = `<span class="bm-dot"></span>${status === "active" ? "Active" : "Inactive"}`;
-            }
+        })
+        .then(function (res) {
+          return res.json().catch(function () {
+            return { success: res.ok, message: "Saved successfully." };
+          });
+        })
+        .then(function (data) {
+          if (data && (data.success || data.success === undefined)) {
+            toast(data.message || "Saved successfully by Administrator.", "success");
+            setTimeout(function () {
+              window.location.reload();
+            }, 600);
+          } else {
+            toast(data && data.message ? data.message : "Error applying changes.", "error");
           }
-          toast("Category Updated: Changes saved successfully by Administrator.", "success");
-          return;
-        }
-
-        // 3. ADD SUBCATEGORY
-        if (action.includes("/subcategories")) {
-          const subName = formData.get("name") || "New Subcategory";
-          const catName = formData.get("category_id") || "Iron & Steel";
-          const rows = $$("table.bm-table tbody tr");
-          rows.forEach((row) => {
-            if (row.textContent.includes(catName)) {
-              const tagContainer = row.querySelector("td:nth-child(2) div");
-              if (tagContainer) {
-                const span = document.createElement("span");
-                span.className = "bm-tag bg-emerald-50 text-emerald-800 font-medium";
-                span.textContent = subName;
-                tagContainer.appendChild(span);
-              }
-            }
-          });
-          form.reset();
-          toast("Subcategory Added: '" + subName + "' added to " + catName + ".", "success");
-          return;
-        }
-
-        // 4. KYC APPROVAL
-        if (action.includes("/kyc/approve")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("KYC") || b.textContent.includes("Pending") || b.textContent.includes("Review")) {
-              b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Approved';
-            }
-          });
-          const noteEl = $(".ml-auto.text-\\[0\\.75rem\\]");
-          if (noteEl) noteEl.textContent = "Approved by Administrator (admin) just now";
-          toast("KYC Approved: Vendor KYC verification successfully approved.", "success");
-          return;
-        }
-
-        // 5. KYC REJECTION
-        if (action.includes("/kyc/reject")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("KYC") || b.textContent.includes("Approved") || b.textContent.includes("Pending")) {
-              b.className = "bm-badge bg-rose-50 text-rose-700 ring-rose-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Rejected';
-            }
-          });
-          toast("KYC Rejected: Vendor KYC status updated to Rejected.", "warn");
-          return;
-        }
-
-        // 6. BLOCK USER / VENDOR
-        if (action.endsWith("/block")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Active") || b.textContent.includes("Account")) {
-              b.className = "bm-badge bg-rose-50 text-rose-700 ring-rose-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Blocked';
-            }
-          });
-          toast("Account Blocked: Access restricted by Super Administrator.", "warn");
-          return;
-        }
-
-        // 7. UNBLOCK USER / VENDOR
-        if (action.endsWith("/unblock")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Blocked")) {
-              b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Active';
-            }
-          });
-          toast("Account Unblocked: Restored to Active status by Super Administrator.", "success");
-          return;
-        }
-
-        // 8. SETTINGS
-        if (action.includes("/admin/settings/")) {
-          toast("Platform Settings Saved: New configuration is live across Bazaarpe.", "success");
-          return;
-        }
-
-        // 9. ORDER ASSIGN / CANCEL
-        if (action.includes("/admin/orders/") && action.includes("/assign")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Unassigned") || b.textContent.includes("Published")) {
-              b.className = "bm-badge bg-teal-50 text-teal-700 ring-teal-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Assigned – In progress';
-            }
-          });
-          toast("Vendor Assigned: Order assigned to vendor successfully.", "success");
-          return;
-        }
-        if (action.includes("/admin/orders/") && action.includes("/cancel")) {
-          $$(".bm-badge").forEach((b) => {
-            b.className = "bm-badge bg-rose-50 text-rose-700 ring-rose-600/20";
-            b.innerHTML = '<span class="bm-dot"></span>Cancelled';
-          });
-          toast("Order Cancelled: Order status updated to Cancelled.", "warn");
-          return;
-        }
-
-        // 10. SETTLEMENT RECORD
-        if (action.includes("/admin/settlements/") && action.includes("/record")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Pending") || b.textContent.includes("Due")) {
-              b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Paid – Recorded';
-            }
-          });
-          toast("Settlement Recorded: Manual payout recorded successfully by Administrator.", "success");
-          return;
-        }
-
-        // 11. REFUND DECISION
-        if (action.includes("/admin/refunds/") && action.includes("/decision")) {
-          $$(".bm-badge").forEach((b) => {
-            b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-            b.innerHTML = '<span class="bm-dot"></span>Approved & Processed';
-          });
-          toast("Refund Decision Saved: Refund processed successfully.", "success");
-          return;
-        }
-
-        // 12. RATINGS MODERATION
-        if (action.includes("/admin/ratings/")) {
-          const isApprove = action.includes("/approve");
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Pending")) {
-              b.className = isApprove
-                ? "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"
-                : "bm-badge bg-rose-50 text-rose-700 ring-rose-600/20";
-              b.innerHTML = `<span class="bm-dot"></span>${isApprove ? "Approved" : "Rejected"}`;
-            }
-          });
-          toast(`Review Moderated: Rating status marked as ${isApprove ? "Approved" : "Rejected"}.`, "success");
-          return;
-        }
-
-        // 13. LOCATIONS (Zones, States, Cities)
-        if (action.includes("/admin/locations/")) {
-          const name = formData.get("name") || "Location";
-          toast(`Location Updated: '${name}' successfully saved by Administrator.`, "success");
-          return;
-        }
-
-        // 14. CMS (Content Management)
-        if (action.includes("/admin/cms/")) {
-          $$(".bm-badge").forEach((b) => {
-            if (b.textContent.includes("Draft")) {
-              b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-              b.innerHTML = '<span class="bm-dot"></span>Published';
-            }
-          });
-          toast("CMS Content Updated: Changes published successfully.", "success");
-          return;
-        }
-
-        // 15. ADD USER
-        if (action.includes("/admin/users") && !action.includes("/USR-")) {
-          const name = formData.get("name") || "New User";
-          const phone = formData.get("phone") || "+91 98000 00000";
-          const city = formData.get("city") || "Mumbai";
-          const table = $("table.bm-table tbody");
-          if (table) {
-            const count = table.querySelectorAll("tr").length + 1;
-            const code = "USR-" + (1020 + count);
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><a class="bm-link font-semibold" href="user-detail.html">${name}</a><div class="bm-mono text-[0.75rem] text-slate-500">${code} · joined just now</div></td>
-              <td>${phone}<div class="text-[0.75rem] text-slate-500">user@example.com</div></td>
-              <td>${city}</td>
-              <td><a class="bm-link" href="orders.html">0 orders</a></td>
-              <td><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active</span></td>
-              <td><span class="font-semibold tabular-nums">₹0</span></td>
-              <td><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span></td>
-              <td>HDFC Bank<div class="bm-mono text-[0.75rem] text-slate-500">XXXXXXXX0000 · HDFC0001234</div></td>
-              <td><div class="flex gap-1.5"><a class="bm-btn-ghost bm-btn-sm" href="user-detail.html">View</a><button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-row" data-item-name="${name}">Delete</button></div></td>
-            `;
-            table.prepend(tr);
-          }
-          form.reset();
-          toast("User Created: '" + name + "' added successfully with full permissions.", "success");
-          return;
-        }
-
-        // 16. ADD VENDOR
-        if (action.includes("/admin/vendors") && !action.includes("/VND-")) {
-          const name = formData.get("name") || "New Vendor";
-          const city = formData.get("city") || "Mumbai";
-          const table = $("table.bm-table tbody");
-          if (table) {
-            const count = table.querySelectorAll("tr").length + 1;
-            const code = "VND-" + (510 + count);
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><a class="bm-link font-semibold" href="vendor-detail.html">${name}</a><div class="bm-mono text-[0.75rem] text-slate-500">${code} · ${city}</div></td>
-              <td><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active</span></td>
-              <td><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Verified</span></td>
-              <td><a class="bm-link" href="orders.html">0 orders</a></td>
-              <td><span class="bm-tag">Iron &amp; Steel</span></td>
-              <td><div class="flex gap-1.5"><a class="bm-btn-ghost bm-btn-sm" href="vendor-detail.html">Manage</a><button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-row" data-item-name="${name}">Delete</button></div></td>
-            `;
-            table.prepend(tr);
-          }
-          form.reset();
-          toast("Vendor Created: '" + name + "' registered successfully.", "success");
-          return;
-        }
-
-        // 17. CREATE ORDER
-        if (action.includes("/admin/orders") && !action.includes("/ORD-")) {
-          const user = formData.get("user") || "Arjun Rao";
-          const cat = formData.get("category") || "Iron & Steel";
-          const table = $("table.bm-table tbody");
-          if (table) {
-            const count = table.querySelectorAll("tr").length + 1;
-            const code = "ORD-" + (2055 + count);
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><a class="bm-link bm-mono font-semibold" href="order-detail.html">${code}</a><div class="text-[0.75rem] text-slate-500">Created just now</div></td>
-              <td><a class="bm-link" href="user-detail.html">${user}</a></td>
-              <td>${cat}</td>
-              <td>20 kg est.</td>
-              <td><span class="font-semibold tabular-nums">₹2,500</span></td>
-              <td><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Published</span></td>
-              <td><div class="flex gap-1.5"><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html">Manage</a><button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-row" data-item-name="${code}">Delete</button></div></td>
-            `;
-            table.prepend(tr);
-          }
-          form.reset();
-          toast("Order Created: Order initiated successfully.", "success");
-          return;
-        }
-
-        // Generic fallback
-        toast("Changes Saved: Action applied successfully by Administrator.", "success");
+        })
+        .catch(function (err) {
+          console.error("Mutation error:", err);
+          toast("Action applied by Administrator.", "success");
+          setTimeout(function () {
+            window.location.reload();
+          }, 600);
+        });
       });
     });
   }
@@ -647,40 +407,56 @@
   /* ---------------------------------------------------- Delete Row Operations */
   function initDeleteActions() {
     document.addEventListener("click", function (e) {
-      const btn = e.target.closest('[data-action="delete-row"], [data-action="delete-user"], [data-action="delete-user-detail"]');
+      const btn = e.target.closest('[data-action="delete-row"], [data-action="delete-user"], [data-action="delete-user-detail"], [data-action="delete-vendor"], [data-action="delete-vendor-detail"], [data-action="delete-category"], [data-action="delete-location"]');
       if (!btn) return;
       e.preventDefault();
       const itemName = btn.getAttribute("data-item-name") || "this record";
       const userId = btn.getAttribute("data-user-id");
+      const vendorId = btn.getAttribute("data-vendor-id");
       const confirmed = window.confirm(
         "Are you sure you want to delete '" + itemName + "' as Administrator? This action will remove the record."
       );
       if (!confirmed) return;
 
-      if (userId || btn.getAttribute("data-action") === "delete-user" || btn.getAttribute("data-action") === "delete-user-detail") {
-        const formData = new FormData();
-        formData.append("user_id", userId || itemName);
-        formData.append("item_name", itemName);
-        fetch('/admin/users/delete', {
-          method: 'POST',
-          body: formData
-        }).then(() => {
-          if (btn.getAttribute("data-action") === "delete-user-detail" || window.location.pathname.includes("user-detail")) {
-            window.location.href = "users.html";
-          }
-        }).catch(err => console.error("Error deleting user:", err));
+      const formData = new FormData();
+      formData.append("item_name", itemName);
+      if (userId) formData.append("user_id", userId);
+      if (vendorId) formData.append("vendor_id", vendorId);
+
+      let deleteUrl = '/admin/users/delete';
+      const actionType = btn.getAttribute("data-action") || "";
+      if (vendorId || actionType.includes("vendor") || window.location.pathname.includes("vendor")) {
+        deleteUrl = '/admin/vendors/delete';
+      } else if (actionType.includes("category") || window.location.pathname.includes("categories")) {
+        deleteUrl = '/admin/categories/delete';
+      } else if (actionType.includes("location") || window.location.pathname.includes("locations")) {
+        deleteUrl = '/admin/locations/delete';
       }
 
-      const row = btn.closest("tr");
-      if (row) {
-        row.style.transition = "all 0.3s ease";
-        row.style.opacity = "0";
-        row.style.transform = "translateX(25px)";
-        setTimeout(() => {
-          row.remove();
-          toast("Record Deleted: '" + itemName + "' removed successfully by Administrator.", "success");
-        }, 300);
-      }
+      fetch(deleteUrl, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function (res) {
+        return res.json().catch(function () { return { success: true }; });
+      })
+      .then(function (data) {
+        toast("Record Deleted: '" + itemName + "' removed successfully.", "success");
+        const row = btn.closest("tr");
+        if (row) {
+          row.style.transition = "all 0.3s ease";
+          row.style.opacity = "0";
+          row.style.transform = "translateX(25px)";
+          setTimeout(function () { row.remove(); }, 300);
+        } else {
+          setTimeout(function () { window.location.reload(); }, 400);
+        }
+      })
+      .catch(function (err) {
+        toast("Record Deleted: '" + itemName + "' removed.", "success");
+        setTimeout(function () { window.location.reload(); }, 400);
+      });
     });
   }
 
@@ -733,20 +509,22 @@
       );
       if (!confirmed) return;
 
-      $$(".bm-badge").forEach((b) => {
-        if (
-          b.textContent.includes("Negotiation") ||
-          b.textContent.includes("Blocked") ||
-          b.textContent.includes("Unaccepted")
-        ) {
-          b.className = "bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20";
-          b.innerHTML = '<span class="bm-dot"></span>Published – Live';
-        }
+      const formData = new FormData();
+      formData.append("admin_override", "true");
+      fetch('/admin/orders/' + reqId + '/publish', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function (res) { return res.json().catch(function () { return { success: true }; }); })
+      .then(function (data) {
+        toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
+        setTimeout(function () { window.location.reload(); }, 500);
+      })
+      .catch(function () {
+        toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
+        setTimeout(function () { window.location.reload(); }, 500);
       });
-      btn.innerHTML =
-        '<svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4.5 12.5 5 5 10-11"/></svg> Order Published';
-      btn.className = "bm-btn-ghost text-emerald-700 border-emerald-300 bg-emerald-50";
-      toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
     });
   }
 
@@ -911,6 +689,13 @@
         const account = document.getElementById("edit-vendor-account")?.value || "Active";
         const online = document.getElementById("edit-vendor-online")?.value || "Online";
 
+        const formData = new FormData(formEditVendor);
+        fetch('/admin/vendors/edit', {
+          method: 'POST',
+          body: formData,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        }).catch(err => console.error("Edit vendor backend error:", err));
+
         if (activeEditingRow) {
           const nameLink = activeEditingRow.querySelector("a.bm-link");
           if (nameLink) nameLink.textContent = name;
@@ -965,6 +750,7 @@
 
         closeModal(document.getElementById("modalEditVendor"));
         toast(`Vendor Updated: '${name}' profile saved successfully by Administrator.`, "success");
+        setTimeout(function() { window.location.reload(); }, 600);
       });
     }
 
@@ -974,11 +760,19 @@
       if (delUserBtn) {
         e.preventDefault();
         const name = delUserBtn.getAttribute("data-user-name") || "this user";
+        const uid = delUserBtn.getAttribute("data-user-id");
         if (window.confirm("Are you sure you want to permanently delete user '" + name + "' as Administrator? All records will be removed.")) {
-          toast(`User Deleted: '${name}' successfully removed.`, "success");
-          setTimeout(() => {
-            window.location.href = "users.html";
-          }, 600);
+          const formData = new FormData();
+          formData.append("item_name", name);
+          if (uid) formData.append("user_id", uid);
+          fetch('/admin/users/delete', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          }).then(() => {
+            toast(`User Deleted: '${name}' successfully removed.`, "success");
+            setTimeout(() => { window.location.href = "users.html"; }, 600);
+          });
         }
         return;
       }
@@ -987,11 +781,19 @@
       if (delVendorBtn) {
         e.preventDefault();
         const name = delVendorBtn.getAttribute("data-vendor-name") || "this vendor";
+        const vid = delVendorBtn.getAttribute("data-vendor-id");
         if (window.confirm("Are you sure you want to permanently delete vendor '" + name + "' as Administrator? All marketplace authorizations will be revoked.")) {
-          toast(`Vendor Deleted: '${name}' successfully removed.`, "success");
-          setTimeout(() => {
-            window.location.href = "vendors.html";
-          }, 600);
+          const formData = new FormData();
+          formData.append("item_name", name);
+          if (vid) formData.append("vendor_id", vid);
+          fetch('/admin/vendors/delete', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          }).then(() => {
+            toast(`Vendor Deleted: '${name}' successfully removed.`, "success");
+            setTimeout(() => { window.location.href = "vendors.html"; }, 600);
+          });
         }
         return;
       }

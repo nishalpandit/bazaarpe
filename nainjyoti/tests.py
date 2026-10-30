@@ -246,6 +246,11 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(response.status_code, 200, response.data)
 
         self.authenticate(self.user_token)
+        tracking_res = self.client.get(f'/api/user/orders/{order.order_id}/tracking/')
+        self.assertEqual(tracking_res.status_code, 200)
+        self.assertIn('pickup_summary', tracking_res.data)
+        self.assertEqual(tracking_res.data['pickup_summary']['final_weight'], 32.5)
+        self.assertEqual(len(tracking_res.data['pickup_summary']['item_images']), 1)
         response = self.client.post(f'/api/user/orders/{order.order_id}/review/', {
             'rating': 5, 'comments': 'Prompt arrival and fair weighing.',
         }, format='json')

@@ -434,6 +434,8 @@ response:
   }
 }
 
+
+
 API for List Available Vendor Orders
 url: http://127.0.0.1:8000/api/vendor/orders/available/
 method: GET
