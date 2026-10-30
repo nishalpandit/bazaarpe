@@ -372,8 +372,24 @@ def dashboard_view(request):
     recorded_payouts_count = PickupOrder.objects.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).count()
     recorded_payouts_amount = PickupOrder.objects.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
 
-    recent_orders = PickupOrder.objects.select_related('user', 'user__profile', 'address', 'category', 'subcategory', 'invoice').order_by('-created_at')[:8]
-    unaccepted_orders = PickupOrder.objects.filter(status=PickupOrder.Status.SEARCHING_VENDOR).select_related('user', 'address', 'category', 'subcategory').order_by('published_at')[:5]
+    recent_orders_qs = PickupOrder.objects.select_related('user', 'user__profile', 'address', 'category', 'subcategory', 'invoice').order_by('-created_at')
+    if request.GET.get('order_status') == 'active':
+        recent_orders_qs = recent_orders_qs.exclude(status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.CANCELLED, PickupOrder.Status.USER_PAYOUT])
+
+    order_page = request.GET.get('order_page') or request.GET.get('page', 1)
+    order_page_size = int(request.GET.get('order_page_size', 5))
+    recent_orders_paginator = Paginator(recent_orders_qs, order_page_size)
+    recent_orders_page_obj = recent_orders_paginator.get_page(order_page)
+    recent_orders = recent_orders_page_obj.object_list
+    recent_orders_query_string = build_query_string(request, 'order_page', 'page')
+
+    unaccepted_orders_qs = PickupOrder.objects.filter(status=PickupOrder.Status.SEARCHING_VENDOR).select_related('user', 'address', 'category', 'subcategory').order_by('published_at')
+    unaccepted_count = unaccepted_orders_qs.count()
+    unaccepted_page_size = int(request.GET.get('unaccepted_page_size', 5))
+    unaccepted_paginator = Paginator(unaccepted_orders_qs, unaccepted_page_size)
+    unaccepted_page_obj = unaccepted_paginator.get_page(request.GET.get('unaccepted_page', 1))
+    unaccepted_orders = unaccepted_page_obj.object_list
+    unaccepted_orders_query_string = build_query_string(request, 'unaccepted_page')
 
     # Dynamic 7-day marketplace activity time-series
     today = timezone.now().date()
@@ -437,7 +453,16 @@ def dashboard_view(request):
         recorded_payouts_count=recorded_payouts_count,
         recorded_payouts_amount=recorded_payouts_amount,
         recent_orders=recent_orders,
+        recent_orders_page_obj=recent_orders_page_obj,
+        recent_orders_paginator=recent_orders_paginator,
+        recent_orders_query_string=recent_orders_query_string,
+        page_obj=recent_orders_page_obj,
+        paginator=recent_orders_paginator,
         unaccepted_orders=unaccepted_orders,
+        unaccepted_orders_page_obj=unaccepted_page_obj,
+        unaccepted_orders_paginator=unaccepted_paginator,
+        unaccepted_orders_query_string=unaccepted_orders_query_string,
+        unaccepted_count=unaccepted_count,
         activity_labels_json=json.dumps(activity_labels),
         activity_requests_json=json.dumps(activity_requests),
         activity_completed_json=json.dumps(activity_completed),

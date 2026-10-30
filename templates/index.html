@@ -394,10 +394,12 @@
 {% empty %}
 <tr><td colspan="8" class="text-center py-6 text-slate-400">No orders placed on platform yet.</td></tr>
 {% endfor %}
-</tbody></table></div></div><div class="bm-card-ft"><div class="flex flex-wrap items-center justify-between gap-2"><p class="text-[0.75rem] text-slate-500">Order status, vendor payment status and user settlement status are tracked independently.</p><a class="bm-link text-[0.8125rem]" href="orders.html">View all orders →</a></div></div></section>
+</tbody></table></div>
+{% include "includes/pagination.html" with page_obj=recent_orders_page_obj paginator=recent_orders_paginator page_param='order_page' query_string=recent_orders_query_string item_label="orders" %}
+</div><div class="bm-card-ft"><div class="flex flex-wrap items-center justify-between gap-2"><p class="text-[0.75rem] text-slate-500">Order status, vendor payment status and user settlement status are tracked independently.</p><a class="bm-link text-[0.8125rem]" href="orders.html">View all orders →</a></div></div></section>
       </div>
       <div class="col-12 col-xl-4">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Unaccepted orders requiring action</h2></div><div class="flex flex-wrap items-center gap-2"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>3 breached</span></div></div><div class="bm-card-bd px-0 py-0 sm:px-0"><ul>
+        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Unaccepted orders requiring action</h2></div><div class="flex flex-wrap items-center gap-2"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>{{ unaccepted_count }} unaccepted</span></div></div><div class="bm-card-bd px-0 py-0 sm:px-0"><ul>
 {% for order in unaccepted_orders %}
 <li class="flex flex-col gap-1.5 border-b border-slate-100 px-4 py-3 last:border-0 sm:px-5">
   <div class="flex flex-wrap items-center justify-between gap-2">
@@ -413,7 +415,11 @@
 {% empty %}
 <li class="px-4 py-6 text-center text-slate-400 text-xs">No unaccepted orders currently pending.</li>
 {% endfor %}
-</ul></div><div class="bm-card-ft"><div class="flex items-center justify-between gap-2"><p class="text-[0.75rem] text-slate-500">Deadline shown only because a value is configured (12 h).</p><a class="bm-link text-[0.8125rem]" href="settings.html">Deadlines</a></div></div></section>
+</ul>
+{% if unaccepted_orders_page_obj and unaccepted_orders_page_obj.has_other_pages %}
+{% include "includes/pagination.html" with page_obj=unaccepted_orders_page_obj paginator=unaccepted_orders_paginator page_param='unaccepted_page' query_string=unaccepted_orders_query_string item_label="unaccepted orders" %}
+{% endif %}
+</div><div class="bm-card-ft"><div class="flex items-center justify-between gap-2"><p class="text-[0.75rem] text-slate-500">Deadline shown only because a value is configured (12 h).</p><a class="bm-link text-[0.8125rem]" href="settings.html">Deadlines</a></div></div></section>
       </div>
     </div>
 
