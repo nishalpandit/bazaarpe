@@ -82,6 +82,18 @@ def full_admin_required(view_func):
     return wrapped_view
 
 
+def build_query_string(request, *exclude_keys):
+    """Build URL query string preserving existing GET filters while excluding pagination keys."""
+    if not hasattr(request, 'GET'):
+        return ""
+    params = request.GET.copy()
+    excludes = set(exclude_keys) | {'page'} if not exclude_keys else set(exclude_keys)
+    for key in excludes:
+        params.pop(key, None)
+    qs = params.urlencode()
+    return f"&{qs}" if qs else ""
+
+
 def admin_context(request, **extra):
     """Shared permission and dynamic navigation badge context for every administration page."""
     try:
@@ -135,6 +147,7 @@ def admin_context(request, **extra):
         'active_orders_count': active_orders_count,
         'live_pickup_enabled': True,
         'live_invoice_enabled': True,
+        'query_string': build_query_string(request, 'page'),
         **extra,
     }
 
@@ -528,7 +541,8 @@ def page_view(request, page_name):
         blocked_count = UserProfile.objects.filter(account_status='Blocked').count()
         cities = list(UserProfile.objects.exclude(city__isnull=True).exclude(city='').values_list('city', flat=True).distinct())
 
-        paginator = Paginator(users_qs, 15)
+        page_size = int(request.GET.get('page_size', 10))
+        paginator = Paginator(users_qs, page_size)
         page_obj = paginator.get_page(page_num)
 
         ctx = admin_context(
@@ -654,7 +668,8 @@ def page_view(request, page_name):
         cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
         categories = list(ScrapCategory.objects.filter(is_active=True).values_list('name', flat=True).distinct())
 
-        paginator = Paginator(vendors_qs, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(vendors_qs, page_size)
         page_obj = paginator.get_page(page_num)
 
         ctx = admin_context(
@@ -732,10 +747,17 @@ def page_view(request, page_name):
                 Q(shop_name__icontains=q) | Q(owner_name__icontains=q) | Q(city__icontains=q) | Q(user__username__icontains=q)
             )
 
+        page_num = request.GET.get('page', 1)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(pending_vendors, page_size)
+        page_obj = paginator.get_page(page_num)
+
         ctx = admin_context(
             request,
             page_name=clean_name,
-            pending_vendors=pending_vendors,
+            pending_vendors=page_obj.object_list,
+            page_obj=page_obj,
+            paginator=paginator,
             pending_count=pending_vendors.count(),
             current_q=q,
         )
@@ -744,10 +766,19 @@ def page_view(request, page_name):
     # 6. CATEGORIES & RATES
     if clean_name == 'categories':
         categories = ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name')
+        page_num = request.GET.get('page', 1)
+        page_size = int(request.GET.get('page_size', 6))
+        cat_paginator = Paginator(categories, page_size)
+        cat_page_obj = cat_paginator.get_page(page_num)
+
         ctx = admin_context(
             request,
             page_name=clean_name,
-            categories=categories,
+            categories=cat_page_obj.object_list,
+            page_obj=cat_page_obj,
+            paginator=cat_paginator,
+            cat_page_obj=cat_page_obj,
+            cat_paginator=cat_paginator,
             total_categories=categories.count(),
         )
         return render(request, 'categories.html', ctx)
@@ -764,11 +795,40 @@ def page_view(request, page_name):
             z_count = ServiceZone.objects.filter(city__state=state_name).count()
             states.append({'name': state_name, 'cities_count': c_count, 'zones_count': z_count, 'status': 'Active'})
 
+        # Separate pagination for cities
+        city_page_size = int(request.GET.get('city_page_size', 5))
+        city_paginator = Paginator(cities, city_page_size)
+        city_page_obj = city_paginator.get_page(request.GET.get('city_page', 1))
+        city_query_string = build_query_string(request, 'city_page')
+
+        # Separate pagination for zones
+        zone_page_size = int(request.GET.get('zone_page_size', 8))
+        zone_paginator = Paginator(zones, zone_page_size)
+        zone_page_obj = zone_paginator.get_page(request.GET.get('zone_page', 1))
+        zone_query_string = build_query_string(request, 'zone_page')
+
+        # Separate pagination for vendor operating areas
+        vendor_areas_qs = VendorProfile.objects.all().select_related('user').prefetch_related('operating_zones', 'operating_zones__city').order_by('shop_name')
+        va_page_size = int(request.GET.get('vendor_page_size', 6))
+        va_paginator = Paginator(vendor_areas_qs, va_page_size)
+        va_page_obj = va_paginator.get_page(request.GET.get('vendor_page', 1))
+        va_query_string = build_query_string(request, 'vendor_page')
+
         ctx = admin_context(
             request,
             page_name=clean_name,
-            cities=cities,
-            zones=zones,
+            cities=city_page_obj.object_list,
+            city_page_obj=city_page_obj,
+            city_paginator=city_paginator,
+            city_query_string=city_query_string,
+            zones=zone_page_obj.object_list,
+            zone_page_obj=zone_page_obj,
+            zone_paginator=zone_paginator,
+            zone_query_string=zone_query_string,
+            vendor_areas=va_page_obj.object_list,
+            vendor_area_page_obj=va_page_obj,
+            vendor_area_paginator=va_paginator,
+            vendor_query_string=va_query_string,
             states=states,
             total_cities=cities.count(),
             total_zones=zones.count(),
@@ -833,7 +893,8 @@ def page_view(request, page_name):
         ref_sum = RefundRequest.objects.filter(status=RefundRequest.Status.SUCCEEDED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
         ref_cnt = RefundRequest.objects.filter(status=RefundRequest.Status.SUCCEEDED).count()
 
-        paginator = Paginator(payments_qs, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(payments_qs, page_size)
         page_obj = paginator.get_page(page_num)
 
         ctx = admin_context(
@@ -886,7 +947,8 @@ def page_view(request, page_name):
                 ])
             return response
 
-        paginator = Paginator(invoices_qs, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(invoices_qs, page_size)
         page_obj = paginator.get_page(page_num)
 
         ctx = admin_context(
@@ -958,7 +1020,8 @@ def page_view(request, page_name):
         pending_amount = settlement_orders_qs.filter(payout_status=PickupOrder.PayoutStatus.PENDING).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
         disbursed_amount = settlement_orders_qs.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
 
-        paginator = Paginator(settlement_orders_qs, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(settlement_orders_qs, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
         return render(request, 'settlements.html', admin_context(
@@ -1016,7 +1079,8 @@ def page_view(request, page_name):
         approved_refunds = RefundRequest.objects.filter(status__in=[RefundRequest.Status.APPROVED, RefundRequest.Status.SUCCEEDED]).count()
         rejected_refunds = RefundRequest.objects.filter(status=RefundRequest.Status.REJECTED).count()
 
-        paginator = Paginator(refunds_qs, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(refunds_qs, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
         return render(request, 'refunds.html', admin_context(
@@ -1063,7 +1127,8 @@ def page_view(request, page_name):
         pending_review_count = OrderReview.objects.filter(is_approved_by_admin=False).count()
         approved_review_count = OrderReview.objects.filter(is_approved_by_admin=True).count()
 
-        paginator = Paginator(reviews, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(reviews, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
         return render(request, 'ratings.html', admin_context(
@@ -1156,19 +1221,46 @@ def page_view(request, page_name):
                 writer.writerow([row['date'], row['reference'], row['order_id'], row['description'], row['debit'] or '', row['credit'] or '', row['balance']])
             return response
 
+        # Separate pagination for user ledger
+        user_page_size = int(request.GET.get('user_page_size', 6))
+        user_paginator = Paginator(user_ledger_entries, user_page_size)
+        user_page_obj = user_paginator.get_page(request.GET.get('user_page', 1))
+        user_query_string = build_query_string(request, 'user_page')
+
+        # Separate pagination for vendor ledger
+        vendor_page_size = int(request.GET.get('vendor_page_size', 6))
+        vendor_paginator = Paginator(vendor_ledger_entries, vendor_page_size)
+        vendor_page_obj = vendor_paginator.get_page(request.GET.get('vendor_page', 1))
+        vendor_query_string = build_query_string(request, 'vendor_page')
+
         return render(request, 'ledgers.html', admin_context(
             request,
             page_name=clean_name,
-            user_ledger_entries=user_ledger_entries,
-            vendor_ledger_entries=vendor_ledger_entries,
+            user_ledger_entries=user_page_obj.object_list,
+            user_page_obj=user_page_obj,
+            user_paginator=user_paginator,
+            user_query_string=user_query_string,
+            vendor_ledger_entries=vendor_page_obj.object_list,
+            vendor_page_obj=vendor_page_obj,
+            vendor_paginator=vendor_paginator,
+            vendor_query_string=vendor_query_string,
             current_party=party,
         ))
 
     # 15. CMS & CONTENT
     if clean_name == 'cms':
         documents = LegalDocument.objects.all().order_by('-published_at')
+        page_num = request.GET.get('page', 1)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(documents, page_size)
+        page_obj = paginator.get_page(page_num)
         return render(request, 'cms.html', admin_context(
-            request, page_name=clean_name, documents=documents,
+            request,
+            page_name=clean_name,
+            documents=page_obj.object_list,
+            page_obj=page_obj,
+            paginator=paginator,
+            total_documents=documents.count(),
         ))
 
     if clean_name == 'cms-edit':
@@ -1222,7 +1314,8 @@ def page_view(request, page_name):
                 ])
             return response
 
-        paginator = Paginator(pickup_requests, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(pickup_requests, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
         return render(request, 'requests.html', admin_context(
@@ -1313,7 +1406,8 @@ def page_view(request, page_name):
                 ])
             return response
 
-        paginator = Paginator(orders, 15)
+        page_size = int(request.GET.get('page_size', 8))
+        paginator = Paginator(orders, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
         return render(request, 'orders.html', admin_context(

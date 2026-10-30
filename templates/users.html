@@ -221,32 +221,7 @@
       </tr>
       {% endfor %}
       </tbody></table></div>
-      <div class="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:px-5">
-      <p class="text-[0.8125rem] text-slate-500">Showing <span class="font-semibold text-slate-700">{{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }}</span> of <span class="font-semibold text-slate-700">{{ paginator.count|default:0 }}</span> users</p>
-      {% if page_obj.has_other_pages %}
-      <nav class="bm-pagination" aria-label="Pagination">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}{% if current_city %}&city={{ current_city }}{% endif %}{% if current_from %}&from={{ current_from }}{% endif %}" class="bm-pagination-btn" aria-label="Previous page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m15 6-6 6 6 6"/></svg></a>
-        {% else %}
-          <button type="button" class="bm-pagination-btn disabled" disabled aria-label="Previous page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m15 6-6 6 6 6"/></svg></button>
-        {% endif %}
-
-        {% for num in paginator.page_range %}
-          {% if page_obj.number == num %}
-            <span class="bm-pagination-btn is-active" aria-current="page">{{ num }}</span>
-          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-            <a href="?page={{ num }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}{% if current_city %}&city={{ current_city }}{% endif %}{% if current_from %}&from={{ current_from }}{% endif %}" class="bm-pagination-btn">{{ num }}</a>
-          {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}{% if current_q %}&q={{ current_q }}{% endif %}{% if current_account %}&account={{ current_account }}{% endif %}{% if current_city %}&city={{ current_city }}{% endif %}{% if current_from %}&from={{ current_from }}{% endif %}" class="bm-pagination-btn" aria-label="Next page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></a>
-        {% else %}
-          <button type="button" class="bm-pagination-btn disabled" disabled aria-label="Next page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></button>
-        {% endif %}
-      </nav>
-      {% endif %}
-    </div>
+      {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="users" %}
     </div>
     </main>
     

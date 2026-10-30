@@ -213,16 +213,7 @@
 </tr>
 {% endfor %}
 </tbody></table></div>
-      <div class="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:px-5">
-      <p class="text-[0.8125rem] text-slate-500">Showing <span class="font-semibold text-slate-700">{{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }}</span> of <span class="font-semibold text-slate-700">{{ paginator.count|default:0 }}</span> vendors</p>
-      <nav class="bm-pagination" aria-label="Pagination">
-        <button type="button" class="bm-pagination-btn disabled" disabled aria-label="Previous page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m15 6-6 6 6 6"/></svg></button>
-        <span class="bm-pagination-btn is-active" aria-current="page">1</span>
-        <a href="vendors.html?page=2" class="bm-pagination-btn">2</a>
-        <a href="vendors.html?page=3" class="bm-pagination-btn">3</a>
-        <a href="vendors.html?page=2" class="bm-pagination-btn" aria-label="Next page"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></a>
-      </nav>
-    </div>
+      {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="vendors" %}
     </div>
     </main>
     

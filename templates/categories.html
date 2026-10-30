@@ -124,7 +124,9 @@
 {% empty %}
 <tr><td colspan="5" class="py-8 text-center text-slate-400">No categories configured yet.</td></tr>
 {% endfor %}
-</tbody></table></div></div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a category hides it from new requests and vendor selections. Existing orders keep their category.</p></div></section>
+</tbody></table></div>
+{% include "includes/pagination.html" with page_obj=cat_page_obj paginator=cat_paginator item_label="categories" %}
+</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a category hides it from new requests and vendor selections. Existing orders keep their category.</p></div></section>
     </div>
 
     <div class="mt-3">

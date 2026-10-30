@@ -77,7 +77,6 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
-    {% if live_pickup_enabled %}
       <div class="mb-3 flex items-center justify-between gap-3">
         <div><h1 class="text-[1.0625rem] font-bold text-slate-800">Pickup Requests &amp; Negotiation</h1><p class="text-[0.8125rem] text-slate-500">Live orders awaiting an agreed price.</p></div>
         <span class="rounded-full bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800">{{ request_count }} pending</span>
@@ -99,74 +98,8 @@
           {% empty %}<tr><td colspan="8" class="py-8 text-center text-slate-500">No pickup requests are awaiting negotiation.</td></tr>{% endfor %}
           </tbody>
         </table></div>
+        {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="pickup requests" %}
       </section>
-    {% else %}
-      
-    
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200">
-      <div class="bm-tabs border-b-0"><a class="bm-tab is-active" href="requests.html" aria-current="page">All open <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-slate-600">5</span></a><a class="bm-tab" href="requests.html?stage=review">Awaiting review <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-slate-600">2</span></a><a class="bm-tab" href="requests.html?stage=negotiation">In negotiation <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-slate-600">1</span></a><a class="bm-tab" href="requests.html?stage=agreement">Agreement recorded <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-slate-600">1</span></a><a class="bm-tab" href="requests.html?stage=closed">Rejected / cancelled <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-slate-600">1</span></a></div>
-      <div class="pb-1">
-        <a class="bm-btn-ghost bm-btn-sm" href="requests.html?export=csv"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg> Export</a>
-      </div>
-    </div>
-
-    <div class="mt-3">
-    <form class="bm-card" method="get" action="requests.html" role="search">
-      <div class="bm-card-bd">
-        <div class="row g-2.5 items-end">
-          <div class="col-12 col-md-6 col-xl-3"><div>
-      <label class="bm-label" for="rq-q">Search</label>
-      <input class="bm-input" id="rq-q" name="q" type="text" value="" placeholder="Request ID, user, phone, city" >
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="rq-stage">Stage</label>
-      <select class="bm-select" id="rq-stage" name="stage" ><option value="" selected>Any stage</option><option value="review">Awaiting review</option><option value="negotiation">In negotiation</option><option value="agreement">Agreement recorded</option><option value="closed">Rejected / cancelled</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="rq-city">City</label>
-      <select class="bm-select" id="rq-city" name="city" ><option value="" selected>All cities</option><option value="Mumbai">Mumbai</option><option value="Pune">Pune</option><option value="Bengaluru">Bengaluru</option><option value="Jaipur">Jaipur</option><option value="Delhi">Delhi</option><option value="Nagpur">Nagpur</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="rq-from">Created from</label>
-      <input class="bm-input" id="rq-from" name="from" type="date" value="" placeholder="" >
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="rq-to">Created to</label>
-      <input class="bm-input" id="rq-to" name="to" type="date" value="" placeholder="" >
-      
-    </div></div>
-        </div>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply filters</button>
-          <a class="bm-btn-ghost bm-btn-sm" href="requests.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg> Reset</a>
-          <span class="ml-auto text-[0.75rem] text-slate-500">Filters and pagination use GET; no data is fetched via JavaScript.</span>
-        </div>
-      </div>
-    </form></div>
-
-    <div class="mt-3 bm-card overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5 sm:px-5">
-        <p class="text-[0.8125rem] text-slate-500"><span class="font-semibold text-slate-700">5</span> requests in the current view</p>
-        <p class="text-[0.75rem] text-slate-500">Estimated amount is the user-declared GST-inclusive estimate, not an agreed price.</p>
-      </div>
-      <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1180px]">
-      <thead><tr><th scope="col" class="">Request</th><th scope="col" class="">User / address</th><th scope="col" class="">Categories</th><th scope="col" class="">Approx. weight</th><th scope="col" class="">Requested slot</th><th scope="col" class="text-right">Est. amount</th><th scope="col" class="">Stage</th><th scope="col" class="">Agreement</th><th scope="col" class=""></th></tr></thead><tbody><tr><td class=""><a class="bm-mono bm-link" href="request-detail.html">REQ-3101</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-24 10:05</div></td><td class=""><a class="bm-link" href="user-detail.html">Sana Kapoor</a><div class="mt-0.5 max-w-[15rem] text-[0.75rem] leading-snug text-slate-500">14, Rose Villa, Malviya Nagar, Jaipur 302017</div></td><td class=""><div class="max-w-[12rem]"><span class="text-[0.8125rem] font-medium text-slate-700">Paper &amp; Cardboard, Plastic</span><div class="text-[0.75rem] text-slate-500">Jaipur · Zone 2</div></div></td><td class=""><span class="font-semibold tabular-nums">60 kg</span></td><td class=""><span class="text-[0.8125rem]">2026-10-27, 10:00 – 13:00</span></td><td class=""><span class="font-semibold tabular-nums">₹1,150</span><div class="text-[0.75rem] text-slate-500">GST-incl. estimate</div></td><td class=""><span class="bm-badge bg-violet-50 text-violet-700 ring-violet-600/20"><span class="bm-dot"></span>In negotiation</span></td><td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>User reviewing</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="request-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Review</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="request-detail.html">REQ-3102</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-25 08:40</div></td><td class=""><a class="bm-link" href="user-detail.html">Arjun Rao</a><div class="mt-0.5 max-w-[15rem] text-[0.75rem] leading-snug text-slate-500">B-704, Indiranagar Residency, 12th Main, Bengaluru 560038</div></td><td class=""><div class="max-w-[12rem]"><span class="text-[0.8125rem] font-medium text-slate-700">E-Waste</span><div class="text-[0.75rem] text-slate-500">Bengaluru · Zone 1</div></div></td><td class=""><span class="font-semibold tabular-nums">12 kg</span></td><td class=""><span class="text-[0.8125rem]">2026-10-26, 15:00 – 18:00</span></td><td class=""><span class="font-semibold tabular-nums">₹1,800</span><div class="text-[0.75rem] text-slate-500">GST-incl. estimate</div></td><td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Awaiting review</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not started</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="request-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Review</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="request-detail.html">REQ-3103</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-23 14:20</div></td><td class=""><a class="bm-link" href="user-detail.html">Nikhil Menon</a><div class="mt-0.5 max-w-[15rem] text-[0.75rem] leading-snug text-slate-500">22, Sector 9, Nerul, Navi Mumbai 400706</div></td><td class=""><div class="max-w-[12rem]"><span class="text-[0.8125rem] font-medium text-slate-700">Iron &amp; Steel</span><div class="text-[0.75rem] text-slate-500">Mumbai · Zone 4</div></div></td><td class=""><span class="font-semibold tabular-nums">120 kg</span></td><td class=""><span class="text-[0.8125rem]">2026-10-27, 09:00 – 12:00</span></td><td class=""><span class="font-semibold tabular-nums">₹8,400</span><div class="text-[0.75rem] text-slate-500">GST-incl. estimate</div></td><td class=""><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20"><span class="bm-dot"></span>Agreement recorded</span></td><td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Agreed – recorded by admin</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="request-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Review</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="request-detail.html">REQ-3104</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-25 07:55</div></td><td class=""><a class="bm-link" href="user-detail.html">Priya Deshmukh</a><div class="mt-0.5 max-w-[15rem] text-[0.75rem] leading-snug text-slate-500">Flat 9C, Lakeview Towers, Kalyani Nagar, Pune 411006</div></td><td class=""><div class="max-w-[12rem]"><span class="text-[0.8125rem] font-medium text-slate-700">Aluminium, Copper</span><div class="text-[0.75rem] text-slate-500">Pune · Zone 3</div></div></td><td class=""><span class="font-semibold tabular-nums">28 kg</span></td><td class=""><span class="text-[0.8125rem]">2026-10-28, 11:00 – 14:00</span></td><td class=""><span class="font-semibold tabular-nums">₹5,200</span><div class="text-[0.75rem] text-slate-500">GST-incl. estimate</div></td><td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Awaiting review</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not started</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="request-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Review</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="request-detail.html">REQ-3105</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-22 09:30</div></td><td class=""><a class="bm-link" href="user-detail.html">Rohit Bansal</a><div class="mt-0.5 max-w-[15rem] text-[0.75rem] leading-snug text-slate-500">7, Ashok Vihar Phase 2, Delhi 110052</div></td><td class=""><div class="max-w-[12rem]"><span class="text-[0.8125rem] font-medium text-slate-700">Battery</span><div class="text-[0.75rem] text-slate-500">Delhi · Zone 1</div></div></td><td class=""><span class="font-semibold tabular-nums">45 kg</span></td><td class=""><span class="text-[0.8125rem]">2026-10-26, 10:00 – 12:00</span></td><td class=""><span class="font-semibold tabular-nums">₹2,600</span><div class="text-[0.75rem] text-slate-500">GST-incl. estimate</div></td><td class=""><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>Rejected</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not applicable</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="request-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Review</a></td></tr></tbody></table></div>
-      <div class="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:px-5">
-      <p class="text-[0.8125rem] text-slate-500">Showing <span class="font-semibold text-slate-700">1–5</span> of <span class="font-semibold text-slate-700">5</span> requests</p>
-      <nav class="flex items-center gap-1.5" aria-label="Pagination">
-        <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-200 px-2 text-[0.8125rem] text-slate-300"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></span>
-        <span aria-current="page" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-brand-600 bg-brand-600 px-2 text-[0.8125rem] font-semibold text-white">1</span><a href="requests.html?page=2" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-400">2</a>
-        <a href="requests.html?page=2" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></a>
-      </nav>
-    </div>
-    </div>
-
-    <div class="mt-3"><details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">GET /admin/pickup-requests</code> Request list should be a paginated server query: filters are GET parameters, ordering by created_at desc. Agreement/negotiation values come from the negotiation record, one per request.</p></div></details></div>
-    {% endif %}
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">

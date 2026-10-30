@@ -77,115 +77,27 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
-    {% if live_pickup_enabled %}
       <div class="mb-3 flex items-center justify-between gap-3"><div><h1 class="text-[1.0625rem] font-bold text-slate-800">Pickup Orders</h1><p class="text-[0.8125rem] text-slate-500">Live lifecycle, payment, and payout state.</p></div><span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-700">{{ order_count }} orders</span></div>
       <form class="bm-card mb-3 grid gap-3 p-4 sm:grid-cols-[1fr_240px_auto]" method="get">
         <div><label class="bm-label" for="live-order-q">Search</label><input class="bm-input" id="live-order-q" name="q" value="{{ request.GET.q }}" placeholder="Order, user, vendor, phone"></div>
         <div><label class="bm-label" for="live-order-status">Status</label><select class="bm-select" id="live-order-status" name="order_status"><option value="">Any status</option><option>NEGOTIATION_PENDING</option><option>SEARCHING_VENDOR</option><option>VENDOR_ASSIGNED</option><option>VENDOR_ON_THE_WAY</option><option>REACHED_LOCATION</option><option>PICKUP_IN_PROGRESS</option><option>INVOICE_GENERATED</option><option>COMPLETED</option><option>USER_REVIEW</option><option>USER_PAYOUT</option><option>CANCELLED</option></select></div>
         <button class="bm-btn-primary self-end" type="submit">Filter</button>
       </form>
-      <section class="bm-card overflow-hidden"><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1180px]">
-        <thead><tr><th>Order</th><th>User</th><th>Vendor</th><th>Category / zone</th><th>Weight</th><th class="text-right">Agreed</th><th>Status</th><th>OTP</th><th>Vendor payment</th><th>User payout</th><th></th></tr></thead>
-        <tbody>{% for order in pickup_orders %}<tr>
-          <td><a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a><div class="text-xs text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</div></td>
-          <td>{{ order.user.profile.full_name|default:order.user.username }}</td><td>{{ order.assigned_vendor_name|default:"Unassigned" }}<div class="text-xs text-slate-500">{{ order.assigned_vendor_phone|default:"" }}</div></td>
-          <td>{{ order.subcategory.name|default:"Unavailable" }}<div class="text-xs text-slate-500">{% if order.address %}{{ order.address.city|default:"Area" }}{% else %}Service Zone{% endif %}</div></td>
-          <td>{{ order.approx_weight }} kg<div class="text-xs text-slate-500">final: {{ order.final_weight|default:"—" }}</div></td><td class="text-right font-semibold">₹{{ order.final_agreed_price|default:order.approx_price }}</td>
-          <td><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">{{ order.get_status_display }}</span></td><td>{% if order.is_otp_verified %}<span class="text-emerald-700">Verified</span>{% else %}<span class="text-amber-700">Pending</span>{% endif %}</td>
-          <td>{% if order.invoice.payment_status == 'PAID' %}<span class="text-emerald-700">Paid</span>{% else %}<span class="text-slate-500">Pending</span>{% endif %}</td><td>{{ order.get_payout_status_display }}</td>
-          <td><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html?id={{ order.order_id }}">Open</a></td>
-        </tr>{% empty %}<tr><td colspan="11" class="py-8 text-center text-slate-500">No pickup orders match these filters.</td></tr>{% endfor %}</tbody>
-      </table></div></section>
-    {% else %}
-      
-    
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <h1 class="text-[1.0625rem] font-bold text-slate-800 tracking-tight">Orders</h1>
-        <span class="rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 px-2 py-0.5 text-[0.6875rem] font-bold">6 active</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" class="bm-btn-primary bm-btn-sm" data-modal-open="modalCreateOrder"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Create order</button>
-        <a class="bm-btn-ghost bm-btn-sm" href="orders.html?export=csv"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg> Export CSV</a>
-      </div>
-    </div>
-
-    <form class="bm-card" method="get" action="orders.html" role="search">
-      <div class="bm-card-bd">
-        <div class="row g-2.5 items-end">
-          <div class="col-12 col-md-6 col-xl-3"><div>
-      <label class="bm-label" for="o-q">Search</label>
-      <input class="bm-input" id="o-q" name="q" type="text" value="" placeholder="Order / user / vendor / phone" >
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-from">From</label>
-      <input class="bm-input" id="o-from" name="from" type="date" value="" placeholder="" >
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-to">To</label>
-      <input class="bm-input" id="o-to" name="to" type="date" value="" placeholder="" >
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-status">Order status</label>
-      <select class="bm-select" id="o-status" name="order_status" ><option value="" selected>Any</option><option value="negotiation">Negotiation</option><option value="published">Published – unaccepted</option><option value="assigned">Assigned</option><option value="on_the_way">On the way</option><option value="in_progress">Pickup in progress</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-pay">Vendor payment</label>
-      <select class="bm-select" id="o-pay" name="payment_status" ><option value="" selected>Any</option><option value="pending">Pending</option><option value="successful">Successful</option><option value="failed">Failed</option><option value="refunded">Refunded</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-set">User settlement</label>
-      <select class="bm-select" id="o-set" name="settlement_status" ><option value="" selected>Any</option><option value="not_due">Not due</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="on_hold">On hold</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-city">City / zone</label>
-      <select class="bm-select" id="o-city" name="city" ><option value="" selected>All</option><option value="Mumbai – Zone 2">Mumbai – Zone 2</option><option value="Pune – Zone 3">Pune – Zone 3</option><option value="Bengaluru – Zone 1">Bengaluru – Zone 1</option><option value="Jaipur – Zone 2">Jaipur – Zone 2</option><option value="Nagpur – Zone 1">Nagpur – Zone 1</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-cat">Category</label>
-      <select class="bm-select" id="o-cat" name="category" ><option value="" selected>All</option><option value="Iron &amp; Steel">Iron &amp; Steel</option><option value="Aluminium">Aluminium</option><option value="Copper">Copper</option><option value="E-Waste">E-Waste</option><option value="Paper &amp; Cardboard">Paper &amp; Cardboard</option><option value="Plastic">Plastic</option></select>
-      
-    </div></div>
-          <div class="col-6 col-md-3 col-xl-2"><div>
-      <label class="bm-label" for="o-vendor">Vendor</label>
-      <select class="bm-select" id="o-vendor" name="vendor" ><option value="" selected>All</option><option value="GreenLoop Recycling">GreenLoop Recycling</option><option value="Sharma Scrap Traders">Sharma Scrap Traders</option><option value="Kumar Metal Works">Kumar Metal Works</option><option value="Unassigned">Unassigned</option></select>
-      
-    </div></div>
-        </div>
-        <div class="mt-3 flex flex-wrap items-center gap-2">
-          <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply filters</button>
-          <a class="bm-btn-ghost bm-btn-sm" href="orders.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg> Reset</a>
-          <label class="ml-2 flex items-center gap-1.5 text-[0.8125rem] text-slate-600"><input class="bm-check" type="checkbox" name="only_breached" value="1"> Only unaccepted past deadline</label>
-        </div>
-      </div>
-    </form>
-
-    <div class="mt-3 bm-card overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5 sm:px-5">
-        <p class="text-[0.8125rem] text-slate-600"><span class="font-semibold">6</span> orders · rows tinted when acceptance deadline was breached</p>
-        <div class="flex items-center gap-2"><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20">Acceptance deadline 12 h</span><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20">Arrival deadline 4 h</span></div>
-      </div>
-      <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1240px]">
-      <thead><tr><th scope="col" class="">Order</th><th scope="col" class="">User</th><th scope="col" class="">Vendor</th><th scope="col" class="">Category / zone</th><th scope="col" class="">Weight</th><th scope="col" class="text-right">Agreed</th><th scope="col" class="">Order status</th><th scope="col" class="">Vendor payment</th><th scope="col" class="">User settlement</th><th scope="col" class=""></th></tr></thead><tbody><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2051</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-25 09:12</div></td><td class=""><a class="bm-link" href="user-detail.html">Meera Iyer</a></td><td class=""><a class="bm-link" href="vendor-detail.html">Sharma Scrap Traders</a></td><td class=""><span class="text-[0.8125rem]">Iron &amp; Steel</span><div class="text-[0.75rem] text-slate-500">Pune · Zone 3</div></td><td class=""><span class="tabular-nums">48 kg</span><div class="text-[0.75rem] text-slate-500">final: —</div></td><td class=""><span class="font-semibold tabular-nums">₹4,250</span></td><td class=""><span class="bm-badge bg-teal-50 text-teal-700 ring-teal-600/20"><span class="bm-dot"></span>Pickup in progress</span></td><td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Pending</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2050</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-25 08:40</div></td><td class=""><a class="bm-link" href="user-detail.html">Arjun Rao</a></td><td class=""><span class="text-slate-400">Unassigned</span></td><td class=""><span class="text-[0.8125rem]">E-Waste</span><div class="text-[0.75rem] text-slate-500">Bengaluru · Zone 1</div></td><td class=""><span class="tabular-nums">12 kg</span><div class="text-[0.75rem] text-slate-500">final: —</div></td><td class=""><span class="font-semibold tabular-nums">₹1,800</span></td><td class=""><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Published – unaccepted</span><div class="mt-1"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20">Acceptance breached</span></div></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not applicable</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2049</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-24 16:05</div></td><td class=""><a class="bm-link" href="user-detail.html">Fatima Sheikh</a></td><td class=""><a class="bm-link" href="vendor-detail.html">GreenLoop Recycling</a></td><td class=""><span class="text-[0.8125rem]">Aluminium</span><div class="text-[0.75rem] text-slate-500">Mumbai · Zone 2</div></td><td class=""><span class="tabular-nums">32 kg</span><div class="text-[0.75rem] text-slate-500">final: 36 kg</div></td><td class=""><span class="font-semibold tabular-nums">₹6,300</span></td><td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Completed</span></td><td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Successful</span></td><td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2048</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-24 11:22</div></td><td class=""><a class="bm-link" href="user-detail.html">Vikram Nair</a></td><td class=""><a class="bm-link" href="vendor-detail.html">Kumar Metal Works</a></td><td class=""><span class="text-[0.8125rem]">Copper</span><div class="text-[0.75rem] text-slate-500">Nagpur · Zone 1</div></td><td class=""><span class="tabular-nums">10 kg</span><div class="text-[0.75rem] text-slate-500">final: 9 kg</div></td><td class=""><span class="font-semibold tabular-nums">₹7,900</span></td><td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Completed</span></td><td class=""><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>Failed</span></td><td class=""><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>Blocked – payment failed</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2047</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-24 10:05</div></td><td class=""><a class="bm-link" href="user-detail.html">Sana Kapoor</a></td><td class=""><span class="text-slate-400">Unassigned</span></td><td class=""><span class="text-[0.8125rem]">Paper &amp; Cardboard</span><div class="text-[0.75rem] text-slate-500">Jaipur · Zone 2</div></td><td class=""><span class="tabular-nums">60 kg</span><div class="text-[0.75rem] text-slate-500">final: —</div></td><td class=""><span class="font-semibold tabular-nums">—</span></td><td class=""><span class="bm-badge bg-violet-50 text-violet-700 ring-violet-600/20"><span class="bm-dot"></span>Negotiation</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not applicable</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr><tr><td class=""><a class="bm-mono bm-link" href="order-detail.html">ORD-2046</a><div class="mt-0.5 text-[0.75rem] text-slate-500">2026-10-23 18:30</div></td><td class=""><a class="bm-link" href="user-detail.html">Deepak Verma</a></td><td class=""><a class="bm-link" href="vendor-detail.html">Sharma Scrap Traders</a></td><td class=""><span class="text-[0.8125rem]">Iron &amp; Steel</span><div class="text-[0.75rem] text-slate-500">Pune · Zone 3</div></td><td class=""><span class="tabular-nums">22 kg</span><div class="text-[0.75rem] text-slate-500">final: —</div></td><td class=""><span class="font-semibold tabular-nums">₹2,050</span></td><td class=""><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20"><span class="bm-dot"></span>Assigned</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not started</span></td><td class=""><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span></td><td class=""><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> Open</a></td></tr></tbody></table></div>
-      <div class="flex flex-col items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:px-5">
-      <p class="text-[0.8125rem] text-slate-500">Showing <span class="font-semibold text-slate-700">1–6</span> of <span class="font-semibold text-slate-700">6</span> orders</p>
-      <nav class="flex items-center gap-1.5" aria-label="Pagination">
-        <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-200 px-2 text-[0.8125rem] text-slate-300"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></span>
-        <span aria-current="page" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-brand-600 bg-brand-600 px-2 text-[0.8125rem] font-semibold text-white">1</span><a href="orders.html?page=2" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-400">2</a><a href="orders.html?page=3" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-400">3</a>
-        <a href="orders.html?page=2" class="inline-flex h-8 min-w-8 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[0.8125rem] font-medium text-slate-600 hover:bg-slate-50 hover:border-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></a>
-      </nav>
-    </div>
-    </div>
-
-    <div class="mt-3"><details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">GET /admin/orders</code> List query must join order, vendor payment and settlement as separate aggregates — never derive one status from another.</p></div></details></div>
-    {% endif %}
+      <section class="bm-card overflow-hidden">
+        <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1180px]">
+          <thead><tr><th>Order</th><th>User</th><th>Vendor</th><th>Category / zone</th><th>Weight</th><th class="text-right">Agreed</th><th>Status</th><th>OTP</th><th>Vendor payment</th><th>User payout</th><th></th></tr></thead>
+          <tbody>{% for order in pickup_orders %}<tr>
+            <td><a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a><div class="text-xs text-slate-500">{{ order.created_at|date:"Y-m-d H:i" }}</div></td>
+            <td>{{ order.user.profile.full_name|default:order.user.username }}</td><td>{{ order.assigned_vendor_name|default:"Unassigned" }}<div class="text-xs text-slate-500">{{ order.assigned_vendor_phone|default:"" }}</div></td>
+            <td>{{ order.subcategory.name|default:"Unavailable" }}<div class="text-xs text-slate-500">{% if order.address %}{{ order.address.city|default:"Area" }}{% else %}Service Zone{% endif %}</div></td>
+            <td>{{ order.approx_weight }} kg<div class="text-xs text-slate-500">final: {{ order.final_weight|default:"—" }}</div></td><td class="text-right font-semibold">₹{{ order.final_agreed_price|default:order.approx_price }}</td>
+            <td><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">{{ order.get_status_display }}</span></td><td>{% if order.is_otp_verified %}<span class="text-emerald-700">Verified</span>{% else %}<span class="text-amber-700">Pending</span>{% endif %}</td>
+            <td>{% if order.invoice.payment_status == 'PAID' %}<span class="text-emerald-700">Paid</span>{% else %}<span class="text-slate-500">Pending</span>{% endif %}</td><td>{{ order.get_payout_status_display }}</td>
+            <td><a class="bm-btn-ghost bm-btn-sm" href="order-detail.html?id={{ order.order_id }}">Open</a></td>
+          </tr>{% empty %}<tr><td colspan="11" class="py-8 text-center text-slate-500">No pickup orders match these filters.</td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="orders" %}
+      </section>
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
