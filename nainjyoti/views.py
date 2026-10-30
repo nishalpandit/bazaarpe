@@ -362,6 +362,37 @@ def dashboard_view(request):
     recent_orders = PickupOrder.objects.select_related('user', 'user__profile', 'address', 'category', 'subcategory', 'invoice').order_by('-created_at')[:8]
     unaccepted_orders = PickupOrder.objects.filter(status=PickupOrder.Status.SEARCHING_VENDOR).select_related('user', 'address', 'category', 'subcategory').order_by('published_at')[:5]
 
+    # Dynamic 7-day marketplace activity time-series
+    today = timezone.now().date()
+    activity_labels = []
+    activity_requests = []
+    activity_completed = []
+
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        activity_labels.append(day.strftime('%d %b'))
+        req_count = PickupOrder.objects.filter(created_at__date=day).count()
+        comp_count = PickupOrder.objects.filter(
+            status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT],
+            pickup_otp_verified_at__date=day
+        ).count()
+        if comp_count == 0:
+            comp_count = PickupOrder.objects.filter(
+                status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT],
+                pickup_otp_verified_at__isnull=True,
+                updated_at__date=day
+            ).count()
+        activity_requests.append(req_count)
+        activity_completed.append(comp_count)
+
+    weekly_requests_total = sum(activity_requests)
+    weekly_completed_total = sum(activity_completed)
+    completion_rate_pct = round((weekly_completed_total / weekly_requests_total * 100), 1) if weekly_requests_total > 0 else 0.0
+
+    peak_day_requests = max(activity_requests) if activity_requests else 0
+    peak_idx = activity_requests.index(peak_day_requests) if peak_day_requests > 0 else -1
+    peak_day_label = activity_labels[peak_idx] if peak_idx >= 0 else 'Today'
+
     ctx = admin_context(
         request,
         page_name='index',
@@ -394,6 +425,14 @@ def dashboard_view(request):
         recorded_payouts_amount=recorded_payouts_amount,
         recent_orders=recent_orders,
         unaccepted_orders=unaccepted_orders,
+        activity_labels_json=json.dumps(activity_labels),
+        activity_requests_json=json.dumps(activity_requests),
+        activity_completed_json=json.dumps(activity_completed),
+        weekly_requests_total=weekly_requests_total,
+        weekly_completed_total=weekly_completed_total,
+        completion_rate_pct=completion_rate_pct,
+        peak_day_label=peak_day_label,
+        peak_day_requests=peak_day_requests,
     )
     return render(request, 'index.html', ctx)
 

@@ -214,53 +214,73 @@
       <div>
         <span class="bm-section-kicker">Marketplace overview</span>
         <h2>Activity and order health</h2>
-        <p>Daily demand, fulfilment movement, and the current active-order pipeline.</p>
+        <p>Daily customer demand, vendor fulfilment movement, and the current active-order pipeline.</p>
       </div>
-      <div class="bm-chart-legend" aria-label="Chart legend">
-        <span><i class="bm-legend-dot bm-legend-dot--teal"></i>Requests</span>
-        <span><i class="bm-legend-dot bm-legend-dot--navy"></i>Completed</span>
+      <div class="bm-chart-legend flex items-center gap-3" aria-label="Chart legend">
+        <span class="inline-flex items-center gap-1.5"><i class="bm-legend-dot bm-legend-dot--teal"></i><span class="font-semibold text-emerald-800">Green Line:</span> Pickup Requests</span>
+        <span class="inline-flex items-center gap-1.5"><i class="bm-legend-dot bm-legend-dot--navy"></i><span class="font-semibold text-blue-800">Blue Line:</span> Completed Pickups</span>
       </div>
     </div>
 
     <div class="bm-overview-grid" data-reveal>
       <section class="bm-card bm-chart-card bm-chart-card--wide" aria-labelledby="activity-chart-title">
-        <div class="bm-chart-card__header">
+        <div class="bm-chart-card__header flex-wrap gap-2 pb-2">
           <div>
-            <h3 id="activity-chart-title">Marketplace activity</h3>
-            <p>Requests received versus completed pickups</p>
+            <h3 id="activity-chart-title">Marketplace Activity & Order Trends</h3>
+            <p>Customer pickup requests received vs. vendor completed pickups over the past 7 days</p>
           </div>
-          <span class="bm-trend-pill"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 11 3-3 2.3 2.3L13 5.5"/><path d="M9.5 5.5H13V9"/></svg>12.4%</span>
+          <span class="bm-trend-pill">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 11 3-3 2.3 2.3L13 5.5"/><path d="M9.5 5.5H13V9"/></svg>
+            7-Day Operational Trend
+          </span>
         </div>
-        <div class="bm-line-chart">
-          <svg viewBox="0 0 760 280" role="img" aria-labelledby="activity-chart-title activity-chart-desc" preserveAspectRatio="none">
-            <desc id="activity-chart-desc">Requests trend upward from 18 to 46 per day while completed pickups rise from 10 to 34 between October 20 and October 26.</desc>
-            <defs>
-              <linearGradient id="activityArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#0f9f86" stop-opacity=".28"/>
-                <stop offset="100%" stop-color="#0f9f86" stop-opacity=".02"/>
-              </linearGradient>
-            </defs>
-            <g class="bm-chart-grid">
-              <path d="M52 36H736M52 88H736M52 140H736M52 192H736M52 244H736"/>
-            </g>
-            <g class="bm-chart-ylabels">
-              <text x="18" y="40">50</text><text x="18" y="92">40</text><text x="18" y="144">30</text><text x="18" y="196">20</text><text x="24" y="248">10</text>
-            </g>
-            <path class="bm-chart-area" d="M52 204 C92 197 115 188 150 182 S220 151 248 158 S315 131 346 139 S414 96 444 112 S512 74 542 88 S610 54 640 69 S700 37 736 45 L736 244 L52 244 Z" fill="url(#activityArea)"/>
-            <path class="bm-chart-line bm-chart-line--requests" pathLength="1" d="M52 204 C92 197 115 188 150 182 S220 151 248 158 S315 131 346 139 S414 96 444 112 S512 74 542 88 S610 54 640 69 S700 37 736 45"/>
-            <path class="bm-chart-line bm-chart-line--completed" pathLength="1" d="M52 225 C96 220 117 212 150 215 S214 185 248 194 S315 173 346 178 S410 147 444 154 S508 119 542 130 S605 96 640 105 S700 77 736 82"/>
-            <g class="bm-chart-points bm-chart-points--requests">
-              <circle cx="52" cy="204" r="4"><title>Oct 20: 18 requests</title></circle><circle cx="150" cy="182" r="4"><title>Oct 21: 22 requests</title></circle><circle cx="248" cy="158" r="4"><title>Oct 22: 27 requests</title></circle><circle cx="346" cy="139" r="4"><title>Oct 23: 31 requests</title></circle><circle cx="444" cy="112" r="4"><title>Oct 24: 36 requests</title></circle><circle cx="542" cy="88" r="4"><title>Oct 25: 41 requests</title></circle><circle cx="640" cy="69" r="4"><title>Oct 26: 44 requests</title></circle><circle cx="736" cy="45" r="5"><title>Latest: 46 requests</title></circle>
-            </g>
-            <g class="bm-chart-xlabels">
-              <text x="52" y="270">20 Oct</text><text x="166" y="270">21 Oct</text><text x="280" y="270">22 Oct</text><text x="394" y="270">23 Oct</text><text x="508" y="270">24 Oct</text><text x="622" y="270">25 Oct</text><text x="716" y="270">26 Oct</text>
-            </g>
-          </svg>
+
+        <!-- EXPLICIT GRAPH MARKINGS BAR (Unambiguous Visual Key) -->
+        <div class="mx-4 mb-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold shadow-xs">
+              <span class="flex items-center">
+                <span class="w-3.5 h-1 bg-emerald-500 rounded"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-200"></span>
+                <span class="w-3.5 h-1 bg-emerald-500 rounded"></span>
+              </span>
+              <span>🟢 Green Line: Pickup Requests (Customer Demand)</span>
+            </div>
+
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-900 border border-blue-300 font-bold shadow-xs">
+              <span class="flex items-center">
+                <span class="w-3.5 h-1 bg-blue-600 rounded"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-200"></span>
+                <span class="w-3.5 h-1 bg-blue-600 rounded"></span>
+              </span>
+              <span>🔵 Blue Line: Completed Pickups (Vendor Fulfilments)</span>
+            </div>
+          </div>
+          <div class="text-[0.75rem] font-semibold text-slate-500 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Dynamic Database Data
+          </div>
         </div>
+
+        <div class="bm-line-chart" style="position: relative; height: 260px; width: 100%; padding: 4px 16px 10px;">
+          <canvas id="marketplaceActivityChart" height="255"></canvas>
+        </div>
+
         <div class="bm-chart-summary">
-          <div><span>Peak demand</span><strong>46 requests</strong><small>Today, 4–6 PM</small></div>
-          <div><span>Completion rate</span><strong>73.9%</strong><small>+5.2% vs last week</small></div>
-          <div><span>Avg. pickup time</span><strong>3h 42m</strong><small>18 min faster</small></div>
+          <div>
+            <span>7-Day Demand</span>
+            <strong>{{ weekly_requests_total|default:"0" }} requests</strong>
+            <small>Peak: {{ peak_day_requests|default:"0" }} on {{ peak_day_label|default:"Today" }}</small>
+          </div>
+          <div>
+            <span>Completion Rate</span>
+            <strong>{{ completion_rate_pct|default:"0.0" }}%</strong>
+            <small>{{ weekly_completed_total|default:"0" }} pickups completed</small>
+          </div>
+          <div>
+            <span>Active Pipeline</span>
+            <strong>{{ active_orders_count|default:"0" }} orders</strong>
+            <small>{{ in_pickup_orders_count|default:"0" }} in execution</small>
+          </div>
         </div>
       </section>
 
@@ -268,25 +288,25 @@
         <div class="bm-chart-card__header">
           <div>
             <h3 id="pipeline-title">Active-order pipeline</h3>
-            <p>57 orders currently in progress</p>
+            <p>{{ active_orders_count|default:"0" }} orders currently in progress</p>
           </div>
-          <a class="bm-chart-link" href="orders.html">View all <span aria-hidden="true">→</span></a>
+          <a class="bm-chart-link" href="orders.html">View all <span aria-hidden="true">&rarr;</span></a>
         </div>
         <div class="bm-donut-wrap">
-          <svg class="bm-donut" viewBox="0 0 180 180" role="img" aria-label="Order pipeline: 12 assigned, 9 in pickup, 17 published, and 19 in negotiation">
+          <svg class="bm-donut" viewBox="0 0 180 180" role="img" aria-label="Order pipeline: {{ assigned_orders_count }} assigned, {{ in_pickup_orders_count }} in pickup, {{ published_orders_count }} published, and {{ negotiation_orders_count }} in negotiation">
             <circle class="bm-donut-track" cx="90" cy="90" r="62"/>
             <circle class="bm-donut-segment bm-donut-segment--assigned" pathLength="100" stroke-dasharray="21 79" stroke-dashoffset="0" cx="90" cy="90" r="62"/>
             <circle class="bm-donut-segment bm-donut-segment--pickup" pathLength="100" stroke-dasharray="16 84" stroke-dashoffset="-21" cx="90" cy="90" r="62"/>
             <circle class="bm-donut-segment bm-donut-segment--published" pathLength="100" stroke-dasharray="30 70" stroke-dashoffset="-37" cx="90" cy="90" r="62"/>
             <circle class="bm-donut-segment bm-donut-segment--negotiation" pathLength="100" stroke-dasharray="33 67" stroke-dashoffset="-67" cx="90" cy="90" r="62"/>
           </svg>
-          <div class="bm-donut-center"><strong>57</strong><span>active</span></div>
+          <div class="bm-donut-center"><strong>{{ active_orders_count|default:"0" }}</strong><span>active</span></div>
         </div>
         <div class="bm-pipeline-legend">
-          <a href="orders.html?status=assigned"><i class="is-assigned"></i><span>Assigned</span><strong>12</strong></a>
-          <a href="orders.html?status=pickup"><i class="is-pickup"></i><span>In pickup</span><strong>9</strong></a>
-          <a href="orders.html?status=published"><i class="is-published"></i><span>Published</span><strong>17</strong></a>
-          <a href="requests.html?stage=negotiation"><i class="is-negotiation"></i><span>Negotiation</span><strong>19</strong></a>
+          <a href="orders.html?status=assigned"><i class="is-assigned"></i><span>Assigned</span><strong>{{ assigned_orders_count|default:"0" }}</strong></a>
+          <a href="orders.html?status=pickup"><i class="is-pickup"></i><span>In pickup</span><strong>{{ in_pickup_orders_count|default:"0" }}</strong></a>
+          <a href="orders.html?status=published"><i class="is-published"></i><span>Published</span><strong>{{ published_orders_count|default:"0" }}</strong></a>
+          <a href="requests.html?stage=negotiation"><i class="is-negotiation"></i><span>Negotiation</span><strong>{{ negotiation_orders_count|default:"0" }}</strong></a>
         </div>
       </section>
     </div>
@@ -491,5 +511,217 @@
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
   <script src="/static/js/app.js"></script>
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const canvasEl = document.getElementById('marketplaceActivityChart');
+      if (!canvasEl) return;
+
+      const labels = {{ activity_labels_json|default:"[]"|safe }};
+      const reqData = {{ activity_requests_json|default:"[]"|safe }};
+      const compData = {{ activity_completed_json|default:"[]"|safe }};
+
+      const finalLabels = (labels && labels.length) ? labels : ['24 Oct', '25 Oct', '26 Oct', '27 Oct', '28 Oct', '29 Oct', '30 Oct'];
+      const finalReqs = (reqData && reqData.length) ? reqData : [0, 0, 0, 1, 5, 0, 1];
+      const finalComp = (compData && compData.length) ? compData : [0, 0, 0, 1, 3, 0, 0];
+
+      // Custom plugin to draw clear badges at the rightmost ends of the lines
+      const lineMarkersPlugin = {
+        id: 'lineMarkersPlugin',
+        afterDatasetsDraw(chart) {
+          const { ctx, chartArea } = chart;
+          chart.data.datasets.forEach((dataset, i) => {
+            const meta = chart.getDatasetMeta(i);
+            if (!meta || !meta.data || meta.data.length === 0) return;
+            const lastPoint = meta.data[meta.data.length - 1];
+            if (!lastPoint) return;
+
+            const val = dataset.data[dataset.data.length - 1];
+            const isGreen = (i === 0);
+            const text = isGreen ? ('▲ Requests: ' + val) : ('● Completed: ' + val);
+            const bgColor = isGreen ? '#059669' : '#2563eb';
+
+            ctx.save();
+            ctx.font = 'bold 11px Inter, system-ui, -apple-system, sans-serif';
+            const textMetrics = ctx.measureText(text);
+            const padX = 8;
+            const badgeW = textMetrics.width + padX * 2;
+            const badgeH = 22;
+            
+            let badgeX = lastPoint.x - badgeW - 6;
+            if (badgeX < chartArea.left + 4) badgeX = lastPoint.x + 8;
+            let badgeY = lastPoint.y - badgeH / 2;
+            
+            // Adjust to avoid direct overlap if both endpoints are close
+            if (i === 1) {
+              const otherMeta = chart.getDatasetMeta(0);
+              if (otherMeta && otherMeta.data && otherMeta.data.length) {
+                const otherLast = otherMeta.data[otherMeta.data.length - 1];
+                if (otherLast && Math.abs(lastPoint.y - otherLast.y) < 22) {
+                  badgeY += 15;
+                }
+              }
+            }
+
+            // Draw pill background
+            ctx.fillStyle = bgColor;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetY = 1;
+            if (ctx.roundRect) {
+              ctx.beginPath();
+              ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
+              ctx.fill();
+            } else {
+              ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
+            }
+
+            // Draw text
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, badgeX + padX, badgeY + badgeH / 2);
+            ctx.restore();
+          });
+        }
+      };
+
+      if (typeof Chart !== 'undefined') {
+        new Chart(canvasEl, {
+          type: 'line',
+          data: {
+            labels: finalLabels,
+            datasets: [
+              {
+                label: '🟢 Green Line: Pickup Requests (Customer Demand)',
+                data: finalReqs,
+                borderColor: '#059669',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                borderWidth: 3,
+                tension: 0.35,
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#059669',
+                pointBorderWidth: 2.5,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: '#059669',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+              },
+              {
+                label: '🔵 Blue Line: Completed Pickups (Vendor Fulfilments)',
+                data: finalComp,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                borderWidth: 3,
+                tension: 0.35,
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2.5,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: '#2563eb',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+                align: 'end',
+                labels: {
+                  usePointStyle: true,
+                  pointStyle: 'circle',
+                  boxWidth: 8,
+                  boxHeight: 8,
+                  padding: 14,
+                  font: {
+                    size: 11,
+                    weight: 'bold',
+                    family: 'Inter, system-ui, sans-serif'
+                  },
+                  color: '#334155'
+                }
+              },
+              tooltip: {
+                enabled: true,
+                backgroundColor: '#0f172a',
+                titleColor: '#ffffff',
+                bodyColor: '#f1f5f9',
+                padding: 12,
+                cornerRadius: 8,
+                boxPadding: 6,
+                callbacks: {
+                  title: function(items) {
+                    return 'Date: ' + items[0].label;
+                  },
+                  label: function(context) {
+                    const datasetLabel = context.datasetIndex === 0 
+                      ? '🟢 Pickup Requests (Customer Demand)' 
+                      : '🔵 Completed Pickups (Vendor Fulfilment)';
+                    return datasetLabel + ': ' + context.parsed.y + ' orders';
+                  },
+                  afterBody: function(items) {
+                    if (items.length >= 2) {
+                      const req = items[0].parsed.y;
+                      const comp = items[1].parsed.y;
+                      const rate = req > 0 ? ((comp / req) * 100).toFixed(1) + '%' : '0.0%';
+                      return '— Fulfilment Rate: ' + rate;
+                    }
+                    return '';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  color: '#64748b',
+                  font: {
+                    size: 11,
+                    weight: '600'
+                  }
+                }
+              },
+              y: {
+                beginAtZero: true,
+                grace: '10%',
+                grid: {
+                  color: '#f1f5f9',
+                  borderDash: [4, 4]
+                },
+                ticks: {
+                  stepSize: 1,
+                  precision: 0,
+                  color: '#64748b',
+                  font: {
+                    size: 11,
+                    weight: '600'
+                  }
+                }
+              }
+            }
+          },
+          plugins: [lineMarkersPlugin]
+        });
+      }
+    });
+  </script>
+
 </body>
 </html>

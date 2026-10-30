@@ -1011,6 +1011,12 @@ a.bm-card:hover {
   padding: 0 16px;
 }
 
+.bm-line-chart canvas {
+  display: block;
+  width: 100% !important;
+  height: 260px !important;
+}
+
 .bm-line-chart svg {
   display: block;
   width: 100%;
