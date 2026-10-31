@@ -1,75 +1,139 @@
 import os
 import sys
-import glob
+import traceback
 
-# 1. Add current project directory to sys.path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEBUG_LOG = os.path.join(CURRENT_DIR, 'passenger_debug.log')
+
+def write_debug(msg):
+    try:
+        with open(DEBUG_LOG, 'a', encoding='utf-8') as f:
+            import datetime
+            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            f.write(f"[{now}] {msg}\n")
+    except Exception:
+        pass
+
+write_debug("--- Passenger Startup Initiated ---")
+write_debug(f"Python executable: {sys.executable}")
+write_debug(f"Python version: {sys.version}")
+
+# Ensure project root is in sys.path
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-# 2. Automatically locate and add virtualenv site-packages to sys.path
-# Check local folders: env, venv, .env, .venv
-for venv_name in ['env', 'venv', '.env', '.venv']:
-    candidate_sp = glob.glob(os.path.join(CURRENT_DIR, venv_name, 'lib', 'python*', 'site-packages'))
-    for sp in candidate_sp:
-        if sp not in sys.path:
-            sys.path.insert(0, sp)
-
-# Check cPanel global virtualenv directory: ~/virtualenv/<app_name>/<py_ver>/lib/python*/site-packages
+# Dynamically locate this specific app's virtualenv in cPanel
+app_folder_name = os.path.basename(CURRENT_DIR)
 home_dir = os.path.expanduser('~')
-cpanel_sp = glob.glob(os.path.join(home_dir, 'virtualenv', '*', '*', 'lib', 'python*', 'site-packages'))
-for sp in cpanel_sp:
-    if sp not in sys.path:
-        sys.path.insert(0, sp)
+virtualenv_base = os.path.join(home_dir, 'virtualenv')
 
-# Also check site-packages of the active python interpreter
-if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
-    prefix_sp = glob.glob(os.path.join(sys.prefix, 'lib', 'python*', 'site-packages'))
-    for sp in prefix_sp:
-        if sp not in sys.path:
-            sys.path.insert(0, sp)
+if os.path.isdir(virtualenv_base):
+    for root, dirs, files in os.walk(virtualenv_base):
+        if os.path.basename(root) == 'site-packages':
+            if app_folder_name.lower() in root.lower() or 'bazaarpe' in root.lower():
+                if root not in sys.path:
+                    sys.path.insert(0, root)
+                    write_debug(f"Added virtualenv site-packages: {root}")
+
+# Also check for local virtualenv in CURRENT_DIR (e.g. venv, env)
+for v_name in ['venv', 'env', '.venv']:
+    local_sp = os.path.join(CURRENT_DIR, v_name, 'lib')
+    if os.path.isdir(local_sp):
+        for root, dirs, files in os.walk(local_sp):
+            if os.path.basename(root) == 'site-packages' and root not in sys.path:
+                sys.path.insert(0, root)
+                write_debug(f"Added local site-packages: {root}")
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'myproject.settings')
 
-# 3. Robust WSGI Application Loader with friendly error reporting for cPanel
-try:
-    from myproject.wsgi import application
-except Exception:
-    import traceback
-    error_traceback = traceback.format_exc()
+django_app = None
+init_error = None
 
-    def application(environ, start_response):
-        start_response('500 Internal Server Error', [('Content-Type', 'text/html; charset=utf-8')])
-        html = f"""<!DOCTYPE html>
+try:
+    from django.core.wsgi import get_wsgi_application
+    django_app = get_wsgi_application()
+    write_debug("Django WSGI application loaded successfully.")
+except Exception as e:
+    init_error = traceback.format_exc()
+    write_debug(f"Django Initialization Error:\n{init_error}")
+
+
+def application(environ, start_response):
+    """
+    WSGI Entry Point with guaranteed 200 OK error visualizer.
+    Prevents LiteSpeed/Passenger 'Incomplete response received from application'.
+    """
+    if init_error:
+        output = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <title>Bazaarpe - cPanel Startup Error</title>
     <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 30px; margin: 0; }}
-        .card {{ background: #1e293b; border-radius: 12px; padding: 28px; max-width: 900px; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #0b1120; color: #f8fafc; padding: 24px; margin: 0; }}
+        .card {{ background: #1e293b; border-radius: 12px; padding: 28px; max-width: 900px; margin: 20px auto; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid #334155; }}
         h1 {{ color: #f43f5e; font-size: 22px; margin-top: 0; }}
-        pre {{ background: #090d16; color: #38bdf8; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; font-family: monospace; border: 1px solid #1e293b; }}
-        .help {{ color: #94a3b8; font-size: 14px; margin-top: 20px; line-height: 1.6; border-top: 1px solid #334155; padding-top: 16px; }}
-        code {{ background: #334155; padding: 2px 6px; border-radius: 4px; color: #f1f5f9; }}
+        pre {{ background: #030712; color: #38bdf8; padding: 18px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; font-family: 'JetBrains Mono', Consolas, monospace; border: 1px solid #1e293b; }}
+        .meta {{ background: #0f172a; padding: 14px; border-radius: 8px; font-size: 12px; color: #94a3b8; margin-bottom: 20px; border: 1px solid #334155; }}
+        .help {{ color: #cbd5e1; font-size: 14px; line-height: 1.6; border-top: 1px solid #334155; padding-top: 18px; margin-top: 20px; }}
+        code {{ background: #334155; padding: 2px 6px; border-radius: 4px; color: #f1f5f9; font-size: 12px; }}
         ol {{ padding-left: 20px; }}
-        li {{ margin-bottom: 8px; }}
+        li {{ margin-bottom: 10px; }}
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>Bazaarpe Application Startup Error</h1>
-        <p>A Python exception occurred while initializing Django via Phusion Passenger:</p>
-        <pre>{error_traceback}</pre>
+        <h1>Bazaarpe Application Initialization Error</h1>
+        <div class="meta">
+            <strong>Python:</strong> {sys.version.split()[0]} ({sys.executable})<br>
+            <strong>App Directory:</strong> {CURRENT_DIR}<br>
+            <strong>Log File:</strong> {DEBUG_LOG}
+        </div>
+        <p>Django failed to initialize with the following exception:</p>
+        <pre>{init_error}</pre>
         <div class="help">
-            <strong>How to fix this in cPanel:</strong>
+            <strong>How to resolve this in cPanel:</strong>
             <ol>
-                <li><strong>Install Dependencies</strong>: In cPanel, go to <em>Setup Python App</em> &rarr; Click your app &rarr; in <em>Configuration files</em> enter <code>requirements.txt</code> &rarr; Click <strong>Run Pip Install</strong>.</li>
-                <li><strong>Python Version</strong>: Ensure your Python version is <strong>3.10, 3.11, or 3.12</strong> (Django 5 requires Python 3.10+).</li>
-                <li><strong>Permissions</strong>: Ensure <code>db.sqlite3</code> and the application directory have write permissions.</li>
+                <li><strong>Install Requirements</strong>: In cPanel, open <em>Setup Python App</em> &rarr; Click your application &rarr; In <em>Configuration files</em> add <code>requirements.txt</code> &rarr; Click <strong>Run Pip Install</strong>.</li>
+                <li><strong>Check Python Version</strong>: Ensure your Python version is <strong>3.10, 3.11, or 3.12</strong> (Django 5 requires Python 3.10+).</li>
+                <li><strong>Run Migrations</strong>: Open the cPanel Terminal and run <code>python manage.py migrate</code>.</li>
+                <li><strong>Database File Permissions</strong>: Ensure <code>db.sqlite3</code> and the application directory have write permissions (<code>chmod 664 db.sqlite3</code>).</li>
             </ol>
         </div>
     </div>
 </body>
-</html>"""
-        return [html.encode('utf-8')]
+</html>""".encode('utf-8')
+        start_response('200 OK', [
+            ('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))
+        ])
+        return [output]
+
+    try:
+        return django_app(environ, start_response)
+    except Exception:
+        err_msg = traceback.format_exc()
+        write_debug(f"Request Runtime Error:\n{err_msg}")
+        output = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bazaarpe - Request Error</title>
+    <style>
+        body {{ font-family: -apple-system, sans-serif; background: #0b1120; color: #f8fafc; padding: 24px; }}
+        .card {{ background: #1e293b; border-radius: 12px; padding: 28px; max-width: 900px; margin: 20px auto; border: 1px solid #334155; }}
+        pre {{ background: #030712; color: #f43f5e; padding: 18px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.6; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1 style="color:#f43f5e; margin-top:0;">Request Runtime Error</h1>
+        <pre>{err_msg}</pre>
+    </div>
+</body>
+</html>""".encode('utf-8')
+        start_response('200 OK', [
+            ('Content-Type', 'text/html; charset=utf-8'),
+            ('Content-Length', str(len(output)))
+        ])
+        return [output]
