@@ -26,3 +26,6 @@ audit_http_test.sqlite3
 
 # Static collection for production
 staticfiles/
+
+# Archives
+*.zip
