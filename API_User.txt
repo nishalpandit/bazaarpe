@@ -1,16 +1,39 @@
-API for Send User OTP
+API for Send User Login OTP
 url: http://127.0.0.1:8000/api/user/send-otp/
 method: POST
 
-params:
-mobile_number: 9876543210
+headers:
+Content-Type: application/json
 
-response:
+params (fields):
+mobile_number: 9876543210 (required, 10 digits)
+
+Postman raw JSON body:
+{
+  "mobile_number": "9876543210"
+}
+
+response (if registered):
 {
   "success": true,
-  "message": "OTP sent successfully",
-  "action": "REGISTER",
+  "message": "OTP sent for login to 9876543210",
+  "mobile_number": "9876543210",
+  "phone": "9876543210",
+  "is_registered": true,
+  "action": "LOGIN",
+  "expires_in_seconds": 600,
+  "resend_after_seconds": 60,
   "otp_debug": "123456"
+}
+
+response (if not registered):
+{
+  "success": false,
+  "message": "Mobile number is not registered. Please register first.",
+  "mobile_number": "9876543210",
+  "phone": "9876543210",
+  "is_registered": false,
+  "action": "REGISTER"
 }
 
 API for Register User
@@ -21,29 +44,21 @@ headers:
 Content-Type: application/json
 
 params (fields):
-full_name: Ramesh Patel (required, string)
-mobile_number: 9876543210 (required, 10 digits)
-email: ramesh@example.com (optional, string)
+full_name: Ashish Prabhakar (required, string)
+mobile_number: 9876543215 (required, 10 digits)
+email: ashish@example.com (optional, string)
 address: Plot 45, Sector 18 (required, string)
 pincode: 400703 (required, 6 digits)
-city: Bengaluru (optional, defaults to "Bengaluru")
-otp: 123456 (required, 6 digits received via send-otp)
-accept_privacy: true (required, boolean: true)
-accept_terms: true (required, boolean: true)
-privacy_version: 2026.1 (optional, string: automatically binds to active system version)
-terms_version: 2026.1 (optional, string: automatically binds to active system version)
+city: Mumbai (optional, defaults to "Bengaluru")
 
 Postman raw JSON body:
 {
-  "full_name": "Ramesh Patel",
-  "mobile_number": "9876543210",
-  "email": "ramesh@example.com",
+  "full_name": "Ashish Prabhakar",
+  "mobile_number": "9876543215",
+  "email": "ashish@example.com",
   "address": "Plot 45, Sector 18",
   "pincode": "400703",
-  "city": "Bengaluru",
-  "otp": "123456",
-  "accept_privacy": true,
-  "accept_terms": true
+  "city": "Mumbai"
 }
 
 response:
@@ -53,10 +68,10 @@ response:
   "is_registered": true,
   "token": "authentication-token",
   "user": {
-    "full_name": "Ramesh Patel",
-    "mobile_number": "9876543210",
-    "email": "ramesh@example.com",
-    "city": "Bengaluru"
+    "full_name": "Ashish Prabhakar",
+    "mobile_number": "9876543215",
+    "email": "ashish@example.com",
+    "city": "Mumbai"
   }
 }
 

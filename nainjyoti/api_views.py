@@ -185,20 +185,14 @@ def send_otp_view(request):
             payload['otp_debug'] = otp_rec.otp
         return Response(payload, status=status.HTTP_200_OK)
     else:
-        otp_rec = OTPVerification.generate_otp_for_phone(phone, purpose='REGISTER')
-        payload = {
-            'success': True,
-            'message': f"Mobile number not registered. OTP sent for registration to {phone}",
+        return Response({
+            'success': False,
+            'message': 'Mobile number is not registered. Please register first.',
             'mobile_number': phone,
             'phone': phone,
             'is_registered': False,
             'action': 'REGISTER',
-            'expires_in_seconds': 600,
-            'resend_after_seconds': OTP_COOLDOWN_SECONDS,
-        }
-        if settings.DEBUG:
-            payload['otp_debug'] = otp_rec.otp
-        return Response(payload, status=status.HTTP_200_OK)
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['POST'])
@@ -226,6 +220,22 @@ def verify_otp_login_view(request):
             'success': False,
             'message': 'Please provide a valid 6-digit OTP.'
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check user registration status first
+    profile = UserProfile.objects.filter(phone=phone).first()
+    if not profile:
+        return Response({
+            'success': False,
+            'message': 'Mobile number is not registered. Please complete registration.',
+            'is_registered': False,
+            'action': 'REGISTER'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    if profile.account_status in ('Blocked', 'Suspended'):
+        return Response({
+            'success': False,
+            'message': 'Your account has been deactivated by administrator. Please contact support.'
+        }, status=status.HTTP_403_FORBIDDEN)
 
     # Verify OTP
     otp_rec = OTPVerification.objects.filter(phone=phone, is_verified=False).exclude(purpose='CHANGE_PHONE').order_by('-created_at').first()
@@ -257,22 +267,6 @@ def verify_otp_login_view(request):
             'attempts_remaining': max(0, OTP_MAX_ATTEMPTS - otp_rec.attempts),
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Check user registration status
-    profile = UserProfile.objects.filter(phone=phone).first()
-    if not profile:
-        return Response({
-            'success': False,
-            'message': 'Mobile number is not registered. Please complete registration.',
-            'is_registered': False,
-            'action': 'REGISTER'
-        }, status=status.HTTP_404_NOT_FOUND)
-
-    if profile.account_status in ('Blocked', 'Suspended'):
-        return Response({
-            'success': False,
-            'message': 'Your account has been deactivated by administrator. Please contact support.'
-        }, status=status.HTTP_403_FORBIDDEN)
-
     # Success
     otp_rec.is_verified = True
     otp_rec.save(update_fields=['is_verified'])
@@ -297,20 +291,15 @@ def verify_otp_login_view(request):
 def register_user_view(request):
     """
     POST /api/user/register/
-    Registers a new user with OTP verification.
+    Registers a new user (no OTP or terms validation required).
     Required credentials:
       - full_name (required, string)
       - mobile_number or phone (required, 10 digits)
       - address (required, string)
       - pincode (required, 6 digits)
-      - otp (required, 6 digits)
-      - accept_privacy (required, boolean `true`)
-      - accept_terms (required, boolean `true`)
     Optional / Defaults:
       - email (optional, string)
       - city (optional, string, defaults to 'Bengaluru')
-      - privacy_version (optional, defaults to active policy version e.g. "2026.1")
-      - terms_version (optional, defaults to active terms version e.g. "2026.1")
     """
     data = request.data
     full_name = str(data.get('full_name', '')).strip()
@@ -323,7 +312,7 @@ def register_user_view(request):
     otp_code = str(data.get('otp', '')).strip()
     legal_docs = active_legal_documents()
 
-    # Validation
+    # Validation: Only basic profile fields
     errors = {}
     if not full_name:
         errors['full_name'] = 'Full name is required.'
@@ -333,26 +322,6 @@ def register_user_view(request):
         errors['address'] = 'Address is required.'
     if not pincode or len(pincode) < 5:
         errors['pincode'] = 'A valid postal pincode is required.'
-    if not otp_code or len(otp_code) != 6:
-        errors['otp'] = 'A valid 6-digit OTP is required.'
-    if not truthy(data.get('accept_privacy')):
-        errors['accept_privacy'] = 'Privacy Policy acceptance is required.'
-    if not truthy(data.get('accept_terms')):
-        errors['accept_terms'] = 'Terms acceptance is required.'
-    for doc_type, field_name in (
-        (LegalDocument.DocumentType.PRIVACY, 'privacy_version'),
-        (LegalDocument.DocumentType.TERMS, 'terms_version'),
-    ):
-        document = legal_docs.get(doc_type)
-        if not document:
-            continue
-        provided_version = str(data.get(field_name, '')).strip()
-        # If client passed accept_privacy/accept_terms: true without version, default to active version
-        if not provided_version:
-            continue
-        active_versions = set(LegalDocument.objects.filter(document_type=doc_type, is_active=True).values_list('version', flat=True))
-        if provided_version != document.version and provided_version not in active_versions:
-            errors[field_name] = f'Current version {document.version} must be accepted.'
 
     if errors:
         return Response({
@@ -370,35 +339,12 @@ def register_user_view(request):
             'action': 'LOGIN'
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Verify OTP
-    otp_rec = OTPVerification.objects.filter(phone=phone, purpose='REGISTER', is_verified=False).order_by('-created_at').first()
-
-    if not otp_rec:
-        return Response({
-            'success': False,
-            'message': 'No OTP requested for this mobile number. Please send OTP first.'
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    if otp_rec.is_expired:
-        return Response({
-            'success': False,
-            'message': 'OTP has expired. Please request a new OTP.'
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    if otp_rec.attempts >= OTP_MAX_ATTEMPTS:
-        return Response({
-            'success': False,
-            'message': 'OTP attempt limit reached. Request a new OTP after the cooldown.',
-        }, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
-    if otp_rec.otp != otp_code:
-        otp_rec.attempts += 1
-        otp_rec.save(update_fields=['attempts'])
-        return Response({
-            'success': False,
-            'message': 'Invalid OTP code. Please check and try again.',
-            'attempts_remaining': max(0, OTP_MAX_ATTEMPTS - otp_rec.attempts),
-        }, status=status.HTTP_400_BAD_REQUEST)
+    # If an OTP was optionally provided, mark it verified
+    if otp_code:
+        otp_rec = OTPVerification.objects.filter(phone=phone, is_verified=False).order_by('-created_at').first()
+        if otp_rec and otp_rec.otp == otp_code:
+            otp_rec.is_verified = True
+            otp_rec.save(update_fields=['is_verified'])
 
     # Create Django User
     user, created = User.objects.get_or_create(username=phone)
@@ -423,10 +369,6 @@ def register_user_view(request):
         onboarding_step=2,
         onboarding_completed=bool(address and pincode),
     )
-
-    # Mark OTP as verified
-    otp_rec.is_verified = True
-    otp_rec.save(update_fields=['is_verified'])
 
     UserConsent.objects.bulk_create([
         UserConsent(user=user, document=document)

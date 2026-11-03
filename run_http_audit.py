@@ -185,58 +185,59 @@ def run_audit():
         print(f"  {icon} {method} {route} -> HTTP {status_code}: {name} {details}")
 
     try:
-        # 1. SEND OTP - Validation & Cooldown
+        # 1. SEND OTP - Validation & Unregistered check
         s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': 'invalid'})
         record('OTP invalid phone rejected', '/api/user/send-otp/', 'POST', s, s == 400)
 
         s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': '9800000001'})
-        otp_a = r.get('otp_debug') if isinstance(r, dict) else None
-        record('User A send OTP', '/api/user/send-otp/', 'POST', s, s == 200 and otp_a is not None, f"action={r.get('action')}")
+        record('Unregistered user send-otp rejected', '/api/user/send-otp/', 'POST', s, s == 404 and r.get('action') == 'REGISTER')
 
-        s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': '9800000001'})
-        record('OTP cooldown 429', '/api/user/send-otp/', 'POST', s, s == 429)
-
-        # 2. LOGIN OTP - Attempt limits & unverified user
-        s, r, _ = http_req('POST', '/api/user/login-otp/', {'phone': '9800000001', 'otp': '000000'})
-        record('Wrong OTP rejected', '/api/user/login-otp/', 'POST', s, s == 400)
-
-        s, r, _ = http_req('POST', '/api/user/login-otp/', {'phone': '9800000001', 'otp': otp_a})
+        # 2. LOGIN OTP - Unregistered user
+        s, r, _ = http_req('POST', '/api/user/login-otp/', {'phone': '9800000001', 'otp': '123456'})
         record('Unregistered user login rejected', '/api/user/login-otp/', 'POST', s, s == 404)
 
-        # 3. REGISTER USER A
-        # Missing consent rejected
+        # 3. REGISTER USER A (No OTP or terms required!)
+        # Missing required field rejected
         s, r, _ = http_req('POST', '/api/user/register/', {
-            'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'address': '12th Main Road',
-            'pincode': '560038', 'city': 'Bengaluru', 'otp': otp_a
+            'mobile_number': '9800000001', 'address': '12th Main Road', 'pincode': '560038'
         })
-        record('Register without consent rejected', '/api/user/register/', 'POST', s, s == 400)
+        record('Register without full_name rejected', '/api/user/register/', 'POST', s, s == 400)
 
-        # Register User A with consent
+        # Register User A directly
         s, r, h = http_req('POST', '/api/user/register/', {
             'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com',
-            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru',
-            'otp': otp_a, 'accept_privacy': True, 'privacy_version': '2026.1',
-            'accept_terms': True, 'terms_version': '2026.1'
+            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru'
         })
         user_a_token = r.get('token') if isinstance(r, dict) else None
         record('Register User A succeeded', '/api/user/register/', 'POST', s, s == 201 and bool(user_a_token))
 
-        # OTP reuse rejected
+        # Duplicate phone registration rejected
         s, r, _ = http_req('POST', '/api/user/register/', {
             'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com',
-            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru',
-            'otp': otp_a, 'accept_privacy': True, 'privacy_version': '2026.1', 'accept_terms': True, 'terms_version': '2026.1'
+            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru'
         })
-        record('Reusing OTP rejected', '/api/user/register/', 'POST', s, s == 400)
+        record('Duplicate phone registration rejected', '/api/user/register/', 'POST', s, s == 400)
 
-        # 4. REGISTER USER B
-        OTPVerification.objects.filter(phone='9800000002').delete()
-        s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': '9800000002'})
-        otp_b = r.get('otp_debug')
+        # Now send Login OTP for registered User A
+        s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': '9800000001'})
+        otp_a = r.get('otp_debug') if isinstance(r, dict) else None
+        record('User A send login OTP', '/api/user/send-otp/', 'POST', s, s == 200 and otp_a is not None, f"action={r.get('action')}")
+
+        s, r, _ = http_req('POST', '/api/user/send-otp/', {'phone': '9800000001'})
+        record('OTP cooldown 429', '/api/user/send-otp/', 'POST', s, s == 429)
+
+        # Login with wrong OTP on registered user
+        s, r, _ = http_req('POST', '/api/user/login-otp/', {'phone': '9800000001', 'otp': '000000'})
+        record('Wrong OTP rejected', '/api/user/login-otp/', 'POST', s, s == 400)
+
+        # Login with correct OTP
+        s, r, _ = http_req('POST', '/api/user/login-otp/', {'phone': '9800000001', 'otp': otp_a})
+        record('Login with correct OTP succeeded', '/api/user/login-otp/', 'POST', s, s == 200 and r.get('is_registered') is True)
+
+        # 4. REGISTER USER B (Direct registration)
         s, r, _ = http_req('POST', '/api/user/register/', {
             'full_name': 'Suresh Sharma', 'mobile_number': '9800000002', 'address': 'Koramangala 4th Block',
-            'pincode': '560034', 'city': 'Bengaluru', 'otp': otp_b,
-            'accept_privacy': True, 'privacy_version': '2026.1', 'accept_terms': True, 'terms_version': '2026.1'
+            'pincode': '560034', 'city': 'Bengaluru'
         })
         user_b_token = r.get('token')
         record('Register User B succeeded', '/api/user/register/', 'POST', s, s == 201 and bool(user_b_token))
@@ -310,13 +311,9 @@ def run_audit():
 
         # 8. VENDOR ONBOARDING & KYC (Vendor A, Vendor B, Vendor C)
         def register_vendor(phone, name, shop_name):
-            OTPVerification.objects.filter(phone=phone).delete()
-            http_req('POST', '/api/vendor/auth/send-otp/', {'phone': phone})
-            otp = OTPVerification.objects.filter(phone=phone).order_by('-created_at').first().otp
             s, r, _ = http_req('POST', '/api/vendor/auth/register/', {
                 'full_name': name, 'mobile_number': phone, 'address': 'Indiranagar',
-                'pincode': '560038', 'city': 'Bengaluru', 'otp': otp,
-                'accept_privacy': True, 'privacy_version': '2026.1', 'accept_terms': True, 'terms_version': '2026.1'
+                'pincode': '560038', 'city': 'Bengaluru'
             })
             token = r.get('token')
             # Profile

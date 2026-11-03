@@ -1,16 +1,39 @@
-API for Send Vendor OTP
+API for Send Vendor Login OTP
 url: http://127.0.0.1:8000/api/vendor/auth/send-otp/
 method: POST
 
-params:
-mobile_number: 9876543210
+headers:
+Content-Type: application/json
 
-response:
+params (fields):
+mobile_number: 9876543210 (required, 10 digits)
+
+Postman raw JSON body:
+{
+  "mobile_number": "9876543210"
+}
+
+response (if registered):
 {
   "success": true,
-  "message": "OTP sent successfully",
-  "action": "REGISTER",
+  "message": "OTP sent for login to 9876543210",
+  "mobile_number": "9876543210",
+  "phone": "9876543210",
+  "is_registered": true,
+  "action": "LOGIN",
+  "expires_in_seconds": 600,
+  "resend_after_seconds": 60,
   "otp_debug": "123456"
+}
+
+response (if not registered):
+{
+  "success": false,
+  "message": "Mobile number is not registered. Please register first.",
+  "mobile_number": "9876543210",
+  "phone": "9876543210",
+  "is_registered": false,
+  "action": "REGISTER"
 }
 
 API for Register Vendor
@@ -27,11 +50,6 @@ email: ravi@example.com (optional, string)
 address: Indiranagar, Bengaluru (required, string)
 pincode: 560038 (required, 6 digits)
 city: Bengaluru (optional, defaults to "Bengaluru")
-otp: 123456 (required, 6 digits received via send-otp)
-accept_privacy: true (required, boolean: true)
-accept_terms: true (required, boolean: true)
-privacy_version: 2026.1 (optional, string: automatically binds to active system version)
-terms_version: 2026.1 (optional, string: automatically binds to active system version)
 
 Postman raw JSON body:
 {
@@ -40,10 +58,7 @@ Postman raw JSON body:
   "email": "ravi@example.com",
   "address": "Indiranagar, Bengaluru",
   "pincode": "560038",
-  "city": "Bengaluru",
-  "otp": "123456",
-  "accept_privacy": true,
-  "accept_terms": true
+  "city": "Bengaluru"
 }
 
 response:
@@ -54,7 +69,9 @@ response:
   "token": "authentication-token",
   "user": {
     "full_name": "Ravi Kumar",
-    "mobile_number": "9876543210"
+    "mobile_number": "9876543210",
+    "email": "ravi@example.com",
+    "city": "Bengaluru"
   }
 }
 
