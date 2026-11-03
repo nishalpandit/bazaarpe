@@ -299,13 +299,18 @@ def register_user_view(request):
     POST /api/user/register/
     Registers a new user with OTP verification.
     Required credentials:
-      - full_name (required)
+      - full_name (required, string)
       - mobile_number or phone (required, 10 digits)
-      - email (optional / recommended)
-      - address (required)
+      - address (required, string)
       - pincode (required, 6 digits)
       - otp (required, 6 digits)
-      - city (optional)
+      - accept_privacy (required, boolean `true`)
+      - accept_terms (required, boolean `true`)
+    Optional / Defaults:
+      - email (optional, string)
+      - city (optional, string, defaults to 'Bengaluru')
+      - privacy_version (optional, defaults to active policy version e.g. "2026.1")
+      - terms_version (optional, defaults to active terms version e.g. "2026.1")
     """
     data = request.data
     full_name = str(data.get('full_name', '')).strip()
@@ -339,7 +344,14 @@ def register_user_view(request):
         (LegalDocument.DocumentType.TERMS, 'terms_version'),
     ):
         document = legal_docs.get(doc_type)
-        if document and str(data.get(field_name, '')).strip() != document.version:
+        if not document:
+            continue
+        provided_version = str(data.get(field_name, '')).strip()
+        # If client passed accept_privacy/accept_terms: true without version, default to active version
+        if not provided_version:
+            continue
+        active_versions = set(LegalDocument.objects.filter(document_type=doc_type, is_active=True).values_list('version', flat=True))
+        if provided_version != document.version and provided_version not in active_versions:
             errors[field_name] = f'Current version {document.version} must be accepted.'
 
     if errors:
@@ -586,9 +598,16 @@ def user_consents_view(request):
             (LegalDocument.DocumentType.TERMS, 'terms_version', 'accept_terms'),
         ):
             doc = docs.get(doc_type)
-            if doc and (not truthy(request.data.get(accept_field)) or str(request.data.get(version_field, '')) != doc.version):
+            if not doc:
+                continue
+            if not truthy(request.data.get(accept_field)):
+                errors[accept_field] = f'{doc.get_document_type_display()} acceptance is required.'
+                continue
+            provided_ver = str(request.data.get(version_field, '')).strip()
+            active_versions = set(LegalDocument.objects.filter(document_type=doc_type, is_active=True).values_list('version', flat=True))
+            if provided_ver and provided_ver != doc.version and provided_ver not in active_versions:
                 errors[version_field] = f'Accept current version {doc.version}.'
-            elif doc:
+            else:
                 consent, _ = UserConsent.objects.get_or_create(user=request.user, document=doc)
                 accepted.append(consent)
         if errors:

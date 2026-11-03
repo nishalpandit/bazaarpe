@@ -18,6 +18,8 @@ os.environ['PAYMENT_REFUND_MODE'] = 'local-test'
 import django
 django.setup()
 
+from datetime import timedelta
+from django.utils import timezone
 from django.core.management import call_command
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
@@ -395,9 +397,10 @@ def run_audit():
         record('Pricing calculation succeeded', '/api/pricing/calculate/', 'POST', s, s == 200 and r.get('base_price') == 1000.0)
 
         # User A creates order
+        tomorrow_str = (timezone.localdate() + timedelta(days=1)).isoformat()
         s, r, _ = http_req('POST', '/api/user/orders/create/', {
             'address_id': addr_a_id, 'subcategory_id': subcat.id, 'approx_weight': 25.0,
-            'pickup_date': '2026-11-01', 'time_slot': '10:00 AM - 01:00 PM', 'notes': 'Gate 4 code 1234'
+            'pickup_date': tomorrow_str, 'time_slot': '10:00 AM - 01:00 PM', 'notes': 'Gate 4 code 1234'
         }, token=user_a_token)
         order_id = r.get('order', {}).get('order_id')
         otp_pickup = r.get('order', {}).get('pickup_otp')

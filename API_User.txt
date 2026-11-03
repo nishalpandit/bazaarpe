@@ -17,18 +17,34 @@ API for Register User
 url: http://127.0.0.1:8000/api/user/register/
 method: POST
 
-params:
-full_name: Ramesh Patel
-mobile_number: 9876543210
-email: ramesh@example.com (optional)
-address: Plot 45, Sector 18
-pincode: 400703
-city: Bengaluru
-otp: 123456
-accept_privacy: true
-privacy_version: 2026.1
-accept_terms: true
-terms_version: 2026.1
+headers:
+Content-Type: application/json
+
+params (fields):
+full_name: Ramesh Patel (required, string)
+mobile_number: 9876543210 (required, 10 digits)
+email: ramesh@example.com (optional, string)
+address: Plot 45, Sector 18 (required, string)
+pincode: 400703 (required, 6 digits)
+city: Bengaluru (optional, defaults to "Bengaluru")
+otp: 123456 (required, 6 digits received via send-otp)
+accept_privacy: true (required, boolean: true)
+accept_terms: true (required, boolean: true)
+privacy_version: 2026.1 (optional, string: automatically binds to active system version)
+terms_version: 2026.1 (optional, string: automatically binds to active system version)
+
+Postman raw JSON body:
+{
+  "full_name": "Ramesh Patel",
+  "mobile_number": "9876543210",
+  "email": "ramesh@example.com",
+  "address": "Plot 45, Sector 18",
+  "pincode": "400703",
+  "city": "Bengaluru",
+  "otp": "123456",
+  "accept_privacy": true,
+  "accept_terms": true
+}
 
 response:
 {
