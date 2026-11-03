@@ -276,6 +276,15 @@ def run_audit():
         s, r, _ = http_req('POST', '/api/user/location/detect/', {'latitude': 12.9784, 'longitude': 77.6408})
         record('Auto-detect GPS location', '/api/user/location/detect/', 'POST', s, s == 200 and r.get('is_serviceable') is True)
 
+        s, r, _ = http_req('GET', '/api/user/states/')
+        record('Get dropdown states', '/api/user/states/', 'GET', s, s == 200 and len(r.get('states', [])) > 0)
+
+        s, r, _ = http_req('GET', '/api/user/cities/?state=Karnataka')
+        record('Get dropdown cities by state', '/api/user/cities/?state=Karnataka', 'GET', s, s == 200 and len(r.get('cities', [])) > 0)
+
+        s, r, _ = http_req('GET', '/api/user/zones/?city=Bengaluru')
+        record('Get dropdown zones by city', '/api/user/zones/?city=Bengaluru', 'GET', s, s == 200 and len(r.get('zones', [])) > 0)
+
         s, r, _ = http_req('GET', '/api/user/service-zones/')
         record('Get service zones', '/api/user/service-zones/', 'GET', s, s == 200 and len(r.get('cities', [])) > 0)
 

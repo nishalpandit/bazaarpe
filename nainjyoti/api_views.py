@@ -814,18 +814,139 @@ def detect_location_view(request):
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+def user_states_view(request):
+    """
+    GET /api/user/states/
+    Step 1: Returns list of active states for dropdown selection.
+    """
+    states_raw = list(
+        ServiceCity.objects.filter(is_active=True)
+        .values_list('state', flat=True)
+        .distinct()
+        .order_by('state')
+    )
+    states = [
+        {'id': idx + 1, 'name': state, 'state': state}
+        for idx, state in enumerate(states_raw) if state
+    ]
+    return Response({
+        'success': True,
+        'count': len(states),
+        'states': states,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def user_cities_view(request):
+    """
+    GET /api/user/cities/?state=Karnataka
+    Step 2: Returns list of active cities in a state for dropdown selection.
+    """
+    state_filter = request.GET.get('state', '').strip()
+    cities_qs = ServiceCity.objects.filter(is_active=True)
+    if state_filter:
+        cities_qs = cities_qs.filter(state__iexact=state_filter)
+
+    cities = [
+        {
+            'id': c.id,
+            'name': c.name,
+            'city': c.name,
+            'state': c.state,
+            'zones_count': c.zones.filter(is_active=True).count(),
+        }
+        for c in cities_qs.order_by('name')
+    ]
+    return Response({
+        'success': True,
+        'state': state_filter or None,
+        'count': len(cities),
+        'cities': cities,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def user_zones_view(request):
+    """
+    GET /api/user/zones/?city=Bengaluru OR ?city_id=1
+    Step 3: Returns list of active service zones in a city for dropdown selection.
+    """
+    city_id = request.GET.get('city_id')
+    city_name = request.GET.get('city', '').strip()
+
+    zones_qs = ServiceZone.objects.filter(is_active=True, city__is_active=True).select_related('city')
+    selected_city = None
+
+    if city_id:
+        try:
+            city_id_int = int(city_id)
+            zones_qs = zones_qs.filter(city_id=city_id_int)
+            selected_city = ServiceCity.objects.filter(id=city_id_int).first()
+        except (ValueError, TypeError):
+            pass
+    elif city_name:
+        zones_qs = zones_qs.filter(city__name__iexact=city_name)
+        selected_city = ServiceCity.objects.filter(name__iexact=city_name).first()
+
+    zones = [
+        {
+            'id': z.id,
+            'name': z.name,
+            'code': z.code or f"ZN-{z.id:02d}",
+            'pincodes': z.pincode_list,
+            'center_latitude': float(z.center_latitude) if z.center_latitude is not None else None,
+            'center_longitude': float(z.center_longitude) if z.center_longitude is not None else None,
+            'radius_km': float(z.radius_km),
+        }
+        for z in zones_qs.order_by('name')
+    ]
+
+    return Response({
+        'success': True,
+        'city_id': selected_city.id if selected_city else (int(city_id) if city_id and str(city_id).isdigit() else None),
+        'city': selected_city.name if selected_city else (city_name or None),
+        'state': selected_city.state if selected_city else None,
+        'count': len(zones),
+        'zones': zones,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def service_zones_view(request):
     """
-    GET /api/user/service-zones/ or /api/user/cities/
-    Returns list of serviceable cities and active service zones.
-    Optional query param: ?city=Bengaluru
+    GET /api/user/service-zones/
+    Cascading helper endpoint:
+      - ?city=Bengaluru or ?city_id=1 -> returns city's zones
+      - ?state=Karnataka -> returns state's cities
+      - ?type=states -> returns states
+      - No params -> returns cascading structure with states & cities
     """
+    state_filter = request.GET.get('state', '').strip()
     city_filter = request.GET.get('city', '').strip()
+    city_id = request.GET.get('city_id')
+    query_type = request.GET.get('type', '').strip().lower()
+
+    if query_type == 'states':
+        return user_states_view(request._request)
+
+    if city_filter or city_id:
+        return user_zones_view(request._request)
+
+    if state_filter:
+        return user_cities_view(request._request)
+
+    states_raw = list(
+        ServiceCity.objects.filter(is_active=True)
+        .values_list('state', flat=True)
+        .distinct()
+        .order_by('state')
+    )
+    states_data = [{'id': idx + 1, 'name': s, 'state': s} for idx, s in enumerate(states_raw) if s]
 
     cities_qs = ServiceCity.objects.filter(is_active=True).prefetch_related('zones')
-    if city_filter:
-        cities_qs = cities_qs.filter(name__iexact=city_filter)
-
     results = []
     for city in cities_qs:
         zones_data = [
@@ -851,7 +972,8 @@ def service_zones_view(request):
 
     return Response({
         'success': True,
-        'cities': results
+        'states': states_data,
+        'cities': results,
     }, status=status.HTTP_200_OK)
 
 

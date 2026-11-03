@@ -292,6 +292,72 @@ response:
   ]
 }
 
+API for List States (Vendor Dropdown Step 1)
+url: http://127.0.0.1:8000/api/vendor/states/
+method: GET
+
+params:
+none
+
+response:
+{
+  "success": true,
+  "count": 5,
+  "states": [
+    {
+      "id": 1,
+      "name": "Karnataka",
+      "state": "Karnataka"
+    }
+  ]
+}
+
+API for List Cities by State (Vendor Dropdown Step 2)
+url: http://127.0.0.1:8000/api/vendor/cities/?state=Karnataka
+method: GET
+
+params:
+state: Karnataka (query param)
+
+response:
+{
+  "success": true,
+  "state": "Karnataka",
+  "count": 1,
+  "cities": [
+    {
+      "id": 1,
+      "name": "Bengaluru",
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "zones_count": 5
+    }
+  ]
+}
+
+API for List Zones by City (Vendor Dropdown Step 3)
+url: http://127.0.0.1:8000/api/vendor/zones/?city=Bengaluru
+method: GET
+
+params:
+city: Bengaluru (query param, e.g. ?city=Bengaluru or ?city_id=1)
+
+response:
+{
+  "success": true,
+  "city_id": 1,
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "count": 5,
+  "zones": [
+    {
+      "id": 1,
+      "name": "Zone 1 - Indiranagar",
+      "code": "ZN-BLR-01"
+    }
+  ]
+}
+
 API for Get Vendor Operating Zones
 url: http://127.0.0.1:8000/api/vendor/operating-zones/
 method: GET
