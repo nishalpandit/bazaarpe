@@ -89,7 +89,13 @@
       </div>
     </div>
 
-    <div class="bm-provisional"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg> Provisional – decision pending</p><p class="mt-0.5">Zone → pincode mapping is stored as free text and does not automatically classify an address. Whether a zone restricts which vendors can see or accept an order is unconfirmed (decision #6). Nothing in this module enforces assignment.</p></div>
+    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-[0.8125rem] text-emerald-900 mb-3">
+      <svg class="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+      <div>
+        <p class="font-semibold">Service Coverage & Zone Routing</p>
+        <p class="mt-0.5 text-emerald-800 text-[0.75rem]">Customer pickup addresses match active zones by postal pincode and geographic proximity. Configure distinct zones with their 6-digit postal pincodes to define vendor operating territories.</p>
+      </div>
+    </div>
 
     <div class="mt-3 row g-3">
       <div class="col-12 col-xl-6">
@@ -121,16 +127,44 @@
 
     <div class="mt-3">
       <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Zones</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd "><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[760px]">
-      <thead><tr><th scope="col" class="">Zone</th><th scope="col" class="">City</th><th scope="col" class="">Pincodes (text)</th><th scope="col" class="">Vendors</th><th scope="col" class="">Status</th><th scope="col" class=""></th></tr></thead><tbody>
+      <thead><tr><th scope="col" class="">Zone</th><th scope="col" class="">City</th><th scope="col" class="">Covered Pincodes</th><th scope="col" class="">Vendors</th><th scope="col" class="">Status</th><th scope="col" class="text-right">Actions</th></tr></thead><tbody>
 {% for zone in zones %}
 <tr>
   <td class=""><span class="font-semibold text-ink-900">{{ zone.name }}</span></td>
   <td class="">{{ zone.city.name }}</td>
-  <td class=""><span class="bm-mono text-[0.75rem]">{{ zone.pincodes|default:"—" }}</span></td>
-  <td class=""><span class="text-slate-600 text-sm">Zone active</span></td>
-  <td class=""><span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active</span></td>
   <td class="">
-    <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-location" data-item-name="{{ zone.name }}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg> Delete</button>
+    {% if zone.pincode_list %}
+      <div class="flex flex-wrap gap-1">
+        {% for pin in zone.pincode_list %}
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[0.6875rem] font-mono font-medium bg-slate-100 text-slate-800 border border-slate-200">{{ pin }}</span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <span class="text-xs text-slate-400 italic">No pincodes assigned</span>
+    {% endif %}
+  </td>
+  <td class=""><span class="text-slate-600 text-sm">Zone active</span></td>
+  <td class="">
+    {% if zone.is_active %}
+    <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active</span>
+    {% else %}
+    <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Inactive</span>
+    {% endif %}
+  </td>
+  <td class="">
+    <div class="flex items-center justify-end gap-1.5">
+      <button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-open="modalEditZone"
+              data-zone-id="{{ zone.id }}"
+              data-zone-name="{{ zone.name }}"
+              data-city-id="{{ zone.city.id }}"
+              data-pincodes="{{ zone.pincodes }}"
+              data-status="{% if zone.is_active %}active{% else %}inactive{% endif %}">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20h4l10-10-4-4L4 16z"/><path d="m14 6 4 4"/></svg> Edit
+      </button>
+      <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-location" data-item-name="{{ zone.name }}">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg> Delete
+      </button>
+    </div>
   </td>
 </tr>
 {% empty %}
@@ -138,7 +172,7 @@
 {% endfor %}
 </tbody></table></div>
 {% include "includes/pagination.html" with page_obj=zone_page_obj paginator=zone_paginator page_param='zone_page' query_string=zone_query_string item_label="zones" %}
-</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a zone does not cancel existing orders in that zone; it only prevents new vendor area assignments (subject to the unconfirmed rule).</p></div></section>
+</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a zone does not cancel existing orders in that zone; it only prevents new vendor area assignments.</p></div></section>
     </div>
 
     <div class="mt-3">
@@ -168,34 +202,34 @@
             <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="space-y-3">
-        <div>
-      <label class="bm-label" for="modalAddZone-f-name">Zone name <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="modalAddZone-f-name" name="name" type="text" value="" placeholder="e.g. Zone 5 – Hinjewadi" required >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddZone-f-city_id">City <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddZone-f-city_id" name="city_id" required ><option value="" selected>Select city…</option><option value="Mumbai">Mumbai</option><option value="Pune">Pune</option><option value="Nagpur">Nagpur</option><option value="Bengaluru">Bengaluru</option><option value="Jaipur">Jaipur</option></select>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddZone-f-pincodes">Pincode list (comma separated, free text)</label>
-      <input class="bm-input" id="modalAddZone-f-pincodes" name="pincodes" type="text" value="" placeholder="411057, 411058" aria-describedby="modalAddZone-f-pincodes-help" >
-      <p class="bm-help" id="modalAddZone-f-pincodes-help">Stored as text. Automatic pincode→zone matching is not implemented (provisional).</p>
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddZone-f-status" name="status" required ><option value="active">Active</option><option value="inactive">Inactive</option></select>
-      
-    </div>
-        <div>
-      <div class="flex items-start gap-2.5">
-        <input class="bm-check mt-0.5" id="modalAddZone-f-confirm_zone" name="confirm_zone" type="checkbox" value="1" required>
-        <label class="text-[0.875rem] text-slate-700" for="modalAddZone-f-confirm_zone">I understand assignment restrictions by zone are unconfirmed</label>
-      </div>
-    </div>
-      </div></div>
+            <div class="space-y-3">
+              <div>
+                <label class="bm-label" for="modalAddZone-f-name">Zone name <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <input class="bm-input" id="modalAddZone-f-name" name="name" type="text" value="" placeholder="e.g. Zone 5 – Hinjewadi" required>
+              </div>
+              <div>
+                <label class="bm-label" for="modalAddZone-f-city_id">City <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <select class="bm-select" id="modalAddZone-f-city_id" name="city_id" required>
+                  <option value="" selected>Select city…</option>
+                  {% for c in all_cities %}
+                  <option value="{{ c.id }}">{{ c.name }} ({{ c.state }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="bm-label" for="modalAddZone-f-pincodes">Covered Pincodes <span class="text-xs font-normal text-slate-500">(comma-separated 6-digit PINs)</span> <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <input class="bm-input font-mono" id="modalAddZone-f-pincodes" name="pincodes" type="text" value="" placeholder="e.g. 411057, 411058, 411033" aria-describedby="modalAddZone-f-pincodes-help" required>
+                <p class="bm-help" id="modalAddZone-f-pincodes-help">Enter 6-digit postal pincodes. Pickup requests in these pincodes will automatically route to this zone.</p>
+              </div>
+              <div>
+                <label class="bm-label" for="modalAddZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <select class="bm-select" id="modalAddZone-f-status" name="status" required>
+                  <option value="active" selected>Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
           <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
             <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
             <button type="submit" class="bm-btn-primary">Create zone</button>
@@ -207,39 +241,41 @@
 
     <div class="bm-modal-backdrop" id="modalEditZone" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditZone-title" aria-hidden="true">
       <div class="bm-modal" role="document">
-        <form method="post" action="/admin/locations/zones/ZN-03" data-prototype-form>
+        <form method="post" action="/admin/locations/zones/edit" data-admin-form>
+          <input type="hidden" id="modalEditZone-f-zone_id" name="zone_id" value="">
           <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-            <h2 class="text-[0.9375rem] font-semibold text-ink-900" id="modalEditZone-title">Edit zone ZN-03</h2>
+            <h2 class="text-[0.9375rem] font-semibold text-ink-900" id="modalEditZone-title">Edit zone</h2>
             <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="space-y-3">
-        <div>
-      <label class="bm-label" for="modalEditZone-f-name">Zone name <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="modalEditZone-f-name" name="name" type="text" value="Zone 3 – Kalyani Nagar" placeholder="" required >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditZone-f-city_id">City <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalEditZone-f-city_id" name="city_id" required ><option value="Mumbai">Mumbai</option><option value="Pune" selected>Pune</option><option value="Nagpur">Nagpur</option><option value="Bengaluru">Bengaluru</option><option value="Jaipur">Jaipur</option></select>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditZone-f-pincodes">Pincode list</label>
-      <input class="bm-input" id="modalEditZone-f-pincodes" name="pincodes" type="text" value="411006, 411014" placeholder="" >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalEditZone-f-status" name="status" required ><option value="active" selected>Active</option><option value="inactive">Inactive</option></select>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditZone-f-change_note">Reason for change <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <textarea class="bm-textarea" id="modalEditZone-f-change_note" name="change_note" rows="2" placeholder="" required ></textarea>
-      <p class="bm-help">Recorded in the settings audit log.</p>
-    </div>
-      </div></div>
+            <div class="space-y-3">
+              <div>
+                <label class="bm-label" for="modalEditZone-f-name">Zone name <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <input class="bm-input" id="modalEditZone-f-name" name="name" type="text" value="" required>
+              </div>
+              <div>
+                <label class="bm-label" for="modalEditZone-f-city_id">City <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <select class="bm-select" id="modalEditZone-f-city_id" name="city_id" required>
+                  <option value="">Select city…</option>
+                  {% for c in all_cities %}
+                  <option value="{{ c.id }}">{{ c.name }} ({{ c.state }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="bm-label" for="modalEditZone-f-pincodes">Covered Pincodes <span class="text-xs font-normal text-slate-500">(comma-separated 6-digit PINs)</span></label>
+                <input class="bm-input font-mono" id="modalEditZone-f-pincodes" name="pincodes" type="text" value="" placeholder="e.g. 411057, 411058" aria-describedby="modalEditZone-f-pincodes-help">
+                <p class="bm-help" id="modalEditZone-f-pincodes-help">Update 6-digit postal pincodes mapped to this service zone.</p>
+              </div>
+              <div>
+                <label class="bm-label" for="modalEditZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <select class="bm-select" id="modalEditZone-f-status" name="status" required>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+          </div>
           <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
             <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
             <button type="submit" class="bm-btn-primary">Save zone</button>
@@ -259,7 +295,7 @@
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
       <div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
       <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><div>Orders already assigned in this zone keep their current zone. New vendor area assignments to this zone will be blocked (rule provisional).</div></div>
+      <div class="min-w-0"><div>Orders already assigned in this zone keep their current zone. New vendor area assignments to this zone will be blocked.</div></div>
     </div>
       <div class="mt-3"><div>
       <label class="bm-label" for="modalToggleZone-f-reason">Reason <span class="text-rose-600" aria-hidden="true">*</span></label>
@@ -368,7 +404,12 @@
       
     </div><div>
       <label class="bm-label" for="modalAddCity-f-state_id">State <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddCity-f-state_id" name="state_id" required ><option value="Maharashtra">Maharashtra</option><option value="Karnataka">Karnataka</option><option value="Rajasthan">Rajasthan</option><option value="Delhi NCR">Delhi NCR</option></select>
+      <select class="bm-select" id="modalAddCity-f-state_id" name="state_id" required>
+        <option value="" selected>Select state…</option>
+        {% for s in states %}
+        <option value="{{ s.name }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
       
     </div><div>
       <label class="bm-label" for="modalAddCity-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
@@ -453,5 +494,36 @@
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
   <script src="/static/js/app.js"></script>
+  <script>
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest('[data-modal-open="modalEditZone"]');
+      if (!btn) return;
+      const zoneId = btn.getAttribute("data-zone-id") || "";
+      const zoneName = btn.getAttribute("data-zone-name") || "";
+      const cityId = btn.getAttribute("data-city-id") || "";
+      const pincodes = btn.getAttribute("data-pincodes") || "";
+      const status = btn.getAttribute("data-status") || "active";
+
+      const modal = document.getElementById("modalEditZone");
+      if (!modal) return;
+      const title = modal.querySelector("#modalEditZone-title");
+      if (title) title.textContent = zoneName ? ("Edit zone — " + zoneName) : "Edit zone";
+
+      const idInput = modal.querySelector("#modalEditZone-f-zone_id");
+      if (idInput) idInput.value = zoneId;
+
+      const nameInput = modal.querySelector("#modalEditZone-f-name");
+      if (nameInput) nameInput.value = zoneName;
+
+      const citySelect = modal.querySelector("#modalEditZone-f-city_id");
+      if (citySelect && cityId) citySelect.value = cityId;
+
+      const pinInput = modal.querySelector("#modalEditZone-f-pincodes");
+      if (pinInput) pinInput.value = pincodes;
+
+      const statusSelect = modal.querySelector("#modalEditZone-f-status");
+      if (statusSelect) statusSelect.value = status;
+    });
+  </script>
 </body>
 </html>

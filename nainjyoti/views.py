@@ -33,6 +33,24 @@ from .models import (
 from .api_views import clean_phone
 
 
+def normalize_pincodes(raw_str):
+    """
+    Parses, validates, deduplicates, and normalizes a string of postal pincodes.
+    Accepts comma, semicolon, space, or newline delimited tokens.
+    Keeps valid 5-6 digit postal PINs in order, joining them with ', '.
+    """
+    if not raw_str:
+        return ''
+    tokens = re.split(r'[,;\s]+', str(raw_str).strip())
+    valid = []
+    for t in tokens:
+        clean = re.sub(r'\D', '', t.strip())
+        if len(clean) in (5, 6) and clean not in valid:
+            valid.append(clean)
+    return ', '.join(valid) if valid else str(raw_str).strip()
+
+
+
 ADMIN_CAPABILITIES = {
     'can_manage': True,
     'can_create': True,
@@ -827,6 +845,10 @@ def page_view(request, page_name):
             z_count = ServiceZone.objects.filter(city__state=state_name).count()
             states.append({'name': state_name, 'cities_count': c_count, 'zones_count': z_count, 'status': 'Active'})
 
+        all_cities = ServiceCity.objects.filter(is_active=True).order_by('state', 'name')
+        if not all_cities.exists():
+            all_cities = list(cities)
+
         # Separate pagination for cities
         city_page_size = int(request.GET.get('city_page_size', 5))
         city_paginator = Paginator(cities, city_page_size)
@@ -864,6 +886,7 @@ def page_view(request, page_name):
             states=states,
             total_cities=cities.count(),
             total_zones=zones.count(),
+            all_cities=all_cities,
         )
         return render(request, 'locations.html', ctx)
 
@@ -2008,7 +2031,7 @@ def admin_action_view(request, action_path):
         # -------------------------------------------------------------
         if action.startswith('locations/cities/create') or action == 'locations/cities':
             city_name = str(data.get('name', '')).strip()
-            state = str(data.get('state', 'Maharashtra')).strip()
+            state = str(data.get('state') or data.get('state_id') or 'Maharashtra').strip()
             if city_name:
                 ServiceCity.objects.get_or_create(name=city_name, defaults={'state': state, 'is_active': True})
                 if is_ajax:
@@ -2026,11 +2049,72 @@ def admin_action_view(request, action_path):
             if not city:
                 city = ServiceCity.objects.first()
 
-            pincodes = str(data.get('pincodes', '')).strip()
+            raw_pincodes = data.get('pincodes', '')
+            pincodes = normalize_pincodes(raw_pincodes)
+            status_val = str(data.get('status', 'active')).lower()
+            is_active = (status_val != 'inactive')
             if city and zone_name:
-                ServiceZone.objects.create(city=city, name=zone_name, pincodes=pincodes, is_active=True)
+                ServiceZone.objects.create(city=city, name=zone_name, pincodes=pincodes, is_active=is_active)
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': f"Zone '{zone_name}' added."})
+                    return JsonResponse({'success': True, 'message': f"Zone '{zone_name}' added successfully."})
+            return redirect('/locations.html')
+
+        if (action.startswith('locations/zones/edit') or 
+            action.startswith('locations/zones/update') or 
+            (action.startswith('locations/zones/') and not action.startswith('locations/zones/create') and not action.endswith('/toggle'))):
+            zone_id = data.get('zone_id')
+            zone = None
+            if zone_id and str(zone_id).isdigit():
+                zone = ServiceZone.objects.filter(id=int(zone_id)).first()
+            if not zone:
+                slug = action.replace('locations/zones/', '').replace('/edit', '').replace('/update', '').strip('/')
+                if slug.isdigit():
+                    zone = ServiceZone.objects.filter(id=int(slug)).first()
+                elif slug:
+                    zone = ServiceZone.objects.filter(code__iexact=slug).first() or ServiceZone.objects.filter(name__iexact=slug).first()
+            if not zone and data.get('name'):
+                zone = ServiceZone.objects.filter(name__iexact=str(data.get('name')).strip()).first()
+
+            if zone:
+                if data.get('name'):
+                    zone.name = str(data.get('name')).strip()
+                city_id = data.get('city_id')
+                if city_id:
+                    if str(city_id).isdigit():
+                        c = ServiceCity.objects.filter(id=int(city_id)).first()
+                    else:
+                        c = ServiceCity.objects.filter(name__iexact=str(city_id).strip()).first()
+                    if c:
+                        zone.city = c
+                if 'pincodes' in data:
+                    zone.pincodes = normalize_pincodes(data.get('pincodes', ''))
+                if 'status' in data:
+                    zone.is_active = (str(data.get('status', '')).lower() != 'inactive')
+                zone.save()
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"Zone '{zone.name}' updated successfully."})
+            else:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': 'Zone not found.'}, status=404)
+            return redirect('/locations.html')
+
+        if action.startswith('locations/zones/') and action.endswith('/toggle'):
+            slug = action.replace('locations/zones/', '').replace('/toggle', '').strip('/')
+            zone = None
+            if slug.isdigit():
+                zone = ServiceZone.objects.filter(id=int(slug)).first()
+            else:
+                zone = ServiceZone.objects.filter(code__iexact=slug).first() or ServiceZone.objects.filter(name__iexact=slug).first()
+            if not zone:
+                zone_id = data.get('zone_id')
+                if zone_id and str(zone_id).isdigit():
+                    zone = ServiceZone.objects.filter(id=int(zone_id)).first()
+            if zone:
+                zone.is_active = not zone.is_active
+                zone.save(update_fields=['is_active'])
+                status_text = 'activated' if zone.is_active else 'deactivated'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"Zone '{zone.name}' {status_text}."})
             return redirect('/locations.html')
 
         if 'locations' in action and 'delete' in action:
