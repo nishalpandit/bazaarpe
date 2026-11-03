@@ -2029,6 +2029,23 @@ def admin_action_view(request, action_path):
         # -------------------------------------------------------------
         # 12. LOCATIONS (CITIES & ZONES) CRUD
         # -------------------------------------------------------------
+        if action.startswith('locations/states/create') or action == 'locations/states':
+            state_name = str(data.get('name', '')).strip()
+            if state_name:
+                ServiceCity.objects.get_or_create(name=f"{state_name} Region", defaults={'state': state_name, 'is_active': True})
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"State '{state_name}' added."})
+            return redirect('/locations.html')
+
+        if action.startswith('locations/states/edit'):
+            old_name = str(data.get('old_state_name') or '').strip()
+            new_name = str(data.get('name') or '').strip()
+            if old_name and new_name:
+                ServiceCity.objects.filter(state__iexact=old_name).update(state=new_name)
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"State updated to '{new_name}'."})
+            return redirect('/locations.html')
+
         if action.startswith('locations/cities/create') or action == 'locations/cities':
             city_name = str(data.get('name', '')).strip()
             state = str(data.get('state') or data.get('state_id') or 'Maharashtra').strip()
@@ -2036,6 +2053,25 @@ def admin_action_view(request, action_path):
                 ServiceCity.objects.get_or_create(name=city_name, defaults={'state': state, 'is_active': True})
                 if is_ajax:
                     return JsonResponse({'success': True, 'message': f"City '{city_name}' added."})
+            return redirect('/locations.html')
+
+        if action.startswith('locations/cities/edit') or (action.startswith('locations/cities/') and not action.startswith('locations/cities/create') and not action.endswith('/toggle')):
+            city_id = data.get('city_id')
+            city = None
+            if city_id and str(city_id).isdigit():
+                city = ServiceCity.objects.filter(id=int(city_id)).first()
+            if not city and data.get('name'):
+                city = ServiceCity.objects.filter(name__iexact=str(data.get('name')).strip()).first()
+            if city:
+                if data.get('name'):
+                    city.name = str(data.get('name')).strip()
+                if data.get('state') or data.get('state_id'):
+                    city.state = str(data.get('state') or data.get('state_id')).strip()
+                if 'status' in data:
+                    city.is_active = (str(data.get('status', '')).lower() != 'inactive')
+                city.save()
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"City '{city.name}' updated."})
             return redirect('/locations.html')
 
         if action.startswith('locations/zones/create') or action == 'locations/zones':
@@ -2118,14 +2154,18 @@ def admin_action_view(request, action_path):
             return redirect('/locations.html')
 
         if 'locations' in action and 'delete' in action:
-            item_name = data.get('item_name', '')
+            item_name = str(data.get('item_name', '')).strip()
             zone = ServiceZone.objects.filter(name__iexact=item_name).first()
             if zone:
                 zone.delete()
             else:
-                city = ServiceCity.objects.filter(name__iexact=item_name).first()
-                if city:
-                    city.delete()
+                state_cities = ServiceCity.objects.filter(state__iexact=item_name)
+                if state_cities.exists():
+                    state_cities.delete()
+                else:
+                    city = ServiceCity.objects.filter(name__iexact=item_name).first()
+                    if city:
+                        city.delete()
             if is_ajax:
                 return JsonResponse({'success': True, 'message': 'Location deleted.'})
             return redirect('/locations.html')
