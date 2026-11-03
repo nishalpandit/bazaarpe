@@ -337,24 +337,25 @@ response:
       "id": 1,
       "name": "Zone 1 - Indiranagar",
       "code": "ZN-BLR-01",
+      "pincode": "560038",
       "pincodes": [
-        "560038",
-        "560008"
+        "560038"
       ],
       "center_latitude": 12.9784,
       "center_longitude": 77.6408,
-      "radius_km": 10.0
+      "radius_km": 8.0
     },
     {
       "id": 2,
       "name": "Zone 2 - Koramangala",
       "code": "ZN-BLR-02",
+      "pincode": "560034",
       "pincodes": [
         "560034"
       ],
       "center_latitude": 12.9352,
       "center_longitude": 77.6245,
-      "radius_km": 10.0
+      "radius_km": 8.0
     }
   ]
 }

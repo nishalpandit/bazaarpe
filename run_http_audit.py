@@ -116,7 +116,7 @@ def setup_database():
     city, _ = ServiceCity.objects.get_or_create(name='Bengaluru', defaults={'state': 'Karnataka', 'is_active': True})
     zone1, _ = ServiceZone.objects.get_or_create(
         city=city, name='Indiranagar Zone',
-        defaults={'code': 'ZN-BLR-01', 'pincodes': '560038, 560008', 'center_latitude': '12.9784', 'center_longitude': '77.6408', 'radius_km': '10.00', 'is_active': True}
+        defaults={'code': 'ZN-BLR-01', 'pincodes': '560038', 'center_latitude': '12.9784', 'center_longitude': '77.6408', 'radius_km': '10.00', 'is_active': True}
     )
     zone2, _ = ServiceZone.objects.get_or_create(
         city=city, name='Koramangala Zone',

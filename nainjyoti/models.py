@@ -65,11 +65,20 @@ class ServiceZone(models.Model):
         return f"{self.name} ({self.city.name})"
 
     @property
+    def pincode(self):
+        """Single 6-digit postal pincode for this zone."""
+        if not self.pincodes:
+            return ""
+        pins = self.pincode_list
+        return pins[0] if pins else ""
+
+    @property
     def pincode_list(self):
         if not self.pincodes:
             return []
         raw = self.pincodes.replace('\n', ',').replace(';', ',')
-        return [p.strip() for p in raw.split(',') if p.strip()]
+        cleaned = [p.strip() for p in raw.split(',') if p.strip()]
+        return cleaned[:1] if cleaned else []
 
     def distance_to(self, lat, lon):
         """Calculates distance in kilometers from GPS point to zone center."""
