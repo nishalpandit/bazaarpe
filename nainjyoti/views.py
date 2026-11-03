@@ -33,21 +33,21 @@ from .models import (
 from .api_views import clean_phone
 
 
-def normalize_pincodes(raw_str):
+def normalize_pincode(raw_str):
     """
-    Parses, validates, deduplicates, and normalizes a string of postal pincodes.
-    Accepts comma, semicolon, space, or newline delimited tokens.
-    Keeps valid 5-6 digit postal PINs in order, joining them with ', '.
+    Extracts a single clean 6-digit postal pincode.
+    Each service zone represents exactly one postal pincode.
     """
     if not raw_str:
         return ''
-    tokens = re.split(r'[,;\s]+', str(raw_str).strip())
-    valid = []
-    for t in tokens:
-        clean = re.sub(r'\D', '', t.strip())
-        if len(clean) in (5, 6) and clean not in valid:
-            valid.append(clean)
-    return ', '.join(valid) if valid else str(raw_str).strip()
+    m = re.search(r'\b\d{6}\b', str(raw_str))
+    if m:
+        return m.group(0)
+    digits = re.sub(r'\D', '', str(raw_str))
+    return digits[:6] if digits else str(raw_str).strip()
+
+
+normalize_pincodes = normalize_pincode
 
 
 
@@ -2085,8 +2085,8 @@ def admin_action_view(request, action_path):
             if not city:
                 city = ServiceCity.objects.first()
 
-            raw_pincodes = data.get('pincodes', '')
-            pincodes = normalize_pincodes(raw_pincodes)
+            raw_pincode = data.get('pincode') or data.get('pincodes') or ''
+            pincodes = normalize_pincode(raw_pincode)
             status_val = str(data.get('status', 'active')).lower()
             is_active = (status_val != 'inactive')
             if city and zone_name:
@@ -2122,8 +2122,8 @@ def admin_action_view(request, action_path):
                         c = ServiceCity.objects.filter(name__iexact=str(city_id).strip()).first()
                     if c:
                         zone.city = c
-                if 'pincodes' in data:
-                    zone.pincodes = normalize_pincodes(data.get('pincodes', ''))
+                if 'pincode' in data or 'pincodes' in data:
+                    zone.pincodes = normalize_pincode(data.get('pincode') or data.get('pincodes', ''))
                 if 'status' in data:
                     zone.is_active = (str(data.get('status', '')).lower() != 'inactive')
                 zone.save()
