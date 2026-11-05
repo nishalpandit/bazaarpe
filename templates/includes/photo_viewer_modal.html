@@ -1,0 +1,139 @@
+<!-- Modal: Scrap & Order Photos Viewer Lightbox -->
+<div class="bm-modal-backdrop" id="modalPhotoViewer" role="dialog" aria-modal="true" aria-hidden="true" style="z-index: 9999;">
+  <div class="bm-modal max-w-2xl w-full p-0 overflow-hidden shadow-2xl bg-white rounded-2xl border border-slate-200" style="max-height: 92vh; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900" id="photoViewerTitle">Order Photos</h3>
+          <p class="text-xs text-slate-500" id="photoViewerSubtitle">Viewing photo 1 of 1</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a id="photoViewerFullLink" href="#" target="_blank" rel="noopener" class="bm-btn-ghost bm-btn-sm text-xs flex items-center gap-1.5 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:bg-slate-100">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Full Image
+        </a>
+        <button type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition" onclick="closePhotoViewer()" title="Close (Esc)">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Photo Display Area -->
+    <div class="relative bg-slate-950 flex items-center justify-center min-h-[300px] max-h-[62vh] overflow-hidden select-none grow">
+      <img id="photoViewerMainImg" src="" alt="Scrap photo preview" class="max-h-[62vh] w-auto max-w-full object-contain mx-auto transition duration-150">
+      
+      <!-- Prev / Next navigation buttons -->
+      <button type="button" id="photoViewerPrev" onclick="navigatePhoto(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white transition shadow-lg cursor-pointer">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button type="button" id="photoViewerNext" onclick="navigatePhoto(1)" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/60 hover:bg-black/90 text-white transition shadow-lg cursor-pointer">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- Thumbnails strip -->
+    <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2 overflow-x-auto shrink-0" id="photoViewerThumbnails">
+      <!-- injected via JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentOrderPhotos = [];
+  let currentPhotoIndex = 0;
+
+  function openOrderPhotosModal(orderId, photos, startIndex) {
+    if (!photos || !photos.length) return;
+    currentOrderPhotos = Array.isArray(photos) ? photos : [photos];
+    startIndex = typeof startIndex === 'number' ? startIndex : 0;
+    currentPhotoIndex = (startIndex >= 0 && startIndex < currentOrderPhotos.length) ? startIndex : 0;
+    
+    const titleEl = document.getElementById('photoViewerTitle');
+    if (titleEl) titleEl.textContent = 'Photos · ' + orderId;
+    
+    updatePhotoViewerUI();
+    
+    const modal = document.getElementById('modalPhotoViewer');
+    if (modal) {
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('bm-no-scroll');
+    }
+  }
+
+  function updatePhotoViewerUI() {
+    if (!currentOrderPhotos || !currentOrderPhotos.length) return;
+    const currentUrl = currentOrderPhotos[currentPhotoIndex];
+    const mainImg = document.getElementById('photoViewerMainImg');
+    const fullLink = document.getElementById('photoViewerFullLink');
+    const subtitle = document.getElementById('photoViewerSubtitle');
+    const prevBtn = document.getElementById('photoViewerPrev');
+    const nextBtn = document.getElementById('photoViewerNext');
+    const thumbContainer = document.getElementById('photoViewerThumbnails');
+
+    if (mainImg) mainImg.src = currentUrl;
+    if (fullLink) fullLink.href = currentUrl;
+    if (subtitle) subtitle.textContent = 'Photo ' + (currentPhotoIndex + 1) + ' of ' + currentOrderPhotos.length;
+    
+    if (prevBtn) prevBtn.style.display = currentOrderPhotos.length > 1 ? 'block' : 'none';
+    if (nextBtn) nextBtn.style.display = currentOrderPhotos.length > 1 ? 'block' : 'none';
+
+    if (thumbContainer) {
+      thumbContainer.innerHTML = '';
+      if (currentOrderPhotos.length > 1) {
+        currentOrderPhotos.forEach(function(url, idx) {
+          const thumb = document.createElement('img');
+          thumb.src = url;
+          thumb.className = 'h-14 w-14 rounded-lg object-cover cursor-pointer border-2 transition ' + 
+            (idx === currentPhotoIndex ? 'border-emerald-600 scale-105 shadow-md ring-2 ring-emerald-400/50' : 'border-slate-200 opacity-60 hover:opacity-100');
+          thumb.onclick = function() {
+            currentPhotoIndex = idx;
+            updatePhotoViewerUI();
+          };
+          thumbContainer.appendChild(thumb);
+        });
+        thumbContainer.style.display = 'flex';
+      } else {
+        thumbContainer.style.display = 'none';
+      }
+    }
+  }
+
+  function navigatePhoto(direction) {
+    if (!currentOrderPhotos || !currentOrderPhotos.length) return;
+    currentPhotoIndex = (currentPhotoIndex + direction + currentOrderPhotos.length) % currentOrderPhotos.length;
+    updatePhotoViewerUI();
+  }
+
+  function closePhotoViewer() {
+    const modal = document.getElementById('modalPhotoViewer');
+    if (modal) {
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('bm-no-scroll');
+    }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('modalPhotoViewer');
+    if (modal && modal.classList.contains('is-open')) {
+      if (e.key === 'Escape') closePhotoViewer();
+      if (e.key === 'ArrowLeft') navigatePhoto(-1);
+      if (e.key === 'ArrowRight') navigatePhoto(1);
+    }
+  });
+
+  // Click outside to close
+  document.addEventListener('click', function(e) {
+    const modal = document.getElementById('modalPhotoViewer');
+    if (modal && e.target === modal) {
+      closePhotoViewer();
+    }
+  });
+</script>
