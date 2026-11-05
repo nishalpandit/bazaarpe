@@ -565,6 +565,7 @@ approx_weight: 30.0
 pickup_date: 2026-10-29
 time_slot: 10:00 AM - 01:00 PM
 notes: Gate code is 4021
+image: [optional binary image file(s) or image URLs, up to 8 images]
 
 response:
 {
@@ -574,7 +575,10 @@ response:
     "order_id": "ORD-2026-123456", 
     "status": "NEGOTIATION_PENDING",
     "pickup_otp": "481920",
-    "approx_weight": 30.0
+    "approx_weight": 30.0,
+    "images": [
+      "/media/pickup_proofs/2026/11/scrap_photo_1.jpg"
+    ]
   }
 }
 

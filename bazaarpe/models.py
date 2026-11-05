@@ -478,6 +478,20 @@ class PickupImage(models.Model):
     class Meta:
         ordering = ['uploaded_at']
 
+    @property
+    def image_url(self):
+        if self.uploaded_file:
+            try:
+                return self.uploaded_file.url
+            except Exception:
+                pass
+        if not self.image:
+            return ''
+        if self.image.startswith(('http://', 'https://', '/', 'data:')):
+            return self.image
+        return f"/media/{self.image}"
+
+
 
 class VendorLocationTrack(models.Model):
     order = models.OneToOneField(PickupOrder, on_delete=models.CASCADE, related_name='vendor_tracking')

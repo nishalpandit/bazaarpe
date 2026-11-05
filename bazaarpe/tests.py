@@ -232,6 +232,39 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(response.data['gst_amount'], 183.6)
         self.assertEqual(response.data['total_approx_price'], 1203.6)
 
+    def test_create_order_with_multiple_images_and_limit(self):
+        self.authenticate(self.user_token)
+        fake_img1 = SimpleUploadedFile("scrap1.jpg", b"fake image content 1", content_type="image/jpeg")
+        fake_img2 = SimpleUploadedFile("scrap2.png", b"fake image content 2", content_type="image/png")
+        response = self.client.post('/api/user/orders/create/', {
+            'address_id': self.address.id,
+            'subcategory_id': self.subcategory.id,
+            'approx_weight': 30,
+            'pickup_date': (timezone.localdate() + timedelta(days=1)).isoformat(),
+            'time_slot': '10:00 AM - 01:00 PM',
+            'notes': 'With photos',
+            'image': [fake_img1, fake_img2],
+        }, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+        order_data = response.data['order']
+        self.assertIn('images', order_data)
+        self.assertEqual(len(order_data['images']), 2)
+
+        nine_images = [
+            SimpleUploadedFile(f"scrap_{i}.jpg", b"fake image content", content_type="image/jpeg")
+            for i in range(9)
+        ]
+        response_bad = self.client.post('/api/user/orders/create/', {
+            'address_id': self.address.id,
+            'subcategory_id': self.subcategory.id,
+            'approx_weight': 30,
+            'pickup_date': (timezone.localdate() + timedelta(days=1)).isoformat(),
+            'time_slot': '10:00 AM - 01:00 PM',
+            'image': nine_images,
+        }, format='multipart')
+        self.assertEqual(response_bad.status_code, 400)
+        self.assertIn('Maximum 8 images allowed', response_bad.data['message'])
+
     def test_full_pickup_payment_review_and_payout_flow(self):
         order = self.create_order()
         self.assertEqual(order.status, PickupOrder.Status.NEGOTIATION_PENDING)

@@ -1345,6 +1345,7 @@ def page_view(request, page_name):
                 PickupOrder.Status.ADMIN_NEGOTIATION,
             ])
             .select_related('user', 'user__profile', 'address', 'category', 'subcategory')
+            .prefetch_related('images')
             .order_by('-created_at')
         )
         q = request.GET.get('q', '').strip()
@@ -1391,9 +1392,9 @@ def page_view(request, page_name):
         order_id = request.GET.get('id') or request.GET.get('order_id')
         req_order = None
         if order_id:
-            req_order = PickupOrder.objects.filter(order_id=order_id).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('negotiation_proposals').first()
+            req_order = PickupOrder.objects.filter(order_id=order_id).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
         if not req_order:
-            req_order = PickupOrder.objects.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('negotiation_proposals').first()
+            req_order = PickupOrder.objects.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
 
         proposals = req_order.negotiation_proposals.all().order_by('created_at') if req_order else []
         return render(request, 'request-detail.html', admin_context(
@@ -1404,7 +1405,7 @@ def page_view(request, page_name):
     if clean_name == 'orders':
         orders = PickupOrder.objects.select_related(
             'user', 'user__profile', 'address', 'category', 'subcategory', 'invoice'
-        ).order_by('-created_at')
+        ).prefetch_related('images').order_by('-created_at')
 
         q = request.GET.get('q', '').strip()
         order_status = request.GET.get('order_status', '').strip().upper()

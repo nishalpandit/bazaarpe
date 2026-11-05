@@ -1708,6 +1708,8 @@ def serialize_order(order, *, include_otp=False):
             'phone': order.assigned_vendor_phone,
         } if order.assigned_vendor_name or order.assigned_vendor_phone else None,
         'payout_status': order.payout_status,
+        'images': proof_images,
+        'image': proof_images[0] if proof_images else None,
         'created_at': order.created_at.isoformat(),
         'updated_at': order.updated_at.isoformat(),
     }
@@ -1803,18 +1805,86 @@ def create_pickup_order_view(request):
     time_slot = str(request.data.get('time_slot', '')).strip()
     if time_slot not in ALLOWED_PICKUP_SLOTS:
         return Response({'success': False, 'message': 'time_slot is unavailable.', 'available_time_slots': sorted(ALLOWED_PICKUP_SLOTS)}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Process optional uploaded image(s) - up to 8 images
+    uploaded_files = []
+    for key in ('image', 'images', 'item_images'):
+        if key in request.FILES:
+            uploaded_files.extend(request.FILES.getlist(key))
+
+    image_values = []
+    for key in ('image', 'images', 'item_images'):
+        if key in request.data:
+            val = request.data.getlist(key) if hasattr(request.data, 'getlist') else request.data.get(key)
+            if isinstance(val, (list, tuple)):
+                for item in val:
+                    if hasattr(item, 'read'):
+                        if item not in uploaded_files:
+                            uploaded_files.append(item)
+                    elif isinstance(item, str) and item.strip():
+                        image_values.append(item.strip())
+            elif hasattr(val, 'read'):
+                if val not in uploaded_files:
+                    uploaded_files.append(val)
+            elif isinstance(val, str) and val.strip():
+                val_str = val.strip()
+                if val_str.startswith('[') and val_str.endswith(']'):
+                    try:
+                        decoded = json.loads(val_str)
+                        if isinstance(decoded, list):
+                            for p in decoded:
+                                if isinstance(p, str) and p.strip():
+                                    image_values.append(p.strip())
+                            continue
+                    except Exception:
+                        pass
+                if ',' in val_str and not val_str.startswith('data:'):
+                    for p in val_str.split(','):
+                        if p.strip():
+                            image_values.append(p.strip())
+                else:
+                    image_values.append(val_str)
+
+    total_images_count = len(uploaded_files) + len(image_values)
+    if total_images_count > 8:
+        return Response({
+            'success': False,
+            'message': f'Maximum 8 images allowed. Received {total_images_count}.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    for uploaded in uploaded_files:
+        ct = str(getattr(uploaded, 'content_type', '') or '')
+        name = str(getattr(uploaded, 'name', '') or '')
+        valid_ext = any(name.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.bmp', '.svg'))
+        if not (ct.startswith('image/') or valid_ext):
+            return Response({
+                'success': False,
+                'message': f'File "{name}" is not a valid image format.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        if uploaded.size > 10 * 1024 * 1024:
+            return Response({
+                'success': False,
+                'message': f'Image "{name}" exceeds maximum allowed size of 10 MB.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     breakdown = subcategory.price_breakdown(weight)
-    order = PickupOrder.objects.create(
-        user=request.user,
-        address=address,
-        category=subcategory.category,
-        subcategory=subcategory,
-        approx_weight=weight,
-        pickup_date=pickup_date,
-        time_slot=time_slot,
-        notes=str(request.data.get('notes', '')).strip(),
-        approx_price=breakdown['total_approx_price'],
-    )
+    with transaction.atomic():
+        order = PickupOrder.objects.create(
+            user=request.user,
+            address=address,
+            category=subcategory.category,
+            subcategory=subcategory,
+            approx_weight=weight,
+            pickup_date=pickup_date,
+            time_slot=time_slot,
+            notes=str(request.data.get('notes', '')).strip(),
+            approx_price=breakdown['total_approx_price'],
+        )
+        for f in uploaded_files:
+            PickupImage.objects.create(order=order, image=f.name, uploaded_file=f)
+        for url in image_values:
+            PickupImage.objects.create(order=order, image=url)
+
     create_notification(
         request.user, UserNotification.EventType.ORDER_CREATED,
         'Pickup request created', f'{order.order_id} is awaiting admin negotiation.', order,
