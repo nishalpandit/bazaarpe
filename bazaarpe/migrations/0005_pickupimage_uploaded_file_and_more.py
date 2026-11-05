@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0004_seed_scrap_categories'),
+        ('bazaarpe', '0004_seed_scrap_categories'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -85,7 +85,7 @@ class Migration(migrations.Migration):
                 ('gateway_signature', models.CharField(blank=True, default='', max_length=128)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('verified_at', models.DateTimeField(blank=True, null=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payment_transactions', to='nainjyoti.pickuporder')),
+                ('order', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='payment_transactions', to='bazaarpe.pickuporder')),
             ],
             options={
                 'ordering': ['-created_at'],
@@ -98,7 +98,7 @@ class Migration(migrations.Migration):
                 ('event_id', models.CharField(max_length=120, unique=True)),
                 ('payload_hash', models.CharField(max_length=64)),
                 ('processed_at', models.DateTimeField(auto_now_add=True)),
-                ('payment', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='webhook_events', to='nainjyoti.paymenttransaction')),
+                ('payment', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='webhook_events', to='bazaarpe.paymenttransaction')),
             ],
         ),
         migrations.CreateModel(
@@ -110,7 +110,7 @@ class Migration(migrations.Migration):
                 ('message', models.TextField()),
                 ('is_read', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to='nainjyoti.pickuporder')),
+                ('order', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to='bazaarpe.pickuporder')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='notifications', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -127,7 +127,7 @@ class Migration(migrations.Migration):
                 ('is_accepted', models.BooleanField(default=False)),
                 ('accepted_at', models.DateTimeField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='negotiation_proposals', to='nainjyoti.pickuporder')),
+                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='negotiation_proposals', to='bazaarpe.pickuporder')),
                 ('proposed_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_proposals', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -140,7 +140,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('accepted_at', models.DateTimeField(auto_now_add=True)),
-                ('document', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='acceptances', to='nainjyoti.legaldocument')),
+                ('document', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='acceptances', to='bazaarpe.legaldocument')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='consents', to=settings.AUTH_USER_MODEL)),
             ],
             options={

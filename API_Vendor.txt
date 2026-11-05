@@ -47,31 +47,23 @@ params (fields):
 full_name: Ravi Kumar (required, string)
 mobile_number: 9876543210 (required, 10 digits)
 email: ravi@example.com (optional, string)
-address: Indiranagar, Bengaluru (required, string)
-pincode: 560038 (required, 6 digits)
-city: Bengaluru (optional, defaults to "Bengaluru")
 
 Postman raw JSON body:
 {
   "full_name": "Ravi Kumar",
   "mobile_number": "9876543210",
-  "email": "ravi@example.com",
-  "address": "Indiranagar, Bengaluru",
-  "pincode": "560038",
-  "city": "Bengaluru"
+  "email": "ravi@example.com"
 }
 
 response:
 {
   "success": true,
   "message": "User registered successfully",
-  "is_registered": true,
   "token": "authentication-token",
   "user": {
     "full_name": "Ravi Kumar",
     "mobile_number": "9876543210",
-    "email": "ravi@example.com",
-    "city": "Bengaluru"
+    "email": "ravi@example.com"
   }
 }
 
@@ -947,7 +939,7 @@ response:
   "updated": 3
 }
 
-API for Create Vendor Refund Request
+ 
 url: http://127.0.0.1:8000/api/vendor/refunds/
 method: POST
 
@@ -1072,3 +1064,8 @@ response:
     "hours": "09:00 AM - 06:00 PM IST"
   }
 }
+
+
+
+
+                                                                        

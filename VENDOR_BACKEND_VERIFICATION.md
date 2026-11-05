@@ -67,7 +67,7 @@ Persisted evidence:
 
 ## Automated verification
 
-`python manage.py test nainjyoti` passes 28 tests. Added coverage verifies marketplace
+`python manage.py test bazaarpe` passes 28 tests. Added coverage verifies marketplace
 data minimization, no pickup-OTP disclosure, vendor-only rejection, offline/KYC/zone
 enforcement, approved billing-policy requirement, refund limits/uniqueness, provider
 fail-closed behavior and idempotent escalation. Existing admin, User API, OTP,

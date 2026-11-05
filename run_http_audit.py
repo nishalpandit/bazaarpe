@@ -23,14 +23,14 @@ from django.utils import timezone
 from django.core.management import call_command
 from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
-from nainjyoti.models import (
+from bazaarpe.models import (
     UserProfile, UserAddress, ScrapCategory, ScrapSubCategory, PickupOrder,
     OrderInvoice, OrderReview, PickupImage, UserBankDetail, LegalDocument,
     UserConsent, PaymentTransaction, UserNotification, OTPVerification,
     ServiceCity, ServiceZone, VendorProfile, VendorBillingSetting,
     VendorOfferRejection, RefundRequest
 )
-from nainjyoti.api_views import payment_signature, webhook_signature
+from bazaarpe.api_views import payment_signature, webhook_signature
 
 PORT = 8768
 BASE_URL = f"http://127.0.0.1:{PORT}"
@@ -199,22 +199,20 @@ def run_audit():
         # 3. REGISTER USER A (No OTP or terms required!)
         # Missing required field rejected
         s, r, _ = http_req('POST', '/api/user/register/', {
-            'mobile_number': '9800000001', 'address': '12th Main Road', 'pincode': '560038'
+            'mobile_number': '9800000001'
         })
         record('Register without full_name rejected', '/api/user/register/', 'POST', s, s == 400)
 
         # Register User A directly
         s, r, h = http_req('POST', '/api/user/register/', {
-            'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com',
-            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru'
+            'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com'
         })
         user_a_token = r.get('token') if isinstance(r, dict) else None
         record('Register User A succeeded', '/api/user/register/', 'POST', s, s == 201 and bool(user_a_token))
 
         # Duplicate phone registration rejected
         s, r, _ = http_req('POST', '/api/user/register/', {
-            'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com',
-            'address': '12th Main Road, Indiranagar', 'pincode': '560038', 'city': 'Bengaluru'
+            'full_name': 'Ramesh Kumar', 'mobile_number': '9800000001', 'email': 'ramesh@example.com'
         })
         record('Duplicate phone registration rejected', '/api/user/register/', 'POST', s, s == 400)
 
@@ -236,8 +234,7 @@ def run_audit():
 
         # 4. REGISTER USER B (Direct registration)
         s, r, _ = http_req('POST', '/api/user/register/', {
-            'full_name': 'Suresh Sharma', 'mobile_number': '9800000002', 'address': 'Koramangala 4th Block',
-            'pincode': '560034', 'city': 'Bengaluru'
+            'full_name': 'Suresh Sharma', 'mobile_number': '9800000002'
         })
         user_b_token = r.get('token')
         record('Register User B succeeded', '/api/user/register/', 'POST', s, s == 201 and bool(user_b_token))

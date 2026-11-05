@@ -4,8 +4,8 @@ from django.db import migrations, models
 
 
 def mark_existing_assigned_vendors(apps, schema_editor):
-    PickupOrder = apps.get_model('nainjyoti', 'PickupOrder')
-    UserProfile = apps.get_model('nainjyoti', 'UserProfile')
+    PickupOrder = apps.get_model('bazaarpe', 'PickupOrder')
+    UserProfile = apps.get_model('bazaarpe', 'UserProfile')
     vendor_user_ids = PickupOrder.objects.exclude(assigned_vendor_id=None).values_list('assigned_vendor_id', flat=True).distinct()
     UserProfile.objects.filter(user_id__in=vendor_user_ids).update(is_vendor=True)
 
@@ -13,7 +13,7 @@ def mark_existing_assigned_vendors(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0006_seed_legal_documents'),
+        ('bazaarpe', '0006_seed_legal_documents'),
     ]
 
     operations = [

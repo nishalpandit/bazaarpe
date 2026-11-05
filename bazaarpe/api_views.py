@@ -295,20 +295,16 @@ def register_user_view(request):
     Required credentials:
       - full_name (required, string)
       - mobile_number or phone (required, 10 digits)
-      - address (required, string)
-      - pincode (required, 6 digits)
-    Optional / Defaults:
+    Optional:
       - email (optional, string)
-      - city (optional, string, defaults to 'Bengaluru')
+
+    Address and location are collected later through the address APIs.
     """
     data = request.data
     full_name = str(data.get('full_name', '')).strip()
     phone_raw = data.get('mobile_number') or data.get('phone')
     phone = clean_phone(phone_raw)
     email = str(data.get('email', '')).strip() or None
-    address = str(data.get('address', '')).strip()
-    pincode = str(data.get('pincode', '')).strip()
-    city = str(data.get('city', '')).strip() or 'Bengaluru'
     otp_code = str(data.get('otp', '')).strip()
     legal_docs = active_legal_documents()
 
@@ -318,11 +314,6 @@ def register_user_view(request):
         errors['full_name'] = 'Full name is required.'
     if not phone or len(phone) != 10:
         errors['mobile_number'] = 'A valid 10-digit mobile number is required.'
-    if not address:
-        errors['address'] = 'Address is required.'
-    if not pincode or len(pincode) < 5:
-        errors['pincode'] = 'A valid postal pincode is required.'
-
     if errors:
         return Response({
             'success': False,
@@ -362,12 +353,12 @@ def register_user_view(request):
         full_name=full_name,
         phone=phone,
         email=email,
-        address=address,
-        pincode=pincode,
-        city=city,
+        address='',
+        pincode='',
+        city='',
         account_status='Active',
         onboarding_step=2,
-        onboarding_completed=bool(address and pincode),
+        onboarding_completed=False,
     )
 
     UserConsent.objects.bulk_create([
@@ -381,9 +372,12 @@ def register_user_view(request):
     response = Response({
         'success': True,
         'message': 'User registered successfully',
-        'is_registered': True,
         'token': token.key,
-        'user': profile.to_dict()
+        'user': {
+            'full_name': profile.full_name,
+            'mobile_number': profile.phone,
+            'email': profile.email,
+        },
     }, status=status.HTTP_201_CREATED)
 
     # Store token in non-expiring cookies for app & web clients

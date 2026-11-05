@@ -9,7 +9,7 @@ Source of truth:
 
 ## Result
 
-The backend implements all four application swimlanes, all seven decision branches, and all fourteen backend service responsibilities represented by the official flowchart. The automated suite contains 33 passing tests. The local SQLite database was migrated through `0011_pickuporder_proof_submitted_at_and_more` and was also exercised with persisted API records.
+The backend implements all four application swimlanes, all seven decision branches, and all fourteen backend service responsibilities represented by the official flowchart. The automated suite contains 35 passing tests, and the live HTTP audit contains 109 passing scenarios. The local SQLite database was migrated through `0011_pickuporder_proof_submitted_at_and_more` and was also exercised with persisted API records.
 
 External production providers remain configuration boundaries: real SMS delivery, Aadhaar verification, push delivery, route navigation, payment capture/refund, and bank payout require provider credentials. The application does not falsely report those external actions as complete when a provider is unconfigured. Local OTP, map-zone matching, signed sandbox payment/webhook, notification persistence, structured invoice, and recorded payout implementations support deterministic development verification.
 

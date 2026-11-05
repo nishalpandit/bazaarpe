@@ -106,6 +106,40 @@ class FullAdminAccessTests(TestCase):
         self.assertTrue(demo_admin.is_superuser)
 
 
+class RegistrationAPITests(APITestCase):
+    def test_registration_uses_only_identity_fields_and_returns_compact_payload(self):
+        response = self.client.post('/api/user/register/', {
+            'full_name': 'Ashish Prabhakar',
+            'mobile_number': '9876543214',
+            'email': 'ashish@example.com',
+            'address': 'This must be ignored',
+            'pincode': '400703',
+            'city': 'Mumbai',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(set(response.data), {'success', 'message', 'token', 'user'})
+        self.assertEqual(response.data['user'], {
+            'full_name': 'Ashish Prabhakar',
+            'mobile_number': '9876543214',
+            'email': 'ashish@example.com',
+        })
+        profile = UserProfile.objects.get(phone='9876543214')
+        self.assertEqual(profile.address, '')
+        self.assertEqual(profile.pincode, '')
+        self.assertEqual(profile.city, '')
+        self.assertFalse(profile.onboarding_completed)
+
+    def test_email_is_optional(self):
+        response = self.client.post('/api/user/register/', {
+            'full_name': 'No Email User',
+            'mobile_number': '9876543213',
+        }, format='json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertIsNone(response.data['user']['email'])
+
+
 class PickupOrderFlowTests(APITestCase):
     def setUp(self):
         self.media_dir = tempfile.TemporaryDirectory()

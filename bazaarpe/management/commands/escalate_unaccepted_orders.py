@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from nainjyoti.models import PickupOrder, UserNotification
+from bazaarpe.models import PickupOrder, UserNotification
 
 
 class Command(BaseCommand):

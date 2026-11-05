@@ -7,7 +7,7 @@ django.setup()
 from django.test import Client
 from django.contrib.auth.models import User
 from decimal import Decimal
-from nainjyoti.models import (
+from bazaarpe.models import (
     ScrapCategory, ScrapSubCategory, ServiceCity, ServiceZone, VendorProfile,
     UserProfile, PickupOrder, UserAddress, LegalDocument,
     VendorBillingSetting, OrderReview, RefundRequest, PaymentTransaction, OrderInvoice,

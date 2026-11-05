@@ -24,8 +24,8 @@ DEFAULTS = {
 
 
 def seed_catalogue(apps, schema_editor):
-    Category = apps.get_model('nainjyoti', 'ScrapCategory')
-    SubCategory = apps.get_model('nainjyoti', 'ScrapSubCategory')
+    Category = apps.get_model('bazaarpe', 'ScrapCategory')
+    SubCategory = apps.get_model('bazaarpe', 'ScrapSubCategory')
     for category_name, (icon, subcategories) in DEFAULTS.items():
         category, _ = Category.objects.update_or_create(
             name=category_name,
@@ -45,6 +45,6 @@ def seed_catalogue(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-    dependencies = [('nainjyoti', '0003_scrapcategory_pickuporder_pickupimage_orderinvoice_and_more')]
+    dependencies = [('bazaarpe', '0003_scrapcategory_pickuporder_pickupimage_orderinvoice_and_more')]
 
     operations = [migrations.RunPython(seed_catalogue, migrations.RunPython.noop)]

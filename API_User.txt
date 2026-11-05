@@ -47,31 +47,23 @@ params (fields):
 full_name: Ashish Prabhakar (required, string)
 mobile_number: 9876543215 (required, 10 digits)
 email: ashish@example.com (optional, string)
-address: Plot 45, Sector 18 (required, string)
-pincode: 400703 (required, 6 digits)
-city: Mumbai (optional, defaults to "Bengaluru")
 
 Postman raw JSON body:
 {
   "full_name": "Ashish Prabhakar",
   "mobile_number": "9876543215",
-  "email": "ashish@example.com",
-  "address": "Plot 45, Sector 18",
-  "pincode": "400703",
-  "city": "Mumbai"
+  "email": "ashish@example.com"
 }
 
 response:
 {
   "success": true,
   "message": "User registered successfully",
-  "is_registered": true,
   "token": "authentication-token",
   "user": {
     "full_name": "Ashish Prabhakar",
     "mobile_number": "9876543215",
-    "email": "ashish@example.com",
-    "city": "Mumbai"
+    "email": "ashish@example.com"
   }
 }
 
@@ -579,7 +571,7 @@ response:
   "success": true,
   "message": "Pickup order created and sent for negotiation.",
   "order": {
-    "order_id": "ORD-2026-123456",
+    "order_id": "ORD-2026-123456", 
     "status": "NEGOTIATION_PENDING",
     "pickup_otp": "481920",
     "approx_weight": 30.0

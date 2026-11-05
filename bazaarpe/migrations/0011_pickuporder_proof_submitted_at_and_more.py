@@ -6,9 +6,9 @@ from django.db import migrations, models
 
 
 def preserve_existing_vendor_coverage(apps, schema_editor):
-    VendorProfile = apps.get_model('nainjyoti', 'VendorProfile')
-    ScrapCategory = apps.get_model('nainjyoti', 'ScrapCategory')
-    ScrapSubCategory = apps.get_model('nainjyoti', 'ScrapSubCategory')
+    VendorProfile = apps.get_model('bazaarpe', 'VendorProfile')
+    ScrapCategory = apps.get_model('bazaarpe', 'ScrapCategory')
+    ScrapSubCategory = apps.get_model('bazaarpe', 'ScrapSubCategory')
     categories = list(ScrapCategory.objects.filter(is_active=True))
     subcategories = list(ScrapSubCategory.objects.filter(is_active=True))
     for vendor in VendorProfile.objects.all():
@@ -19,7 +19,7 @@ def preserve_existing_vendor_coverage(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0010_vendorprofile_aadhaar_number_and_more'),
+        ('bazaarpe', '0010_vendorprofile_aadhaar_number_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -32,12 +32,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='vendorprofile',
             name='categories',
-            field=models.ManyToManyField(blank=True, related_name='vendors', to='nainjyoti.scrapcategory'),
+            field=models.ManyToManyField(blank=True, related_name='vendors', to='bazaarpe.scrapcategory'),
         ),
         migrations.AddField(
             model_name='vendorprofile',
             name='subcategories',
-            field=models.ManyToManyField(blank=True, related_name='vendors', to='nainjyoti.scrapsubcategory'),
+            field=models.ManyToManyField(blank=True, related_name='vendors', to='bazaarpe.scrapsubcategory'),
         ),
         migrations.AlterField(
             model_name='legaldocument',
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                 ('metadata', models.JSONField(blank=True, default=dict)),
                 ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('actor', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='marketplace_audit_events', to=settings.AUTH_USER_MODEL)),
-                ('order', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_events', to='nainjyoti.pickuporder')),
+                ('order', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='audit_events', to='bazaarpe.pickuporder')),
             ],
             options={
                 'ordering': ['-created_at'],

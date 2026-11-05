@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0008_vendorbillingsetting_and_more'),
+        ('bazaarpe', '0008_vendorbillingsetting_and_more'),
     ]
 
     operations = [

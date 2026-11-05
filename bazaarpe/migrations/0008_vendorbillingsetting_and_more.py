@@ -7,8 +7,8 @@ from django.db import migrations, models
 
 
 def create_draft_vendor_profiles(apps, schema_editor):
-    UserProfile = apps.get_model('nainjyoti', 'UserProfile')
-    VendorProfile = apps.get_model('nainjyoti', 'VendorProfile')
+    UserProfile = apps.get_model('bazaarpe', 'UserProfile')
+    VendorProfile = apps.get_model('bazaarpe', 'VendorProfile')
     for profile in UserProfile.objects.filter(is_vendor=True).select_related('user'):
         pincode = ''.join(character for character in str(profile.pincode or '') if character.isdigit())[:6]
         VendorProfile.objects.get_or_create(
@@ -31,7 +31,7 @@ def create_draft_vendor_profiles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0007_userprofile_is_vendor'),
+        ('bazaarpe', '0007_userprofile_is_vendor'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -135,7 +135,7 @@ class Migration(migrations.Migration):
                 ('approved_at', models.DateTimeField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('operating_zones', models.ManyToManyField(blank=True, related_name='vendors', to='nainjyoti.servicezone')),
+                ('operating_zones', models.ManyToManyField(blank=True, related_name='vendors', to='bazaarpe.servicezone')),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vendor_profile', to=settings.AUTH_USER_MODEL)),
             ],
             options={
@@ -149,8 +149,8 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('reason', models.CharField(blank=True, default='', max_length=250)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vendor_rejections', to='nainjyoti.pickuporder')),
-                ('vendor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='offer_rejections', to='nainjyoti.vendorprofile')),
+                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vendor_rejections', to='bazaarpe.pickuporder')),
+                ('vendor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='offer_rejections', to='bazaarpe.vendorprofile')),
             ],
             options={
                 'constraints': [models.UniqueConstraint(fields=('vendor', 'order'), name='unique_vendor_order_rejection')],
@@ -167,8 +167,8 @@ class Migration(migrations.Migration):
                 ('gateway_refund_ref', models.CharField(blank=True, default='', max_length=120)),
                 ('requested_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('payment', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='refund_request', to='nainjyoti.paymenttransaction')),
-                ('vendor', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='refund_requests', to='nainjyoti.vendorprofile')),
+                ('payment', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='refund_request', to='bazaarpe.paymenttransaction')),
+                ('vendor', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='refund_requests', to='bazaarpe.vendorprofile')),
             ],
             options={
                 'ordering': ['-requested_at'],

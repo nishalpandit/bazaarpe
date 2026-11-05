@@ -36,7 +36,7 @@ urlpatterns = [
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}, name='media_loader'),
 
     path('django-admin/', admin.site.urls),
-    path('', include('nainjyoti.urls')),
+    path('', include('bazaarpe.urls')),
 ]
 
 # Standard Django static helper (active when DEBUG=True)

@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0002_servicecity_userprofile_latitude_and_more'),
+        ('bazaarpe', '0002_servicecity_userprofile_latitude_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -50,9 +50,9 @@ class Migration(migrations.Migration):
                 ('payout_disbursed_at', models.DateTimeField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('address', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='nainjyoti.useraddress')),
+                ('address', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='bazaarpe.useraddress')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='pickup_orders', to=settings.AUTH_USER_MODEL)),
-                ('category', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='nainjyoti.scrapcategory')),
+                ('category', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='bazaarpe.scrapcategory')),
             ],
             options={
                 'ordering': ['-created_at'],
@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('image', models.CharField(max_length=500)),
                 ('uploaded_at', models.DateTimeField(auto_now_add=True)),
-                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='images', to='nainjyoti.pickuporder')),
+                ('order', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='images', to='bazaarpe.pickuporder')),
             ],
             options={
                 'ordering': ['uploaded_at'],
@@ -82,7 +82,7 @@ class Migration(migrations.Migration):
                 ('payment_gateway_ref', models.CharField(blank=True, max_length=100)),
                 ('payment_status', models.CharField(choices=[('PENDING', 'Pending'), ('PAID', 'Paid')], default='PENDING', max_length=20)),
                 ('paid_at', models.DateTimeField(blank=True, null=True)),
-                ('order', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='invoice', to='nainjyoti.pickuporder')),
+                ('order', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, related_name='invoice', to='bazaarpe.pickuporder')),
             ],
         ),
         migrations.CreateModel(
@@ -94,7 +94,7 @@ class Migration(migrations.Migration):
                 ('gst_percent', models.DecimalField(decimal_places=2, default=18.0, max_digits=5)),
                 ('min_weight_kg', models.DecimalField(decimal_places=2, default=5.0, max_digits=6)),
                 ('is_active', models.BooleanField(default=True)),
-                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subcategories', to='nainjyoti.scrapcategory')),
+                ('category', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subcategories', to='bazaarpe.scrapcategory')),
             ],
             options={
                 'ordering': ['category__name', 'name'],
@@ -103,7 +103,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='pickuporder',
             name='subcategory',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='nainjyoti.scrapsubcategory'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='pickup_orders', to='bazaarpe.scrapsubcategory'),
         ),
         migrations.CreateModel(
             name='UserBankDetail',
@@ -127,7 +127,7 @@ class Migration(migrations.Migration):
                 ('latitude', models.DecimalField(decimal_places=7, max_digits=10)),
                 ('longitude', models.DecimalField(decimal_places=7, max_digits=10)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vendor_tracking', to='nainjyoti.pickuporder')),
+                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='vendor_tracking', to='bazaarpe.pickuporder')),
             ],
         ),
         migrations.CreateModel(
@@ -139,7 +139,7 @@ class Migration(migrations.Migration):
                 ('is_approved_by_admin', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='reviews_given', to=settings.AUTH_USER_MODEL)),
-                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='review', to='nainjyoti.pickuporder')),
+                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='review', to='bazaarpe.pickuporder')),
             ],
             options={
                 'ordering': ['-created_at'],

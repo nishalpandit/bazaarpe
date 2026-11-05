@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nainjyoti', '0001_initial'),
+        ('bazaarpe', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ('radius_km', models.DecimalField(decimal_places=2, default=8.0, help_text='Service radius in km', max_digits=6)),
                 ('is_active', models.BooleanField(default=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('city', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='zones', to='nainjyoti.servicecity')),
+                ('city', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='zones', to='bazaarpe.servicecity')),
             ],
             options={
                 'verbose_name': 'Service Zone',
@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userprofile',
             name='service_zone',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='user_profiles', to='nainjyoti.servicezone'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='user_profiles', to='bazaarpe.servicezone'),
         ),
         migrations.CreateModel(
             name='UserAddress',
@@ -81,8 +81,8 @@ class Migration(migrations.Migration):
                 ('is_default', models.BooleanField(default=False)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='saved_addresses', to='nainjyoti.userprofile')),
-                ('service_zone', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='user_addresses', to='nainjyoti.servicezone')),
+                ('profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='saved_addresses', to='bazaarpe.userprofile')),
+                ('service_zone', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='user_addresses', to='bazaarpe.servicezone')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='addresses', to=settings.AUTH_USER_MODEL)),
             ],
             options={
