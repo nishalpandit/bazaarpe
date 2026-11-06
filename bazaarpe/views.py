@@ -652,7 +652,7 @@ def page_view(request, page_name):
         category = request.GET.get('category', '').strip()
         page_num = request.GET.get('page', 1)
 
-        vendors_qs = VendorProfile.objects.all().select_related('user').prefetch_related('operating_zones', 'categories', 'subcategories').order_by('-created_at')
+        vendors_qs = VendorProfile.objects.all().select_related('user', 'user__bank_details', 'user__profile').prefetch_related('operating_zones', 'categories', 'subcategories').order_by('-created_at')
 
         if q:
             q_filter = (
@@ -718,6 +718,8 @@ def page_view(request, page_name):
         cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
         categories = list(ScrapCategory.objects.filter(is_active=True).values_list('name', flat=True).distinct())
         all_categories = list(ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories'))
+        all_zones = list(ServiceZone.objects.filter(is_active=True, city__is_active=True).select_related('city'))
+        all_cities = list(ServiceCity.objects.filter(is_active=True).prefetch_related('zones'))
 
         page_size = int(request.GET.get('page_size', 8))
         paginator = Paginator(vendors_qs, page_size)
@@ -737,6 +739,8 @@ def page_view(request, page_name):
             cities=cities,
             categories=categories,
             all_categories=all_categories,
+            all_zones=all_zones,
+            all_cities=all_cities,
             current_q=q,
             current_account=account,
             current_kyc=kyc,
@@ -775,6 +779,7 @@ def page_view(request, page_name):
             if calc_rating:
                 avg_rating = round(float(calc_rating), 1)
 
+        all_categories = list(ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories'))
         ctx = admin_context(
             request,
             page_name=clean_name,
@@ -783,6 +788,7 @@ def page_view(request, page_name):
             vendor_reviews=vendor_reviews,
             vendor_payments=vendor_payments,
             all_zones=all_zones,
+            all_categories=all_categories,
             completed_orders_count=completed_orders_count,
             total_payouts=total_payouts,
             total_weight=total_weight,
@@ -1541,6 +1547,47 @@ def admin_action_view(request, action_path):
     action = action_path.strip('/')
     is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
 
+    if request.method == 'GET':
+        vendor_data_match = re.fullmatch(r'vendors/([^/]+)/(?:data|json)', action)
+        if vendor_data_match:
+            vendor = find_vendor_profile(vendor_data_match.group(1))
+            if not vendor:
+                return JsonResponse({'success': False, 'message': 'Vendor not found.'}, status=404)
+            bank = getattr(vendor.user, 'bank_details', None) if vendor.user else None
+            return JsonResponse({
+                'success': True,
+                'vendor': {
+                    'id': vendor.id,
+                    'display_id': vendor.display_vendor_id,
+                    'shop_name': vendor.shop_name,
+                    'owner_name': vendor.owner_name,
+                    'phone': vendor.user.username if vendor.user else '',
+                    'email': vendor.user.email if vendor.user else '',
+                    'full_address': vendor.full_address or '',
+                    'city': vendor.city or '',
+                    'state': vendor.state or '',
+                    'pincode': vendor.pincode or '',
+                    'latitude': str(vendor.latitude) if vendor.latitude is not None else '',
+                    'longitude': str(vendor.longitude) if vendor.longitude is not None else '',
+                    'kyc_status': vendor.kyc_status,
+                    'kyc_rejection_reason': vendor.kyc_rejection_reason or '',
+                    'account_status': vendor.user.profile.account_status if (vendor.user and hasattr(vendor.user, 'profile')) else 'Active',
+                    'is_online': vendor.is_online,
+                    'aadhaar_number': vendor.aadhaar_number or vendor.aadhaar_last4 or '',
+                    'pan_number': vendor.pan_number or vendor.pan_last4 or '',
+                    'gst_number': vendor.gst_number or '',
+                    'operating_zone_ids': list(vendor.operating_zones.values_list('id', flat=True)),
+                    'category_ids': list(vendor.categories.values_list('id', flat=True)),
+                    'bank': {
+                        'account_holder_name': bank.account_holder_name if bank else '',
+                        'bank_name': bank.bank_name if bank else '',
+                        'account_number': bank.account_number if bank else '',
+                        'ifsc_code': bank.ifsc_code if bank else '',
+                        'upi_id': bank.upi_id if bank else '',
+                    } if bank else None
+                }
+            })
+
     if request.method == 'POST':
         data = request.POST.copy()
         if request.content_type == 'application/json' and request.body:
@@ -1962,31 +2009,81 @@ def admin_action_view(request, action_path):
                     return JsonResponse({'success': False, 'message': 'Vendor profile not found.'}, status=404)
                 return redirect('/vendors.html')
 
+            # 1. Business & Owner credentials
             if data.get('name') or data.get('shop_name'):
                 vendor.shop_name = str(data.get('name') or data.get('shop_name')).strip()
             if data.get('owner') or data.get('owner_name'):
                 vendor.owner_name = str(data.get('owner') or data.get('owner_name')).strip()
+            if data.get('phone') and vendor.user:
+                new_phone = clean_phone(data.get('phone'))
+                vendor.user.username = new_phone
+                vendor.user.save(update_fields=['username'])
+                if hasattr(vendor.user, 'profile'):
+                    vendor.user.profile.phone = new_phone
+                    vendor.user.profile.save(update_fields=['phone', 'updated_at'])
+            if 'email' in data and vendor.user:
+                vendor.user.email = str(data.get('email', '')).strip()
+                vendor.user.save(update_fields=['email'])
+
+            # 2. Address & GPS Coordinates
+            if 'full_address' in data:
+                vendor.full_address = str(data.get('full_address')).strip()
             if data.get('city'):
                 vendor.city = str(data.get('city')).strip()
+            if 'state' in data:
+                vendor.state = str(data.get('state')).strip()
+            if 'pincode' in data:
+                vendor.pincode = str(data.get('pincode')).strip()
+            if 'latitude' in data:
+                lat_val = str(data.get('latitude', '')).strip()
+                if lat_val:
+                    try: vendor.latitude = Decimal(lat_val)
+                    except Exception: pass
+                else:
+                    vendor.latitude = None
+            if 'longitude' in data:
+                lng_val = str(data.get('longitude', '')).strip()
+                if lng_val:
+                    try: vendor.longitude = Decimal(lng_val)
+                    except Exception: pass
+                else:
+                    vendor.longitude = None
+
+            # 3. Government IDs & KYC Verification
             if data.get('aadhaar') or data.get('aadhaar_number'):
                 vendor.aadhaar_number = str(data.get('aadhaar') or data.get('aadhaar_number')).strip()
-                vendor.aadhaar_last4 = vendor.aadhaar_number[-4:]
+                vendor.aadhaar_last4 = vendor.aadhaar_number[-4:] if len(vendor.aadhaar_number) >= 4 else vendor.aadhaar_number
             if data.get('pan') or data.get('pan_number'):
-                vendor.pan_number = str(data.get('pan') or data.get('pan_number')).strip()
-                vendor.pan_last4 = vendor.pan_number[-4:]
+                vendor.pan_number = str(data.get('pan') or data.get('pan_number')).strip().upper()
+                vendor.pan_last4 = vendor.pan_number[-4:] if len(vendor.pan_number) >= 4 else vendor.pan_number
             if data.get('gst') or data.get('gst_number'):
-                vendor.gst_number = str(data.get('gst') or data.get('gst_number')).strip()
+                vendor.gst_number = str(data.get('gst') or data.get('gst_number')).strip().upper()
             if data.get('kyc_status'):
-                vendor.kyc_status = str(data.get('kyc_status'))
-            if 'is_online' in data:
-                vendor.is_online = data.get('is_online') in ('true', '1', True, 'Online')
+                vendor.kyc_status = str(data.get('kyc_status')).upper()
+            if 'kyc_rejection_reason' in data:
+                vendor.kyc_rejection_reason = str(data.get('kyc_rejection_reason', '')).strip()
+
+            # 4. Operating Status & Availability
+            if 'account_status' in data and vendor.user and hasattr(vendor.user, 'profile'):
+                vendor.user.profile.account_status = str(data.get('account_status'))
+                vendor.user.profile.save(update_fields=['account_status', 'updated_at'])
+            if 'online_status' in data or 'is_online' in data:
+                online_val = data.get('online_status') or data.get('is_online')
+                vendor.is_online = online_val in ('true', '1', True, 'Online', 'online')
+
+            # 5. Operating Service Zones
+            if 'zone_ids' in data or 'operating_zones' in data:
+                zone_raw = data.getlist('zone_ids') if hasattr(data, 'getlist') and data.getlist('zone_ids') else (data.get('zone_ids') or data.get('operating_zones'))
+                zone_ids = [int(x) for x in (zone_raw if isinstance(zone_raw, list) else str(zone_raw).split(',')) if str(x).strip().isdigit()]
+                vendor.operating_zones.set(zone_ids)
+
+            # 6. Categories & Subcategories
             if 'category_ids' in data or 'categories' in data:
                 cat_raw = data.getlist('category_ids') if hasattr(data, 'getlist') and data.getlist('category_ids') else (data.get('category_ids') or data.get('categories'))
                 cat_ids = [int(x) for x in (cat_raw if isinstance(cat_raw, list) else str(cat_raw).split(',')) if str(x).strip().isdigit()]
                 if cat_ids:
                     valid_cats = list(ScrapCategory.objects.filter(id__in=cat_ids, is_active=True))
                     vendor.categories.set(valid_cats)
-                    # Automatically enable all subcategories under the assigned categories
                     all_subcats = list(ScrapSubCategory.objects.filter(category__in=valid_cats, is_active=True))
                     vendor.subcategories.set(all_subcats)
                 else:
@@ -1997,6 +2094,26 @@ def admin_action_view(request, action_path):
                 sub_ids = [int(x) for x in (sub_raw if isinstance(sub_raw, list) else str(sub_raw).split(',')) if str(x).strip().isdigit()]
                 if sub_ids:
                     vendor.subcategories.set(sub_ids)
+
+            # 7. Bank & Payout Details
+            bank_holder = str(data.get('account_holder_name') or '').strip()
+            bank_name = str(data.get('bank_name') or '').strip()
+            acc_num = str(data.get('account_number') or '').strip()
+            ifsc = str(data.get('ifsc_code') or '').strip().upper()
+            upi = str(data.get('upi_id') or '').strip()
+            if bank_holder or bank_name or acc_num or ifsc or upi:
+                UserBankDetail.objects.update_or_create(
+                    user=vendor.user,
+                    defaults={
+                        'account_holder_name': bank_holder or vendor.owner_name,
+                        'bank_name': bank_name or 'Bank',
+                        'account_number': acc_num,
+                        'ifsc_code': ifsc,
+                        'upi_id': upi,
+                        'is_verified': True,
+                    }
+                )
+
             vendor.save()
 
             if is_ajax:

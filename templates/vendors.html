@@ -203,7 +203,33 @@
   <td class="">
     <div class="flex gap-1.5">
       <a class="bm-btn-ghost bm-btn-sm" href="vendor-detail.html?id={{ vendor.id }}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg> View</a>
-      <button type="button" class="bm-btn-ghost bm-btn-sm text-teal-700 hover:bg-teal-50" data-action="edit-vendor" data-vendor-id="{{ vendor.id }}" data-vendor-name="{{ vendor.shop_name }}" data-owner-name="{{ vendor.owner_name }}" data-phone="{{ vendor.user.username }}" data-city="{{ vendor.city }}" data-kyc="{{ vendor.kyc_status }}" data-account="Active" data-online="{{ vendor.is_online|yesno:'Online,Offline' }}" data-category-ids="[{% for c in vendor.categories.all %}{{ c.id }}{% if not forloop.last %},{% endif %}{% endfor %}]" data-subcategory-ids="[{% for s in vendor.subcategories.all %}{{ s.id }}{% if not forloop.last %},{% endif %}{% endfor %}]"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit</button>
+      <button type="button" class="bm-btn-ghost bm-btn-sm text-teal-700 hover:bg-teal-50" data-action="edit-vendor"
+        data-vendor-id="{{ vendor.id }}"
+        data-vendor-name="{{ vendor.shop_name }}"
+        data-owner-name="{{ vendor.owner_name }}"
+        data-phone="{{ vendor.user.username }}"
+        data-email="{{ vendor.user.email }}"
+        data-address="{{ vendor.full_address }}"
+        data-city="{{ vendor.city }}"
+        data-state="{{ vendor.state }}"
+        data-pincode="{{ vendor.pincode }}"
+        data-lat="{{ vendor.latitude|default:'' }}"
+        data-lng="{{ vendor.longitude|default:'' }}"
+        data-aadhaar="{{ vendor.aadhaar_number|default:vendor.aadhaar_last4 }}"
+        data-pan="{{ vendor.pan_number|default:vendor.pan_last4 }}"
+        data-gst="{{ vendor.gst_number }}"
+        data-kyc="{{ vendor.kyc_status }}"
+        data-kyc-reason="{{ vendor.kyc_rejection_reason }}"
+        data-account="{% if vendor.user.profile.account_status %}{{ vendor.user.profile.account_status }}{% else %}Active{% endif %}"
+        data-online="{{ vendor.is_online|yesno:'Online,Offline' }}"
+        data-zone-ids="[{% for z in vendor.operating_zones.all %}{{ z.id }}{% if not forloop.last %},{% endif %}{% endfor %}]"
+        data-category-ids="[{% for c in vendor.categories.all %}{{ c.id }}{% if not forloop.last %},{% endif %}{% endfor %}]"
+        data-bank-holder="{{ vendor.user.bank_details.account_holder_name|default:'' }}"
+        data-bank-name="{{ vendor.user.bank_details.bank_name|default:'' }}"
+        data-bank-acc="{{ vendor.user.bank_details.account_number|default:'' }}"
+        data-bank-ifsc="{{ vendor.user.bank_details.ifsc_code|default:'' }}"
+        data-bank-upi="{{ vendor.user.bank_details.upi_id|default:'' }}"
+      ><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> Edit</button>
       <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-row" data-vendor-id="{{ vendor.id }}" data-item-name="{{ vendor.shop_name }}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg> Delete</button>
     </div>
   </td>
@@ -291,87 +317,203 @@
     </div>
   </div>
 
-  <!-- Modal: Edit Vendor -->
+  <!-- Modal: Edit Vendor (Comprehensive Full Profile & Credentials Editor) -->
   <div class="bm-modal-backdrop" id="modalEditVendor" data-modal role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="bm-modal" role="document">
-      <form method="post" action="/admin/vendors/edit" id="formEditVendor">
-        <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+    <div class="bm-modal max-w-2xl w-[94vw]" role="document" style="max-height: 90vh;">
+      <form method="post" action="/admin/vendors/edit" id="formEditVendor" class="flex flex-col h-full">
+        <!-- Modal Header -->
+        <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-3.5 bg-slate-50/80">
           <div>
-            <h2 class="text-[0.9375rem] font-bold text-ink-900">Edit Vendor Profile</h2>
-            <p class="text-[0.75rem] text-slate-500">Super Administrator override for vendor credentials & operating status.</p>
+            <div class="flex items-center gap-2">
+              <h2 class="text-base font-bold text-ink-900">Edit Vendor Profile</h2>
+              <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 text-xs font-mono" id="edit-vendor-badge">VND</span>
+            </div>
+            <p class="text-[0.75rem] text-slate-500">Super Administrator complete override for credentials, address, GPS, KYC, zones, and banking.</p>
           </div>
-          <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+          <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-200/60 hover:text-slate-600" data-modal-close aria-label="Close dialog">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </button>
         </div>
-        <div class="bm-card-bd space-y-3">
+
+        <!-- Modal Body (Scrollable) -->
+        <div class="bm-card-bd space-y-4 overflow-y-auto px-5 py-4 max-h-[70vh]">
           <input type="hidden" id="edit-vendor-id" name="vendor_id" value="">
-          <div>
-            <label class="bm-label" for="edit-vendor-name">Business / Scrap Yard Name <span class="text-rose-600">*</span></label>
-            <input class="bm-input" id="edit-vendor-name" name="name" type="text" required>
-          </div>
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="bm-label" for="edit-vendor-owner">Owner Name <span class="text-rose-600">*</span></label>
-              <input class="bm-input" id="edit-vendor-owner" name="owner" type="text" required>
+
+          <!-- SECTION 1: BUSINESS & CONTACT INFO -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"/></svg>
+                Business & Contact Details
+              </h3>
+              <span class="text-[0.7rem] text-slate-400">Primary Identity</span>
             </div>
-            <div class="col-6">
-              <label class="bm-label" for="edit-vendor-phone">Phone Number <span class="text-rose-600">*</span></label>
-              <input class="bm-input" id="edit-vendor-phone" name="phone" type="text" required>
+            <div>
+              <label class="bm-label" for="edit-vendor-name">Business / Scrap Yard Name <span class="text-rose-600">*</span></label>
+              <input class="bm-input" id="edit-vendor-name" name="name" type="text" placeholder="e.g. GreenLoop Scrap Traders" required>
             </div>
-          </div>
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="bm-label" for="edit-vendor-email">Email Address <span class="text-rose-600">*</span></label>
-              <input class="bm-input" id="edit-vendor-email" name="email" type="email" required>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-owner">Owner Full Name <span class="text-rose-600">*</span></label>
+                <input class="bm-input" id="edit-vendor-owner" name="owner" type="text" placeholder="e.g. Ramesh Patil" required>
+              </div>
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-phone">Phone Number / Username <span class="text-rose-600">*</span></label>
+                <input class="bm-input" id="edit-vendor-phone" name="phone" type="text" placeholder="e.g. 9876543210" required>
+              </div>
             </div>
-            <div class="col-6">
-              <label class="bm-label" for="edit-vendor-city">City <span class="text-rose-600">*</span></label>
-              <select class="bm-select" id="edit-vendor-city" name="city" required>
-                <option value="Mumbai">Mumbai</option>
-                <option value="Pune">Pune</option>
-                <option value="Bengaluru">Bengaluru</option>
-                <option value="Jaipur">Jaipur</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Nagpur">Nagpur</option>
-                <option value="Hyderabad">Hyderabad</option>
-              </select>
+            <div>
+              <label class="bm-label" for="edit-vendor-email">Email Address</label>
+              <input class="bm-input" id="edit-vendor-email" name="email" type="email" placeholder="vendor@example.com">
             </div>
           </div>
-          <div class="row g-2">
-            <div class="col-4">
-              <label class="bm-label" for="edit-vendor-kyc">KYC Status</label>
-              <select class="bm-select" id="edit-vendor-kyc" name="kyc_status">
-                <option value="Approved">Approved</option>
-                <option value="Pending review">Pending review</option>
-                <option value="Rejected">Rejected</option>
-              </select>
+
+          <!-- SECTION 2: OPERATING STATUS & KYC VERIFICATION -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Operating Status & KYC Verification
+              </h3>
+              <span class="text-[0.7rem] text-slate-400">Authorization</span>
             </div>
-            <div class="col-4">
-              <label class="bm-label" for="edit-vendor-account">Account Status</label>
-              <select class="bm-select" id="edit-vendor-account" name="account_status">
-                <option value="Active">Active</option>
-                <option value="Blocked">Blocked</option>
-              </select>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-kyc">KYC Status</label>
+                <select class="bm-select" id="edit-vendor-kyc" name="kyc_status">
+                  <option value="APPROVED">Approved</option>
+                  <option value="UNDER_REVIEW">Under Review</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="REJECTED">Rejected</option>
+                  <option value="SUSPENDED">Suspended</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-account">Account Status</label>
+                <select class="bm-select" id="edit-vendor-account" name="account_status">
+                  <option value="Active">Active</option>
+                  <option value="Blocked">Blocked</option>
+                  <option value="Suspended">Suspended</option>
+                </select>
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-online">Availability</label>
+                <select class="bm-select" id="edit-vendor-online" name="online_status">
+                  <option value="Online">Online</option>
+                  <option value="Offline">Offline</option>
+                </select>
+              </div>
             </div>
-            <div class="col-4">
-              <label class="bm-label" for="edit-vendor-online">Availability</label>
-              <select class="bm-select" id="edit-vendor-online" name="online_status">
-                <option value="Online">Online</option>
-                <option value="Offline">Offline</option>
-              </select>
+            <div>
+              <label class="bm-label" for="edit-vendor-kyc-reason">KYC Notes / Rejection Reason</label>
+              <input class="bm-input text-xs" id="edit-vendor-kyc-reason" name="kyc_rejection_reason" type="text" placeholder="Notes for vendor if under review or reason if rejected">
             </div>
           </div>
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="bm-label mb-0">Assigned Scrap Categories</label>
+
+          <!-- SECTION 3: ADDRESS, LOCATION & GPS COORDINATES -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Physical Address & GPS Coordinates
+              </h3>
+              <span class="text-[0.7rem] text-slate-400">Order Matching</span>
+            </div>
+            <div>
+              <label class="bm-label" for="edit-vendor-address">Full Address / Street / Yard Location</label>
+              <textarea class="bm-input text-xs" id="edit-vendor-address" name="full_address" rows="2" placeholder="e.g. Plot No 42, Mayapuri Industrial Area Phase II"></textarea>
+            </div>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-city">City <span class="text-rose-600">*</span></label>
+                <input class="bm-input" id="edit-vendor-city" name="city" type="text" placeholder="e.g. Delhi" required>
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-state">State</label>
+                <input class="bm-input" id="edit-vendor-state" name="state" type="text" placeholder="e.g. Delhi">
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-pincode">Pincode</label>
+                <input class="bm-input" id="edit-vendor-pincode" name="pincode" type="text" maxlength="6" placeholder="e.g. 110020">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-lat">Latitude</label>
+                <input class="bm-input font-mono text-xs" id="edit-vendor-lat" name="latitude" type="text" placeholder="e.g. 28.5355161">
+              </div>
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-lng">Longitude</label>
+                <input class="bm-input font-mono text-xs" id="edit-vendor-lng" name="longitude" type="text" placeholder="e.g. 77.3910265">
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: OPERATING SERVICE ZONES -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-purple-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                Operating Service Zones
+              </h3>
+              <span class="text-[0.7rem] text-slate-500">Pickups dispatched in these zones</span>
+            </div>
+            <div class="max-h-36 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 p-2 space-y-2">
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {% for zone in all_zones %}
+                <label class="flex items-center gap-1.5 p-1 rounded bg-white border border-slate-200/80 text-[0.72rem] cursor-pointer hover:bg-slate-50 transition-colors">
+                  <input type="checkbox" name="zone_ids" value="{{ zone.id }}" class="zone-checkbox rounded text-brand-600 focus:ring-brand-500 h-3.5 w-3.5" data-zone-id="{{ zone.id }}">
+                  <span class="truncate" title="{{ zone.name }} ({{ zone.city.name }})">{{ zone.name }}</span>
+                </label>
+                {% empty %}
+                <p class="text-xs text-slate-400 col-span-3">No active zones configured.</p>
+                {% endfor %}
+              </div>
+            </div>
+            <p class="text-[0.7rem] text-slate-400">Select zones this vendor can service. Orders in these zones will be broadcasted to this vendor.</p>
+          </div>
+
+          <!-- SECTION 5: GOVERNMENT TAX & KYC IDS -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/></svg>
+                Government IDs & Tax Credentials
+              </h3>
+              <span class="text-[0.7rem] text-slate-400">Statutory Compliance</span>
+            </div>
+            <div class="row g-2">
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-aadhaar">Aadhaar Number</label>
+                <input class="bm-input font-mono text-xs" id="edit-vendor-aadhaar" name="aadhaar_number" type="text" placeholder="12-digit number">
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-pan">PAN Number</label>
+                <input class="bm-input font-mono text-xs uppercase" id="edit-vendor-pan" name="pan_number" type="text" maxlength="10" placeholder="e.g. ABCDE1234F">
+              </div>
+              <div class="col-4">
+                <label class="bm-label" for="edit-vendor-gst">GST Number</label>
+                <input class="bm-input font-mono text-xs uppercase" id="edit-vendor-gst" name="gst_number" type="text" maxlength="15" placeholder="15-char GSTIN">
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 6: ASSIGNED SCRAP CATEGORIES -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                Assigned Scrap Categories
+              </h3>
               <span class="text-[0.7rem] font-medium text-emerald-700">All subcategories enabled</span>
             </div>
-            <div class="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 space-y-2">
+            <div class="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 p-2 space-y-2">
               {% for cat in all_categories %}
-              <label class="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-2.5 shadow-sm cursor-pointer hover:border-brand-300 hover:bg-slate-50 transition-colors">
+              <label class="flex items-start gap-2.5 rounded-md border border-slate-200 bg-white p-2 shadow-xs cursor-pointer hover:border-brand-300 hover:bg-slate-50 transition-colors">
                 <input type="checkbox" name="category_ids" value="{{ cat.id }}" class="cat-checkbox rounded text-brand-600 focus:ring-brand-500 h-4 w-4 mt-0.5" data-cat-id="{{ cat.id }}">
                 <div class="flex-1">
                   <div class="font-bold text-xs text-slate-900">{{ cat.name }}</div>
-                  <div class="text-[0.7rem] text-slate-500 mt-0.5">
+                  <div class="text-[0.68rem] text-slate-500 mt-0.5">
                     {% if cat.subcategories.all %}
                       <span class="text-slate-400">Includes:</span> {% for sub in cat.subcategories.all %}{{ sub.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
                     {% else %}
@@ -384,12 +526,49 @@
               <p class="text-xs text-slate-400">No active categories configured.</p>
               {% endfor %}
             </div>
-            <p class="mt-1 text-[0.7rem] text-slate-400">Vendor is assigned at the Category level and automatically receives and sees orders for all subcategories within them.</p>
           </div>
+
+          <!-- SECTION 7: BANK ACCOUNT & PAYOUT DETAILS -->
+          <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <svg class="h-4 w-4 text-teal-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                Bank Account & Payout Details
+              </h3>
+              <span class="text-[0.7rem] text-slate-400">Vendor Settlements</span>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-bank-holder">Account Holder Name</label>
+                <input class="bm-input" id="edit-vendor-bank-holder" name="account_holder_name" type="text" placeholder="e.g. Ramesh Patil">
+              </div>
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-bank-name">Bank Name</label>
+                <input class="bm-input" id="edit-vendor-bank-name" name="bank_name" type="text" placeholder="e.g. HDFC Bank">
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="bm-label" for="edit-vendor-bank-acc">Account Number</label>
+                <input class="bm-input font-mono text-xs" id="edit-vendor-bank-acc" name="account_number" type="text" placeholder="e.g. 50100234567890">
+              </div>
+              <div class="col-3">
+                <label class="bm-label" for="edit-vendor-bank-ifsc">IFSC Code</label>
+                <input class="bm-input font-mono text-xs uppercase" id="edit-vendor-bank-ifsc" name="ifsc_code" type="text" maxlength="11" placeholder="HDFC0001234">
+              </div>
+              <div class="col-3">
+                <label class="bm-label" for="edit-vendor-bank-upi">UPI ID</label>
+                <input class="bm-input font-mono text-xs" id="edit-vendor-bank-upi" name="upi_id" type="text" placeholder="vendor@okaxis">
+              </div>
+            </div>
+          </div>
+
         </div>
-        <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+
+        <!-- Modal Footer -->
+        <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/80 px-5 py-3">
           <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-          <button type="submit" class="bm-btn-primary">Save Changes</button>
+          <button type="submit" class="bm-btn-primary" id="btnSaveVendorChanges">Save All Changes</button>
         </div>
       </form>
     </div>

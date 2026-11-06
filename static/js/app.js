@@ -642,72 +642,127 @@
       e.preventDefault();
       activeEditingRow = btn.closest("tr");
 
-      const vid = btn.getAttribute("data-vendor-id") || "VND-501";
-      const name = btn.getAttribute("data-vendor-name") || "GreenLoop Recycling";
-      const owner = btn.getAttribute("data-owner-name") || "Anil Kulkarni";
-      const phone = btn.getAttribute("data-phone") || "+91 98765 41200";
-      const email = btn.getAttribute("data-email") || "anil@greenloop.in";
-      const city = btn.getAttribute("data-city") || "Mumbai";
-      const kyc = btn.getAttribute("data-kyc") || "Approved";
+      const vid = btn.getAttribute("data-vendor-id") || "";
+      const name = btn.getAttribute("data-vendor-name") || "";
+      const owner = btn.getAttribute("data-owner-name") || "";
+      const phone = btn.getAttribute("data-phone") || "";
+      const email = btn.getAttribute("data-email") || "";
+      const address = btn.getAttribute("data-address") || "";
+      const city = btn.getAttribute("data-city") || "";
+      const state = btn.getAttribute("data-state") || "";
+      const pincode = btn.getAttribute("data-pincode") || "";
+      const lat = btn.getAttribute("data-lat") || "";
+      const lng = btn.getAttribute("data-lng") || "";
+      const aadhaar = btn.getAttribute("data-aadhaar") || "";
+      const pan = btn.getAttribute("data-pan") || "";
+      const gst = btn.getAttribute("data-gst") || "";
+      const kyc = btn.getAttribute("data-kyc") || "APPROVED";
+      const kycReason = btn.getAttribute("data-kyc-reason") || "";
       const account = btn.getAttribute("data-account") || "Active";
       const online = btn.getAttribute("data-online") || "Online";
 
-      const idInput = document.getElementById("edit-vendor-id");
-      const nameInput = document.getElementById("edit-vendor-name");
-      const ownerInput = document.getElementById("edit-vendor-owner");
-      const phoneInput = document.getElementById("edit-vendor-phone");
-      const emailInput = document.getElementById("edit-vendor-email");
-      const citySelect = document.getElementById("edit-vendor-city");
-      const kycSelect = document.getElementById("edit-vendor-kyc");
-      const accountSelect = document.getElementById("edit-vendor-account");
-      const onlineSelect = document.getElementById("edit-vendor-online");
+      const bankHolder = btn.getAttribute("data-bank-holder") || "";
+      const bankName = btn.getAttribute("data-bank-name") || "";
+      const bankAcc = btn.getAttribute("data-bank-acc") || "";
+      const bankIfsc = btn.getAttribute("data-bank-ifsc") || "";
+      const bankUpi = btn.getAttribute("data-bank-upi") || "";
 
-      if (idInput) idInput.value = vid;
-      if (nameInput) nameInput.value = name;
-      if (ownerInput) ownerInput.value = owner;
-      if (phoneInput) phoneInput.value = phone;
-      if (emailInput) emailInput.value = email;
-      if (citySelect) citySelect.value = city;
-      if (kycSelect) kycSelect.value = kyc;
-      if (accountSelect) accountSelect.value = account;
-      if (onlineSelect) onlineSelect.value = online;
+      // Populate Inputs
+      const badge = document.getElementById("edit-vendor-badge");
+      if (badge) badge.textContent = "VND-" + (parseInt(vid) > 500 ? vid : (500 + parseInt(vid || 1)));
 
-      // Sync category and subcategory checkboxes
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      };
+
+      setVal("edit-vendor-id", vid);
+      setVal("edit-vendor-name", name);
+      setVal("edit-vendor-owner", owner);
+      setVal("edit-vendor-phone", phone);
+      setVal("edit-vendor-email", email);
+      setVal("edit-vendor-address", address);
+      setVal("edit-vendor-city", city);
+      setVal("edit-vendor-state", state);
+      setVal("edit-vendor-pincode", pincode);
+      setVal("edit-vendor-lat", lat);
+      setVal("edit-vendor-lng", lng);
+      setVal("edit-vendor-aadhaar", aadhaar);
+      setVal("edit-vendor-pan", pan);
+      setVal("edit-vendor-gst", gst);
+      setVal("edit-vendor-kyc", kyc.toUpperCase());
+      setVal("edit-vendor-kyc-reason", kycReason);
+      setVal("edit-vendor-account", account);
+      setVal("edit-vendor-online", online);
+
+      setVal("edit-vendor-bank-holder", bankHolder);
+      setVal("edit-vendor-bank-name", bankName);
+      setVal("edit-vendor-bank-acc", bankAcc);
+      setVal("edit-vendor-bank-ifsc", bankIfsc);
+      setVal("edit-vendor-bank-upi", bankUpi);
+
+      // Checkboxes: Categories & Zones from data attributes
       let catIds = [];
-      let subIds = [];
-      try {
-        catIds = JSON.parse(btn.getAttribute("data-category-ids") || "[]");
-      } catch (err) { catIds = []; }
-      try {
-        subIds = JSON.parse(btn.getAttribute("data-subcategory-ids") || "[]");
-      } catch (err) { subIds = []; }
+      let zoneIds = [];
+      try { catIds = JSON.parse(btn.getAttribute("data-category-ids") || "[]"); } catch (err) { catIds = []; }
+      try { zoneIds = JSON.parse(btn.getAttribute("data-zone-ids") || "[]"); } catch (err) { zoneIds = []; }
 
       document.querySelectorAll("#modalEditVendor .cat-checkbox").forEach(cb => {
         cb.checked = catIds.includes(parseInt(cb.value));
       });
-      document.querySelectorAll("#modalEditVendor .subcat-checkbox").forEach(cb => {
-        cb.checked = subIds.includes(parseInt(cb.value));
+      document.querySelectorAll("#modalEditVendor .zone-checkbox").forEach(cb => {
+        cb.checked = zoneIds.includes(parseInt(cb.value));
       });
 
-      openModal("modalEditVendor");
-    });
+      // Background fresh fetch from server
+      if (vid) {
+        fetch('/admin/vendors/' + vid + '/data', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.success && data.vendor) {
+              const v = data.vendor;
+              if (v.display_id && badge) badge.textContent = v.display_id;
+              if (v.shop_name) setVal("edit-vendor-name", v.shop_name);
+              if (v.owner_name) setVal("edit-vendor-owner", v.owner_name);
+              if (v.phone) setVal("edit-vendor-phone", v.phone);
+              if (v.email) setVal("edit-vendor-email", v.email);
+              if (v.full_address) setVal("edit-vendor-address", v.full_address);
+              if (v.city) setVal("edit-vendor-city", v.city);
+              if (v.state) setVal("edit-vendor-state", v.state);
+              if (v.pincode) setVal("edit-vendor-pincode", v.pincode);
+              if (v.latitude) setVal("edit-vendor-lat", v.latitude);
+              if (v.longitude) setVal("edit-vendor-lng", v.longitude);
+              if (v.aadhaar_number) setVal("edit-vendor-aadhaar", v.aadhaar_number);
+              if (v.pan_number) setVal("edit-vendor-pan", v.pan_number);
+              if (v.gst_number) setVal("edit-vendor-gst", v.gst_number);
+              if (v.kyc_status) setVal("edit-vendor-kyc", v.kyc_status.toUpperCase());
+              if (v.kyc_rejection_reason) setVal("edit-vendor-kyc-reason", v.kyc_rejection_reason);
+              if (v.account_status) setVal("edit-vendor-account", v.account_status);
+              setVal("edit-vendor-online", v.is_online ? "Online" : "Offline");
 
-    // Parent checkbox toggles child subcategories in Edit Vendor Modal
-    document.addEventListener("change", function (e) {
-      if (e.target.matches("#modalEditVendor .cat-checkbox")) {
-        const catId = e.target.getAttribute("data-cat-id");
-        const checked = e.target.checked;
-        document.querySelectorAll(`#modalEditVendor .subcat-checkbox[data-parent-cat="${catId}"]`).forEach(subCb => {
-          subCb.checked = checked;
-        });
+              if (v.bank) {
+                if (v.bank.account_holder_name) setVal("edit-vendor-bank-holder", v.bank.account_holder_name);
+                if (v.bank.bank_name) setVal("edit-vendor-bank-name", v.bank.bank_name);
+                if (v.bank.account_number) setVal("edit-vendor-bank-acc", v.bank.account_number);
+                if (v.bank.ifsc_code) setVal("edit-vendor-bank-ifsc", v.bank.ifsc_code);
+                if (v.bank.upi_id) setVal("edit-vendor-bank-upi", v.bank.upi_id);
+              }
+              if (Array.isArray(v.category_ids)) {
+                document.querySelectorAll("#modalEditVendor .cat-checkbox").forEach(cb => {
+                  cb.checked = v.category_ids.includes(parseInt(cb.value));
+                });
+              }
+              if (Array.isArray(v.operating_zone_ids)) {
+                document.querySelectorAll("#modalEditVendor .zone-checkbox").forEach(cb => {
+                  cb.checked = v.operating_zone_ids.includes(parseInt(cb.value));
+                });
+              }
+            }
+          })
+          .catch(err => console.log("Vendor data fetch error:", err));
       }
-      if (e.target.matches("#modalEditVendor .subcat-checkbox")) {
-        const parentId = e.target.getAttribute("data-parent-cat");
-        const parentCb = document.querySelector(`#modalEditVendor .cat-checkbox[data-cat-id="${parentId}"]`);
-        if (parentCb && e.target.checked) {
-          parentCb.checked = true;
-        }
-      }
+
+      openModal("modalEditVendor");
     });
 
     // 4. Submit Edit Vendor Form
