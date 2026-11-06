@@ -1425,6 +1425,36 @@ def serialize_vendor_order(order, vendor, *, assigned=False):
     return payload
 
 
+def vendor_category_selection(data):
+    """Validate category-only selection, including repeated multipart fields."""
+    if 'category_ids' not in data:
+        return None
+    raw = data.getlist('category_ids') if hasattr(data, 'getlist') else data['category_ids']
+    if isinstance(raw, list) and len(raw) == 1 and isinstance(raw[0], str):
+        raw = raw[0]
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw) if raw.strip().startswith('[') else raw.split(',')
+        except (ValueError, TypeError):
+            raw = raw.split(',')
+    if not isinstance(raw, list) or not raw:
+        raise ValueError('category_ids must be a non-empty list of positive integers.')
+    ids = []
+    for value in raw:
+        if isinstance(value, bool) or not re.fullmatch(r'[1-9]\d*', str(value).strip()):
+            raise ValueError('Every category_id must be a positive integer.')
+        ids.append(int(value))
+    categories = list(ScrapCategory.objects.filter(id__in=set(ids), is_active=True))
+    if len(categories) != len(set(ids)):
+        raise ValueError('One or more categories are invalid or inactive.')
+    return categories
+
+
+def set_vendor_categories(vendor, categories):
+    vendor.categories.set(categories)
+    vendor.subcategories.set(ScrapSubCategory.objects.filter(category__in=categories, is_active=True))
+
+
 @api_view(['GET', 'POST', 'PUT', 'PATCH'])
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
@@ -1439,6 +1469,10 @@ def vendor_profile_view(request):
     if consent:
         return consent
     data = request.data
+    try:
+        selected_categories = vendor_category_selection(data)
+    except ValueError as exc:
+        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     coordinates = {}
     for field, minimum, maximum in (('latitude', Decimal('-90'), Decimal('90')), ('longitude', Decimal('-180'), Decimal('180'))):
         if field in data and data[field] not in ('', None):
@@ -1481,42 +1515,8 @@ def vendor_profile_view(request):
         vendor.profile_picture = picture
     vendor.save()
 
-    # Optional category & subcategory assignment during profile creation / update
-    raw_cat = data.get('category_ids')
-    raw_sub = data.get('subcategory_ids')
-    if raw_cat is not None or raw_sub is not None:
-        def _parse_id_list(val):
-            if val is None:
-                return []
-            if isinstance(val, (int, float)):
-                return [int(val)]
-            if isinstance(val, str):
-                val = val.strip()
-                if not val:
-                    return []
-                try:
-                    loaded = json.loads(val)
-                    if isinstance(loaded, list):
-                        return [int(x) for x in loaded if not isinstance(x, bool) and str(x).isdigit()]
-                except Exception:
-                    pass
-                return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
-            if isinstance(val, list):
-                return [int(x) for x in val if not isinstance(x, bool) and str(x).isdigit()]
-            return []
-
-        cat_ids = _parse_id_list(raw_cat)
-        sub_ids = _parse_id_list(raw_sub)
-        if sub_ids and not cat_ids:
-            parent_cat_ids = list(ScrapSubCategory.objects.filter(id__in=sub_ids, is_active=True).values_list('category_id', flat=True))
-            cat_ids = list(set(parent_cat_ids))
-        if cat_ids and not sub_ids:
-            sub_ids = list(ScrapSubCategory.objects.filter(category_id__in=cat_ids, is_active=True).values_list('id', flat=True))
-        if cat_ids:
-            valid_cats = list(ScrapCategory.objects.filter(id__in=cat_ids, is_active=True))
-            vendor.categories.set(valid_cats)
-            all_child_subcats = list(ScrapSubCategory.objects.filter(category__in=valid_cats, is_active=True))
-            vendor.subcategories.set(all_child_subcats)
+    if selected_categories is not None:
+        set_vendor_categories(vendor, selected_categories)
 
     return Response({'success': True, 'message': 'Vendor profile saved.', 'vendor': serialize_vendor_profile(vendor)}, status=status.HTTP_201_CREATED if request.method == 'POST' else status.HTTP_200_OK)
 
@@ -1570,57 +1570,14 @@ def vendor_categories_view(request):
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     
     if request.method in ('PUT', 'POST'):
-        raw_cat = request.data.get('category_ids')
-        raw_sub = request.data.get('subcategory_ids')
-        
-        def parse_ids(val):
-            if val is None:
-                return []
-            if isinstance(val, (int, float)):
-                return [int(val)]
-            if isinstance(val, str):
-                val = val.strip()
-                if not val:
-                    return []
-                try:
-                    loaded = json.loads(val)
-                    if isinstance(loaded, list):
-                        return [int(x) for x in loaded if not isinstance(x, bool) and str(x).isdigit()]
-                except Exception:
-                    pass
-                return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
-            if isinstance(val, list):
-                return [int(x) for x in val if not isinstance(x, bool) and str(x).isdigit()]
-            return []
-
-        category_ids = parse_ids(raw_cat)
-        subcategory_ids = parse_ids(raw_sub)
-
-        # Smart fallback:
-        # If subcategories provided without category_ids, auto-find parent category_ids
-        if subcategory_ids and not category_ids:
-            parent_cat_ids = list(ScrapSubCategory.objects.filter(id__in=subcategory_ids, is_active=True).values_list('category_id', flat=True))
-            category_ids = list(set(parent_cat_ids))
-        
-        # If category_ids provided without subcategories, auto-include all active subcategories of those categories
-        if category_ids and not subcategory_ids:
-            child_sub_ids = list(ScrapSubCategory.objects.filter(category_id__in=category_ids, is_active=True).values_list('id', flat=True))
-            subcategory_ids = list(set(child_sub_ids))
-
-        if not category_ids and not subcategory_ids:
-            return Response({'success': False, 'message': 'category_ids is required.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        categories = list(ScrapCategory.objects.filter(id__in=set(category_ids), is_active=True))
-        if not categories:
-            return Response({'success': False, 'message': 'Invalid category selection.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # All subcategories belonging to these categories are automatically enabled for the vendor
-        subcategories = list(ScrapSubCategory.objects.filter(
-            category__in=categories, is_active=True
-        ).select_related('category'))
-
-        vendor.categories.set(categories)
-        vendor.subcategories.set(subcategories)
+        try:
+            categories = vendor_category_selection(request.data)
+            if categories is None:
+                raise ValueError('category_ids is required.')
+        except ValueError as exc:
+            return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        set_vendor_categories(vendor, categories)
+        subcategories = vendor.subcategories.all()
         audit_event(request.user, 'VENDOR', 'VENDOR_CLASSIFICATIONS_UPDATED', vendor, metadata={
             'category_ids': [c.id for c in categories],
             'subcategory_ids': [s.id for s in subcategories],
@@ -1645,6 +1602,10 @@ def vendor_availability_view(request):
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     
+    try:
+        selected_categories = vendor_category_selection(request.data)
+    except ValueError as exc:
+        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     online_flag = truthy(request.data.get('is_online', True)) if 'is_online' in request.data else not vendor.is_online
     if vendor.kyc_status != VendorProfile.KYCStatus.APPROVED and online_flag:
         return Response({'success': False, 'message': 'Only approved vendors can go online.'}, status=status.HTTP_403_FORBIDDEN)
@@ -1658,11 +1619,8 @@ def vendor_availability_view(request):
         if active_subcats and not vendor.subcategories.exists():
             vendor.subcategories.set(active_subcats)
 
-    # Allow passing category_ids or subcategory_ids in payload if desired
-    if 'category_ids' in request.data:
-        vendor.categories.set(request.data.get('category_ids', []))
-    if 'subcategory_ids' in request.data:
-        vendor.subcategories.set(request.data.get('subcategory_ids', []))
+    if selected_categories is not None:
+        set_vendor_categories(vendor, selected_categories)
 
     vendor.is_online = online_flag
     vendor.save(update_fields=['is_online', 'updated_at'])
@@ -2294,7 +2252,9 @@ def vendor_dashboard_view(request):
     available = eligible_vendor_orders(vendor).filter(Q(acceptance_deadline__isnull=True) | Q(acceptance_deadline__gte=timezone.now())).count() if not vendor_block_reason(vendor, require_online=True) else 0
     assigned = PickupOrder.objects.filter(assigned_vendor=request.user)
     completed_statuses = [PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT]
-    return Response({'success': True, 'summary': {
+    classifications = serialize_vendor_profile(vendor)
+    return Response({'success': True, 'categories': classifications['categories'],
+                     'subcategories': classifications['subcategories'], 'summary': {
         'available_orders': available,
         'active_orders': assigned.exclude(status__in=completed_statuses + [PickupOrder.Status.CANCELLED]).count(),
         'completed_orders': assigned.filter(status__in=completed_statuses).count(),

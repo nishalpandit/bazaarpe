@@ -693,6 +693,44 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(proposal.proposer_role, NegotiationProposal.ProposerRole.USER)
         self.assertTrue(MarketplaceAuditLog.objects.filter(order=order, action='PRICE_COUNTERED').exists())
 
+    def test_vendor_profile_category_only_create_update_and_dashboard(self):
+        self.authenticate(self.user_token)
+        second = ScrapCategory.objects.create(name='Profile Test Paper')
+        child = ScrapSubCategory.objects.create(category=second, name='Profile Test Cardboard', rate_per_kg='10')
+        inactive = ScrapSubCategory.objects.create(category=second, name='Inactive Cardboard', rate_per_kg='10', is_active=False)
+        ids = [self.subcategory.category_id, second.id]
+        response = self.client.post('/api/vendor/profile/', {
+            'shop_name': 'Category Test Shop', 'owner_name': 'Owner',
+            'full_address': '45 Industrial Area', 'city': 'Delhi', 'state': 'Delhi',
+            'pincode': '110020', 'category_ids': str(ids),
+        }, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+        vendor = VendorProfile.objects.get(user=self.user)
+        self.assertEqual(set(vendor.categories.values_list('id', flat=True)), set(ids))
+        self.assertTrue(vendor.subcategories.filter(pk=child.pk).exists())
+        self.assertFalse(vendor.subcategories.filter(pk=inactive.pk).exists())
+        response = self.client.patch('/api/vendor/profile/', {'category_ids': [second.id]}, format='multipart')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(list(vendor.categories.values_list('id', flat=True)), [second.id])
+        self.assertEqual(list(vendor.subcategories.values_list('id', flat=True)), [child.id])
+        dashboard = self.client.get('/api/vendor/dashboard/')
+        self.assertEqual(dashboard.status_code, 200, dashboard.data)
+        self.assertEqual(dashboard.data['subcategories'], [{'id': child.id, 'category_id': second.id, 'name': child.name}])
+        response = self.client.patch('/api/vendor/profile/', {'category_ids': ids}, format='multipart')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(vendor.categories.count(), 2)
+        for invalid in ([], [second.id, 999999], [True], ['bad']):
+            response = self.client.patch('/api/vendor/profile/', {'shop_name': 'Must not save', 'category_ids': invalid}, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
+        vendor.refresh_from_db()
+        self.assertEqual(vendor.shop_name, 'Category Test Shop')
+        self.assertEqual(vendor.categories.count(), 2)
+        response = self.client.patch('/api/vendor/profile/', {'owner_name': 'Updated'}, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(vendor.categories.count(), 2)
+        response = self.client.put('/api/vendor/categories/', {'subcategory_ids': [child.id]}, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+
     def test_vendor_category_selection_controls_marketplace_matching(self):
         order = self.publish_order(self.create_order())
         self.vendor_profile.categories.clear()

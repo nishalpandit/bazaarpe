@@ -353,6 +353,7 @@ PAGES = {
     'user-detail': 'user-detail.html',
     'users': 'users.html',
     'vendor-detail': 'vendor-detail.html',
+    'vendor-edit': 'vendor-edit.html',
     'vendors': 'vendors.html',
 }
 
@@ -795,6 +796,29 @@ def page_view(request, page_name):
             avg_rating=avg_rating,
         )
         return render(request, 'vendor-detail.html', ctx)
+
+    # 4b. VENDOR EDIT (Dedicated Full Page)
+    if clean_name == 'vendor-edit':
+        identifier = request.GET.get('id') or request.GET.get('vendor_id') or request.GET.get('q')
+        vendor = None
+        if identifier:
+            vendor = find_vendor_profile(identifier)
+        if not vendor:
+            vendor = VendorProfile.objects.select_related('user', 'user__profile').first()
+
+        all_zones = list(ServiceZone.objects.filter(is_active=True).select_related('city'))
+        all_categories = list(ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories'))
+        all_cities = list(ServiceCity.objects.filter(is_active=True))
+        ctx = admin_context(
+            request,
+            page_name='vendors',
+            vendor=vendor,
+            all_zones=all_zones,
+            all_categories=all_categories,
+            all_cities=all_cities,
+            saved=request.GET.get('saved') == '1',
+        )
+        return render(request, 'vendor-edit.html', ctx)
 
     # 5. KYC REVIEW QUEUE
     if clean_name == 'kyc':
@@ -2118,7 +2142,7 @@ def admin_action_view(request, action_path):
 
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f"Vendor '{vendor.shop_name}' updated successfully."})
-            return redirect('/vendors.html')
+            return redirect(f'/vendor-edit.html?id={vendor.id}&saved=1')
 
         if action.startswith('vendors/delete') or (action.startswith('vendors/') and action.endswith('/delete')):
             vendor_id = data.get('vendor_id') or data.get('id') or action.replace('vendors/', '').replace('/delete', '')

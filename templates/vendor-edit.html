@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Edit Vendor: {{ vendor.shop_name|default:"Vendor Profile" }} · Bazaarpe Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <link rel="icon" href="/static/images/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/tailwind.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+</head>
+<body class="" data-active="vendors">
+  <a href="#bmMain" class="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-white">Skip to content</a>
+  
+  <aside class="bm-sidebar bm-no-scroll" id="bmSidebar" aria-label="Admin navigation">
+    <div class="flex items-center gap-3 px-4 py-3.5 border-b border-white/10">
+      <img src="/static/images/logo.png" alt="Bazaarpe" class="shrink-0" style="height: 48px; width: auto; object-fit: contain; border-radius: 0 !important;">
+      <div class="min-w-0">
+        <span class="text-[1.125rem] font-extrabold tracking-tight text-white leading-none block">Bazaarpe</span>
+        <p class="text-[0.6875rem] uppercase font-bold tracking-wider text-white/70 mt-1">Admin Panel</p>
+      </div>
+      <button type="button" class="ml-auto rounded-md p-1.5 text-white/70 hover:bg-white/10 lg:hidden" data-sidebar-close aria-label="Close navigation">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto bm-scroll px-2.5 pb-4" aria-label="Modules">
+      <a class="bm-nav-link" href="index.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/></svg></span><span class="truncate">Dashboard</span></a>
+      <p class="bm-nav-group-label">Marketplace</p>
+      <a class="bm-nav-link" href="requests.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-6.5A8 8 0 0 1 13 4a8 8 0 0 1 8 8Z"/></svg></span><span class="truncate">Pickup requests</span><span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.requests|default:"0" }}</span></a>
+      <a class="bm-nav-link" href="orders.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z"/><path d="M3 8.5 12 14l9-5.5"/><path d="M12 14v7"/></svg></span><span class="truncate">Orders</span></a>
+      <a class="bm-nav-link is-active" href="vendors.html" aria-current="page"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg></span><span class="truncate">Vendors</span></a>
+      <a class="bm-nav-link" href="kyc.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 5 5.5v6c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5v-6z"/><path d="m9 12 2 2 4-4"/></svg></span><span class="truncate">KYC review queue</span><span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.kyc|default:"0" }}</span></a>
+      <a class="bm-nav-link" href="users.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.9"/><path d="M17.5 20a6.4 6.4 0 0 0-2-4.6"/></svg></span><span class="truncate">Users</span></a>
+      <p class="bm-nav-group-label">Money</p>
+      <a class="bm-nav-link" href="payments.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a3 3 0 0 1 3 3v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16z"/><path d="M16.5 12h2.8"/></svg></span><span class="truncate">Vendor payments</span></a>
+      <a class="bm-nav-link" href="invoices.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span><span class="truncate">Invoices</span></a>
+      <a class="bm-nav-link" href="settlements.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 12H4"/><path d="m10 6-6 6 6 6"/></svg></span><span class="truncate">User settlements</span><span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.settlements|default:"0" }}</span></a>
+      <a class="bm-nav-link" href="ledgers.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h8M8 11h8"/></svg></span><span class="truncate">Ledgers</span></a>
+      <a class="bm-nav-link" href="refunds.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10a9 9 0 1 1 3 6.7"/><path d="M3 4v6h6"/><path d="M12 8v4l3 2"/></svg></span><span class="truncate">Refunds</span><span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.refunds|default:"0" }}</span></a>
+      <p class="bm-nav-group-label">Trust &amp; content</p>
+      <a class="bm-nav-link" href="ratings.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m12 3.5 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9z"/></svg></span><span class="truncate">Ratings &amp; reviews</span><span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.ratings|default:"0" }}</span></a>
+      <a class="bm-nav-link" href="locations.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg></span><span class="truncate">Locations &amp; zones</span></a>
+      <a class="bm-nav-link" href="categories.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 12.5 12.5 20 4 11.5V4h7.5z"/><circle cx="8.5" cy="8.5" r="1.4"/></svg></span><span class="truncate">Categories</span></a>
+      <a class="bm-nav-link" href="cms.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><span class="truncate">CMS &amp; FAQs</span></a>
+      <p class="bm-nav-group-label">Administration</p>
+      <a class="bm-nav-link" href="settings.html"><span class="text-slate-400"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/></svg></span><span class="truncate">Platform settings</span></a>
+    </nav>
+  </aside>
+  
+  <div class="fixed inset-0 z-30 hidden bg-ink-900/30 lg:hidden" id="bmSidebarOverlay" data-sidebar-close aria-hidden="true"></div>
+
+  <div class="bm-main">
+    <header class="bm-topbar">
+      <div class="flex items-center gap-2 px-3 py-2.5 sm:px-5">
+        <button type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="bmSidebar">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+
+        <div class="hidden items-center gap-2 sm:flex">
+          <a class="text-[0.8125rem] font-medium text-slate-400 hover:text-brand-700" href="vendors.html">Vendors</a>
+          <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></span>
+          <a class="text-[0.8125rem] font-medium text-slate-400 hover:text-brand-700" href="vendor-detail.html?id={{ vendor.id }}">{{ vendor.shop_name|default:"Vendor Detail" }}</a>
+          <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></span>
+          <span class="text-[0.8125rem] font-bold text-slate-800">Edit Profile</span>
+        </div>
+
+        <div class="ml-auto flex items-center gap-2" style="margin-left: auto !important;">
+          <a href="vendor-detail.html?id={{ vendor.id }}" class="bm-btn-ghost bm-btn-sm text-xs font-semibold">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+            View Profile
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main class="px-3 pb-12 pt-3 sm:px-6 sm:pt-4" id="bmMain">
+      {% if saved %}
+      <div class="mb-4 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900 shadow-xs">
+        <div class="flex items-center gap-2.5">
+          <svg class="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+          <div>
+            <p class="text-xs font-bold">Vendor profile changes saved successfully!</p>
+            <p class="text-[0.72rem] text-emerald-700">All updated dispatch zones, categories, and account statuses are immediately active.</p>
+          </div>
+        </div>
+        <a href="vendor-detail.html?id={{ vendor.id }}" class="bm-btn-sm rounded-lg bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 px-3 py-1.5 transition-colors">Go to Vendor View</a>
+      </div>
+      {% endif %}
+
+      <form method="post" action="/admin/vendors/edit" id="formFullVendorEdit">
+        <input type="hidden" name="vendor_id" value="{{ vendor.id }}">
+
+        <!-- Top Header & Primary Action Bar -->
+        <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
+          <div class="flex items-center gap-3.5">
+            <div class="h-12 w-12 rounded-2xl bg-brand-50 border border-brand-200/80 flex items-center justify-center text-brand-700 font-extrabold text-base shadow-xs">
+              <svg class="h-6 w-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"/></svg>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight sm:text-xl">{{ vendor.shop_name }}</h1>
+                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-mono font-bold text-emerald-800">{{ vendor.display_vendor_id }}</span>
+                {% if vendor.is_online %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[0.7rem] font-bold text-emerald-700"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Online</span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[0.7rem] font-bold text-slate-600">Offline</span>
+                {% endif %}
+              </div>
+              <p class="text-xs text-slate-500 mt-1">Owner: <strong class="text-slate-800">{{ vendor.owner_name }}</strong> · Username: <strong class="text-slate-800 font-mono">{{ vendor.user.username }}</strong> · Super Admin Master Editor</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <a href="vendors.html" class="bm-btn-ghost text-xs font-semibold px-4 py-2.5 rounded-xl border border-slate-200">Discard</a>
+            <button type="submit" class="bm-btn-primary text-xs font-bold px-6 py-2.5 rounded-xl shadow-xs flex items-center gap-2">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+              Save Vendor Changes
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+          <!-- LEFT COLUMN: PRIMARY FORMS (8 Cols) -->
+          <div class="lg:col-span-8 space-y-5">
+
+            <!-- CARD 1: BUSINESS & CONTACT -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5m-4 0h4"/></svg>
+                  </div>
+                  <div>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Business & Contact Information</h2>
+                    <p class="text-[0.72rem] text-slate-400">Core operational identity visible across the marketplace</p>
+                  </div>
+                </div>
+                <span class="text-[0.7rem] font-semibold text-slate-400">Required</span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-name">Business / Scrap Yard Name <span class="text-rose-600">*</span></label>
+                  <input class="bm-input" id="input-vendor-name" name="name" type="text" value="{{ vendor.shop_name }}" placeholder="e.g. GreenLoop Scrap Traders" required>
+                </div>
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-owner">Owner Full Name <span class="text-rose-600">*</span></label>
+                  <input class="bm-input" id="input-vendor-owner" name="owner" type="text" value="{{ vendor.owner_name }}" placeholder="e.g. Ramesh Patil" required>
+                </div>
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-phone">Phone Number / Username <span class="text-rose-600">*</span></label>
+                  <input class="bm-input font-mono" id="input-vendor-phone" name="phone" type="text" value="{{ vendor.user.username }}" placeholder="e.g. 9876543210" required>
+                  <p class="text-[0.68rem] text-slate-400 mt-1">Used for mobile app OTP login</p>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-email">Email Address</label>
+                  <input class="bm-input" id="input-vendor-email" name="email" type="email" value="{{ vendor.user.email|default:'' }}" placeholder="vendor@example.com">
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 2: SCRAP CATEGORIES (AUTO-SYNC SUBCATEGORIES) -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                  </div>
+                  <div>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Assigned Scrap Categories</h2>
+                    <p class="text-[0.72rem] text-slate-400">Vendor receives and accepts all pickup orders under checked categories</p>
+                  </div>
+                </div>
+                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[0.7rem] font-bold text-emerald-800">Auto-Subcategory Sync</span>
+              </div>
+
+              <div class="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 text-amber-900 text-xs flex items-center gap-2">
+                <svg class="h-4 w-4 text-amber-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Vendor is assigned at the <strong>Category level</strong>. Checking a category automatically authorizes the vendor for <strong>all its child subcategories</strong>.</span>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {% for cat in all_categories %}
+                <label class="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs cursor-pointer hover:border-brand-400 hover:bg-brand-50/20 transition-all">
+                  <input type="checkbox" name="category_ids" value="{{ cat.id }}" class="cat-checkbox rounded text-brand-600 focus:ring-brand-500 h-4 w-4 mt-0.5" {% if cat in vendor.categories.all %}checked{% endif %}>
+                  <div class="flex-1 min-w-0">
+                    <div class="font-bold text-xs text-slate-900">{{ cat.name }}</div>
+                    <div class="text-[0.72rem] text-slate-500 mt-1">
+                      {% if cat.subcategories.all %}
+                        <span class="text-slate-400 font-medium">Includes:</span>
+                        <div class="flex flex-wrap gap-1 mt-1">
+                          {% for sub in cat.subcategories.all %}
+                          <span class="inline-block bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[0.68rem] font-medium">{{ sub.name }}</span>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        All scrap pickup orders under this category
+                      {% endif %}
+                    </div>
+                  </div>
+                </label>
+                {% empty %}
+                <p class="text-xs text-slate-400 col-span-2 py-4 text-center">No scrap categories found in system.</p>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- CARD 3: PHYSICAL ADDRESS & GPS COORDINATES -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                  </div>
+                  <div>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Physical Address & GPS Location</h2>
+                    <p class="text-[0.72rem] text-slate-400">Scrap yard location used for proximity order broadcast and dispatching</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-address">Full Address / Street / Yard Location</label>
+                  <textarea class="bm-input text-xs" id="input-vendor-address" name="full_address" rows="2" placeholder="e.g. Plot No 42, Mayapuri Industrial Area Phase II">{{ vendor.full_address }}</textarea>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                  <div>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-city">City <span class="text-rose-600">*</span></label>
+                    <input class="bm-input" id="input-vendor-city" name="city" type="text" value="{{ vendor.city }}" placeholder="e.g. Delhi" required>
+                  </div>
+                  <div>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-state">State</label>
+                    <input class="bm-input" id="input-vendor-state" name="state" type="text" value="{{ vendor.state|default:'' }}" placeholder="e.g. Delhi">
+                  </div>
+                  <div>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-pincode">Pincode</label>
+                    <input class="bm-input font-mono" id="input-vendor-pincode" name="pincode" type="text" maxlength="6" value="{{ vendor.pincode|default:'' }}" placeholder="e.g. 110020">
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lat">GPS Latitude</label>
+                    <input class="bm-input font-mono text-xs" id="input-vendor-lat" name="latitude" type="text" value="{{ vendor.latitude|default:'' }}" placeholder="e.g. 28.5355161">
+                  </div>
+                  <div>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lng">GPS Longitude</label>
+                    <input class="bm-input font-mono text-xs" id="input-vendor-lng" name="longitude" type="text" value="{{ vendor.longitude|default:'' }}" placeholder="e.g. 77.3910265">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD 4: OPERATING SERVICE ZONES -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                  </div>
+                  <div>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Operating Service Zones</h2>
+                    <p class="text-[0.72rem] text-slate-400">Customer pickup orders in checked zones are broadcasted to this vendor</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                {% for zone in all_zones %}
+                <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 cursor-pointer hover:border-brand-400 hover:bg-brand-50/20 transition-all shadow-2xs">
+                  <input type="checkbox" name="zone_ids" value="{{ zone.id }}" class="zone-checkbox rounded text-brand-600 focus:ring-brand-500 h-4 w-4" {% if zone in vendor.operating_zones.all %}checked{% endif %}>
+                  <div class="truncate">
+                    <div class="font-bold text-slate-900 truncate">{{ zone.name }}</div>
+                    <div class="text-[0.68rem] text-slate-400 truncate">{{ zone.city.name }}</div>
+                  </div>
+                </label>
+                {% empty %}
+                <p class="text-xs text-slate-400 col-span-4 py-4 text-center">No active service zones configured.</p>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- CARD 5: BANK ACCOUNT & SETTLEMENT -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="h-7 w-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                  </div>
+                  <div>
+                    <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Bank Account & Payout Details</h2>
+                    <p class="text-[0.72rem] text-slate-400">Direct settlement destination for vendor scrap payouts</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-bank-holder">Account Holder Name</label>
+                  <input class="bm-input" id="input-bank-holder" name="account_holder_name" type="text" value="{{ vendor.user.bank_details.account_holder_name|default:'' }}" placeholder="e.g. Ramesh Patil">
+                </div>
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-bank-name">Bank Name</label>
+                  <input class="bm-input" id="input-bank-name" name="bank_name" type="text" value="{{ vendor.user.bank_details.bank_name|default:'' }}" placeholder="e.g. HDFC Bank">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-bank-acc">Account Number</label>
+                  <input class="bm-input font-mono text-xs" id="input-bank-acc" name="account_number" type="text" value="{{ vendor.user.bank_details.account_number|default:'' }}" placeholder="e.g. 50100234567890">
+                </div>
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-bank-ifsc">IFSC Code</label>
+                  <input class="bm-input font-mono text-xs uppercase" id="input-bank-ifsc" name="ifsc_code" type="text" maxlength="11" value="{{ vendor.user.bank_details.ifsc_code|default:'' }}" placeholder="HDFC0001234">
+                </div>
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-bank-upi">UPI ID (VPA)</label>
+                  <input class="bm-input font-mono text-xs" id="input-bank-upi" name="upi_id" type="text" value="{{ vendor.user.bank_details.upi_id|default:'' }}" placeholder="vendor@okaxis">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RIGHT COLUMN: CONTROLS & COMPLIANCE (4 Cols) -->
+          <div class="lg:col-span-4 space-y-5">
+
+            <!-- CARD: OPERATING STATUS & CONTROLS -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Platform Controls & Status</h2>
+                <p class="text-[0.72rem] text-slate-400">Access authorization and live availability</p>
+              </div>
+
+              <div class="space-y-3.5">
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-kyc-status">KYC Verification Status</label>
+                  <select class="bm-select text-xs font-bold" id="input-kyc-status" name="kyc_status">
+                    <option value="APPROVED" {% if vendor.kyc_status == "APPROVED" %}selected{% endif %}>Approved (Verified)</option>
+                    <option value="UNDER_REVIEW" {% if vendor.kyc_status == "UNDER_REVIEW" %}selected{% endif %}>Under Review</option>
+                    <option value="DRAFT" {% if vendor.kyc_status == "DRAFT" %}selected{% endif %}>Draft (Incomplete)</option>
+                    <option value="REJECTED" {% if vendor.kyc_status == "REJECTED" %}selected{% endif %}>Rejected</option>
+                    <option value="SUSPENDED" {% if vendor.kyc_status == "SUSPENDED" %}selected{% endif %}>Suspended</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-account-status">Account Authorization</label>
+                  <select class="bm-select text-xs font-bold" id="input-account-status" name="account_status">
+                    <option value="Active" {% if vendor.user.is_active %}selected{% endif %}>Active (Authorized)</option>
+                    <option value="Blocked" {% if not vendor.user.is_active %}selected{% endif %}>Blocked (Login Revoked)</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-online-status">Availability</label>
+                  <select class="bm-select text-xs font-bold" id="input-online-status" name="online_status">
+                    <option value="Online" {% if vendor.is_online %}selected{% endif %}>Online (Accepting Orders)</option>
+                    <option value="Offline" {% if not vendor.is_online %}selected{% endif %}>Offline (Paused)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-kyc-reason">KYC Notes / Rejection Reason</label>
+                  <textarea class="bm-input text-xs" id="input-kyc-reason" name="kyc_rejection_reason" rows="2" placeholder="Notes for admin audit or reason communicated to vendor if rejected">{{ vendor.kyc_rejection_reason|default:'' }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD: STATUTORY COMPLIANCE & TAX IDS -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="border-b border-slate-100 pb-3">
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Statutory Tax & KYC IDs</h2>
+                <p class="text-[0.72rem] text-slate-400">Legal verification credentials</p>
+              </div>
+
+              <div class="space-y-3.5">
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-aadhaar">Aadhaar Number</label>
+                  <input class="bm-input font-mono text-xs" id="input-aadhaar" name="aadhaar_number" type="text" value="{% if vendor.aadhaar_number %}{{ vendor.aadhaar_number }}{% else %}{{ vendor.aadhaar_last4|default:'' }}{% endif %}" placeholder="12-digit Aadhaar">
+                  <p class="text-[0.68rem] text-slate-400 mt-1">Optional for onboarded vendors</p>
+                </div>
+
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-pan">PAN Number</label>
+                  <input class="bm-input font-mono text-xs uppercase" id="input-pan" name="pan_number" type="text" maxlength="10" value="{% if vendor.pan_number %}{{ vendor.pan_number }}{% else %}{{ vendor.pan_last4|default:'' }}{% endif %}" placeholder="e.g. ABCDE1234F">
+                  <p class="text-[0.68rem] text-slate-400 mt-1">10-digit Income Tax PAN</p>
+                </div>
+
+                <div>
+                  <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-gst">GSTIN Number</label>
+                  <input class="bm-input font-mono text-xs uppercase" id="input-gst" name="gst_number" type="text" maxlength="15" value="{{ vendor.gst_number|default:'' }}" placeholder="15-character GSTIN">
+                  <p class="text-[0.68rem] text-slate-400 mt-1">Required for GST invoices</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- CARD: SAVE ACTION & AUDIT -->
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+              <div class="space-y-2.5">
+                <button type="submit" class="w-full bm-btn-primary py-3 rounded-xl font-bold text-sm shadow-xs flex items-center justify-center gap-2">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+                  Save All Changes
+                </button>
+                <a href="vendors.html" class="w-full bm-btn-ghost py-2.5 rounded-xl font-semibold text-xs border border-slate-200 flex items-center justify-center">
+                  Cancel and Return
+                </a>
+              </div>
+              <div class="border-t border-slate-100 pt-3 text-[0.72rem] text-slate-400 space-y-1">
+                <p>Created on: <span class="font-mono text-slate-600">{{ vendor.created_at|date:"M d, Y H:i" }}</span></p>
+                <p>Last modified: <span class="font-mono text-slate-600">{{ vendor.updated_at|date:"M d, Y H:i" }}</span></p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
+  <script src="/static/vendor/bootstrap.bundle.min.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -194,8 +194,9 @@ state: Karnataka
 pincode: 560038
 latitude: 12.9784 (optional)
 longitude: 77.6408 (optional)
-category_ids: [1, 2] (optional - can select here OR in popup step)
-subcategory_ids: [1, 2, 3] (optional - can select here OR in popup step)
+category_ids: [1, 2] (optional; JSON array text in multipart, or repeated category_ids fields)
+Select multiple categories only. All active subcategories under them are enabled automatically.
+Do not send subcategory_ids.
 
 response:
 {
@@ -252,6 +253,9 @@ state: Karnataka
 pincode: 560038
 latitude: 12.9784 (optional)
 longitude: 77.6408 (optional)
+
+category_ids: [1, 2] (optional; replaces selected categories and automatically refreshes subcategories)
+Omit category_ids to keep the existing selection. Invalid/inactive IDs or an empty list return 400.
 
 response:
 {
@@ -388,7 +392,7 @@ response:
     },
     {
       "id": 2,
-      "name": "Zone 2 - Koramangala" 
+      "name": "Zone 2 - Koramangala"
     }
   ]
 }
@@ -952,7 +956,7 @@ response:
   "updated": 3
 }
 
- 
+
 url: http://127.0.0.1:8000/api/vendor/refunds/
 method: POST
 
@@ -1081,4 +1085,7 @@ response:
 
 
 
-                                                                        
+
+Vendor dashboard classification fields:
+GET /api/vendor/dashboard/ also returns top-level categories [{"id": 1, "name": "Metal"}]
+and subcategories [{"id": 1, "category_id": 1, "name": "Iron"}] for the vendor selection.
