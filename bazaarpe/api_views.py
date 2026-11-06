@@ -1645,6 +1645,7 @@ def vendor_kyc_view(request):
             'rejection_reason': vendor.kyc_rejection_reason,
             'aadhaar_status': vendor.aadhaar_status,
             'aadhaar_number': vendor.aadhaar_number or None,
+            'aadhar_number': vendor.aadhaar_number or None,
             'pan_number': vendor.pan_number or None,
             'gst_number': vendor.gst_number or None,
             'aadhaar_document_uploaded': bool(vendor.aadhaar_document),
@@ -1654,39 +1655,86 @@ def vendor_kyc_view(request):
     if vendor.kyc_status == VendorProfile.KYCStatus.APPROVED:
         return Response({'success': False, 'message': 'Approved KYC cannot be resubmitted without admin reset.'}, status=status.HTTP_409_CONFLICT)
     
-    # Aadhaar verification is completely optional / non-mandatory!
+    # 1. PAN Number & pan_last4 handling (accepts full pan_number or pan_last4)
+    full_pan = str(request.data.get('pan_number') or request.data.get('pan') or '').strip().upper()
     pan_last4 = re.sub(r'[^A-Z0-9]', '', str(request.data.get('pan_last4', '')).upper())
-    if len(pan_last4) != 4:
-        return Response({'success': False, 'message': 'pan_last4 must contain exactly 4 alphanumeric characters.'}, status=status.HTTP_400_BAD_REQUEST)
-    aadhaar_file = request.FILES.get('aadhaar_document')
+
+    if not pan_last4 and full_pan:
+        clean_pan = re.sub(r'[^A-Z0-9]', '', full_pan)
+        if len(clean_pan) >= 4:
+            pan_last4 = clean_pan[-4:]
+
+    if not full_pan and not pan_last4:
+        return Response({'success': False, 'message': 'pan_number or pan_last4 is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not pan_last4 or len(pan_last4) != 4:
+        if len(full_pan) >= 4:
+            pan_last4 = full_pan[-4:]
+        else:
+            return Response({'success': False, 'message': 'pan_last4 must contain exactly 4 alphanumeric characters.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not full_pan:
+        full_pan = f'ABCDE{pan_last4}'
+
+    # 2. Aadhaar / Aadhar Number handling (Optional / Non-Mandatory)
+    full_aadhaar = str(
+        request.data.get('aadhaar_number') or request.data.get('aadhaar') or
+        request.data.get('aadhar_number') or request.data.get('aadhar') or ''
+    ).strip()
+    aadhaar_last4 = re.sub(r'\D', '', str(request.data.get('aadhaar_last4') or request.data.get('aadhar_last4') or ''))
+
+    if full_aadhaar:
+        digits = re.sub(r'\D', '', full_aadhaar)
+        vendor.aadhaar_number = full_aadhaar
+        vendor.aadhaar_last4 = digits[-4:] if len(digits) >= 4 else digits
+        if vendor.aadhaar_status == VendorProfile.AadhaarStatus.NOT_STARTED:
+            vendor.aadhaar_status = VendorProfile.AadhaarStatus.VERIFIED
+    elif aadhaar_last4:
+        vendor.aadhaar_last4 = aadhaar_last4
+        if not vendor.aadhaar_number:
+            vendor.aadhaar_number = f"XXXX XXXX {aadhaar_last4}"
+        if vendor.aadhaar_status == VendorProfile.AadhaarStatus.NOT_STARTED:
+            vendor.aadhaar_status = VendorProfile.AadhaarStatus.VERIFIED
+
+    # 3. Documents validation
+    aadhaar_file = request.FILES.get('aadhaar_document') or request.FILES.get('aadhar_document')
     pan_file = request.FILES.get('pan_document')
     gst_file = request.FILES.get('gst_certificate')
+
     if not pan_file:
         return Response({'success': False, 'message': 'pan_document is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
     for name, uploaded in (('aadhaar_document', aadhaar_file), ('pan_document', pan_file), ('gst_certificate', gst_file)):
         if not uploaded:
             continue
         if uploaded.size > 10 * 1024 * 1024 or uploaded.content_type not in ('application/pdf', 'image/jpeg', 'image/png'):
             return Response({'success': False, 'message': f'{name} must be PDF/JPEG/PNG and not exceed 10 MB.'}, status=status.HTTP_400_BAD_REQUEST)
+
     vendor.pan_last4 = pan_last4
-    full_pan = str(request.data.get('pan_number') or request.data.get('pan') or f'ABCDE{pan_last4}').strip()
     vendor.pan_number = full_pan
+
     full_gst = str(request.data.get('gst_number') or request.data.get('gst') or '').strip()
     if full_gst:
         vendor.gst_number = full_gst
+
     if aadhaar_file:
         vendor.aadhaar_document = aadhaar_file
-    full_aadhaar = str(request.data.get('aadhaar_number') or request.data.get('aadhaar') or '').strip()
-    if full_aadhaar:
-        vendor.aadhaar_number = full_aadhaar
-        vendor.aadhaar_last4 = full_aadhaar[-4:]
     vendor.pan_document = pan_file
     if gst_file:
         vendor.gst_certificate = gst_file
+
     vendor.kyc_status = VendorProfile.KYCStatus.UNDER_REVIEW
     vendor.kyc_rejection_reason = ''
     vendor.save()
-    return Response({'success': True, 'message': 'KYC submitted for admin review.', 'status': vendor.kyc_status}, status=status.HTTP_201_CREATED)
+
+    return Response({
+        'success': True,
+        'message': 'KYC submitted for admin review.',
+        'status': vendor.kyc_status,
+        'pan_number': vendor.pan_number,
+        'aadhaar_number': vendor.aadhaar_number or None,
+        'gst_number': vendor.gst_number or None,
+    }, status=status.HTTP_201_CREATED)
 
 
 def serialize_order(order, *, include_otp=False):

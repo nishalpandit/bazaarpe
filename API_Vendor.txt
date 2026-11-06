@@ -473,18 +473,22 @@ method: POST
 params:
 Authorization: Bearer <token> (header)
 Content-Type: multipart/form-data (header)
-pan_last4: AB12
-pan_number: ABCDE1234F
+pan_number: ABCDE1234F (pan_last4 is automatically extracted from pan_number)
+pan_last4: 1234F (optional if pan_number is provided)
+aadhaar_number: 543298761234 (optional / non-mandatory, also accepts aadhar_number)
 gst_number: 29ABCDE1234F1Z5 (optional)
+pan_document: <PDF or JPEG or PNG file, max 10 MB> (required)
 aadhaar_document: <PDF or JPEG or PNG file, max 10 MB> (optional)
-pan_document: <PDF or JPEG or PNG file, max 10 MB>
 gst_certificate: <PDF or JPEG or PNG file, max 10 MB> (optional)
 
 response:
 {
   "success": true,
   "message": "KYC submitted for admin review.",
-  "status": "UNDER_REVIEW"
+  "status": "UNDER_REVIEW",
+  "pan_number": "ABCDE1234F",
+  "aadhaar_number": "543298761234",
+  "gst_number": "29ABCDE1234F1Z5"
 }
 
 API for Get Vendor KYC Status
