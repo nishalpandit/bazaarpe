@@ -762,7 +762,40 @@
           .catch(err => console.log("Vendor data fetch error:", err));
       }
 
+      // Switch to first tab by default
+      document.querySelectorAll(".vendor-tab-btn").forEach(b => {
+        b.classList.remove("active-tab", "text-brand-700", "bg-white", "border-slate-200/80", "shadow-xs");
+        b.classList.add("text-slate-600", "border-transparent");
+      });
+      const firstTabBtn = document.querySelector('.vendor-tab-btn[data-tab="tab-general"]');
+      if (firstTabBtn) {
+        firstTabBtn.classList.add("active-tab", "text-brand-700", "bg-white", "border-slate-200/80", "shadow-xs");
+        firstTabBtn.classList.remove("text-slate-600", "border-transparent");
+      }
+      document.querySelectorAll(".vendor-tab-pane").forEach(pane => {
+        pane.classList.toggle("hidden", pane.id !== "tab-general");
+      });
+
       openModal("modalEditVendor");
+    });
+
+    // Tab switching inside Edit Vendor modal
+    document.addEventListener("click", function (e) {
+      const tabBtn = e.target.closest(".vendor-tab-btn");
+      if (!tabBtn) return;
+      const targetId = tabBtn.getAttribute("data-tab");
+      if (!targetId) return;
+
+      document.querySelectorAll(".vendor-tab-btn").forEach(b => {
+        b.classList.remove("active-tab", "text-brand-700", "bg-white", "border-slate-200/80", "shadow-xs");
+        b.classList.add("text-slate-600", "border-transparent");
+      });
+      tabBtn.classList.add("active-tab", "text-brand-700", "bg-white", "border-slate-200/80", "shadow-xs");
+      tabBtn.classList.remove("text-slate-600", "border-transparent");
+
+      document.querySelectorAll(".vendor-tab-pane").forEach(pane => {
+        pane.classList.toggle("hidden", pane.id !== targetId);
+      });
     });
 
     // 4. Submit Edit Vendor Form
