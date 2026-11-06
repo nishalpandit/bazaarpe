@@ -435,7 +435,7 @@ response:
   "subcategories": [{"id": 2, "category_id": 1, "name": "Iron Scrap"}]
 }
 
-API for Initiate Vendor Aadhaar Verification
+API for Initiate Vendor Aadhaar Verification (Optional / Non-Mandatory)
 url: http://127.0.0.1:8000/api/vendor/kyc/aadhaar/initiate/
 method: POST
 
@@ -451,7 +451,7 @@ response:
   "status": "PENDING"
 }
 
-API for Confirm Vendor Aadhaar Verification
+API for Confirm Vendor Aadhaar Verification (Optional / Non-Mandatory)
 url: http://127.0.0.1:8000/api/vendor/kyc/aadhaar/confirm/
 method: POST
 
@@ -476,7 +476,7 @@ Content-Type: multipart/form-data (header)
 pan_last4: AB12
 pan_number: ABCDE1234F
 gst_number: 29ABCDE1234F1Z5 (optional)
-aadhaar_document: <PDF or JPEG or PNG file, max 10 MB>
+aadhaar_document: <PDF or JPEG or PNG file, max 10 MB> (optional)
 pan_document: <PDF or JPEG or PNG file, max 10 MB>
 gst_certificate: <PDF or JPEG or PNG file, max 10 MB> (optional)
 

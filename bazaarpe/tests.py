@@ -575,6 +575,22 @@ class PickupOrderFlowTests(APITestCase):
         self.assertTrue(order.is_escalated)
         self.assertEqual(UserNotification.objects.filter(order=order, title='Vendor search escalated').count(), 1)
 
+    def test_vendor_kyc_submission_without_aadhaar_is_allowed(self):
+        self.authenticate(self.vendor_token)
+        # Ensure aadhaar is not verified
+        self.vendor_profile.aadhaar_status = VendorProfile.AadhaarStatus.NOT_STARTED
+        self.vendor_profile.kyc_status = VendorProfile.KYCStatus.DRAFT
+        self.vendor_profile.save()
+
+        pan_file = SimpleUploadedFile('pan.pdf', b'%PDF-1.4 test', content_type='application/pdf')
+        response = self.client.post('/api/vendor/kyc/', {
+            'pan_last4': 'AB12',
+            'pan_number': 'ABCDE1234F',
+            'pan_document': pan_file,
+        }, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(response.data['status'], VendorProfile.KYCStatus.UNDER_REVIEW)
+
     @override_settings(AADHAAR_PROVIDER_MODE='unconfigured')
     def test_aadhaar_does_not_fake_success_without_provider_configuration(self):
         self.authenticate(self.vendor_token)
