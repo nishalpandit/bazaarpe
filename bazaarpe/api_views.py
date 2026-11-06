@@ -1524,41 +1524,74 @@ def vendor_operating_zones_view(request):
     return Response({'success': True, 'zones': [zone.to_dict() for zone in vendor.operating_zones.all()]})
 
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'POST'])
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@parser_classes([JSONParser, FormParser, MultiPartParser])
 def vendor_categories_view(request):
     vendor = get_vendor_profile(request.user)
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    if request.method == 'PUT':
-        category_ids = request.data.get('category_ids', [])
-        subcategory_ids = request.data.get('subcategory_ids', [])
-        for key, value in (('category_ids', category_ids), ('subcategory_ids', subcategory_ids)):
-            if isinstance(value, str):
+    
+    if request.method in ('PUT', 'POST'):
+        raw_cat = request.data.get('category_ids')
+        raw_sub = request.data.get('subcategory_ids')
+        
+        def parse_ids(val):
+            if val is None:
+                return []
+            if isinstance(val, (int, float)):
+                return [int(val)]
+            if isinstance(val, str):
+                val = val.strip()
+                if not val:
+                    return []
                 try:
-                    value = json.loads(value)
-                except json.JSONDecodeError:
-                    value = []
-            if not isinstance(value, list) or not value or any(isinstance(item, bool) or not str(item).isdigit() for item in value):
-                return Response({'success': False, 'message': f'{key} must be a non-empty JSON list of positive integers.'}, status=status.HTTP_400_BAD_REQUEST)
-            if key == 'category_ids':
-                category_ids = [int(item) for item in value]
-            else:
-                subcategory_ids = [int(item) for item in value]
+                    loaded = json.loads(val)
+                    if isinstance(loaded, list):
+                        return [int(x) for x in loaded if not isinstance(x, bool) and str(x).isdigit()]
+                except Exception:
+                    pass
+                return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
+            if isinstance(val, list):
+                return [int(x) for x in val if not isinstance(x, bool) and str(x).isdigit()]
+            return []
+
+        category_ids = parse_ids(raw_cat)
+        subcategory_ids = parse_ids(raw_sub)
+
+        # Smart fallback:
+        # If subcategories provided without category_ids, auto-find parent category_ids
+        if subcategory_ids and not category_ids:
+            parent_cat_ids = list(ScrapSubCategory.objects.filter(id__in=subcategory_ids, is_active=True).values_list('category_id', flat=True))
+            category_ids = list(set(parent_cat_ids))
+        
+        # If category_ids provided without subcategories, auto-include all active subcategories of those categories
+        if category_ids and not subcategory_ids:
+            child_sub_ids = list(ScrapSubCategory.objects.filter(category_id__in=category_ids, is_active=True).values_list('id', flat=True))
+            subcategory_ids = list(set(child_sub_ids))
+
+        if not category_ids and not subcategory_ids:
+            return Response({'success': False, 'message': 'category_ids or subcategory_ids is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
         categories = list(ScrapCategory.objects.filter(id__in=set(category_ids), is_active=True))
         subcategories = list(ScrapSubCategory.objects.filter(
-            id__in=set(subcategory_ids), is_active=True, category_id__in=set(category_ids), category__is_active=True,
+            id__in=set(subcategory_ids), is_active=True
         ).select_related('category'))
-        if len(categories) != len(set(category_ids)) or len(subcategories) != len(set(subcategory_ids)):
-            return Response({'success': False, 'message': 'Selections contain an invalid, inactive, or mismatched category.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not categories:
+            return Response({'success': False, 'message': 'Invalid category selection.'}, status=status.HTTP_400_BAD_REQUEST)
+
         vendor.categories.set(categories)
         vendor.subcategories.set(subcategories)
         audit_event(request.user, 'VENDOR', 'VENDOR_CLASSIFICATIONS_UPDATED', vendor, metadata={
-            'category_ids': category_ids, 'subcategory_ids': subcategory_ids,
+            'category_ids': [c.id for c in categories],
+            'subcategory_ids': [s.id for s in subcategories],
         })
+
     return Response({
         'success': True,
+        'message': f'Vendor assigned {vendor.categories.count()} categories and {vendor.subcategories.count()} subcategories.',
         'categories': [{'id': item.id, 'name': item.name} for item in vendor.categories.all()],
         'subcategories': [
             {'id': item.id, 'category_id': item.category_id, 'name': item.name}

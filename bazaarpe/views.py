@@ -1978,6 +1978,16 @@ def admin_action_view(request, action_path):
                 vendor.kyc_status = str(data.get('kyc_status'))
             if 'is_online' in data:
                 vendor.is_online = data.get('is_online') in ('true', '1', True, 'Online')
+            if 'category_ids' in data or 'categories' in data:
+                cat_raw = data.getlist('category_ids') if hasattr(data, 'getlist') and data.getlist('category_ids') else (data.get('category_ids') or data.get('categories'))
+                cat_ids = [int(x) for x in (cat_raw if isinstance(cat_raw, list) else str(cat_raw).split(',')) if str(x).strip().isdigit()]
+                if cat_ids:
+                    vendor.categories.set(cat_ids)
+            if 'subcategory_ids' in data or 'subcategories' in data:
+                sub_raw = data.getlist('subcategory_ids') if hasattr(data, 'getlist') and data.getlist('subcategory_ids') else (data.get('subcategory_ids') or data.get('subcategories'))
+                sub_ids = [int(x) for x in (sub_raw if isinstance(sub_raw, list) else str(sub_raw).split(',')) if str(x).strip().isdigit()]
+                if sub_ids:
+                    vendor.subcategories.set(sub_ids)
             vendor.save()
 
             if is_ajax:
