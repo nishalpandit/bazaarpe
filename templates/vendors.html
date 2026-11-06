@@ -160,16 +160,12 @@
   <td class="">
     <div class="flex max-w-[14rem] flex-wrap gap-1">
       {% for c in vendor.categories.all %}
-        <span class="bm-tag text-[0.7rem] bg-emerald-50 text-emerald-800 border border-emerald-200">{{ c.name }}</span>
+        <span class="bm-tag text-[0.7rem] bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">{{ c.name }}</span>
       {% empty %}
         <span class="text-xs text-slate-400">All categories</span>
       {% endfor %}
     </div>
-    {% if vendor.subcategories.exists %}
-      <div class="text-[0.68rem] text-slate-500 mt-0.5 truncate max-w-[14rem]" title="{% for s in vendor.subcategories.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
-        {{ vendor.subcategories.count }} subcategories
-      </div>
-    {% endif %}
+    <div class="text-[0.68rem] text-slate-500 mt-0.5 font-medium">All subcategories active</div>
   </td>
   <td class="">
     <div class="bm-mono text-xs font-semibold text-slate-900">{{ vendor.aadhaar_number|default:vendor.aadhaar_last4 }}</div>
@@ -366,32 +362,29 @@
           </div>
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="bm-label mb-0">Accepted Scrap Categories & Subcategories</label>
-              <span class="text-[0.7rem] text-slate-500">Super admin override</span>
+              <label class="bm-label mb-0">Assigned Scrap Categories</label>
+              <span class="text-[0.7rem] font-medium text-emerald-700">All subcategories enabled</span>
             </div>
-            <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 space-y-2.5">
+            <div class="max-h-52 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 space-y-2">
               {% for cat in all_categories %}
-              <div class="rounded-md border border-slate-200 bg-white p-2.5 shadow-sm">
-                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-slate-800">
-                  <input type="checkbox" name="category_ids" value="{{ cat.id }}" class="cat-checkbox rounded text-brand-600 focus:ring-brand-500 h-3.5 w-3.5" data-cat-id="{{ cat.id }}">
-                  <span>{{ cat.name }}</span>
-                </label>
-                {% if cat.subcategories.all %}
-                <div class="ml-5 mt-2 grid grid-cols-2 gap-1.5 border-t border-slate-100 pt-1.5">
-                  {% for sub in cat.subcategories.all %}
-                  <label class="flex items-center gap-1.5 cursor-pointer text-[0.72rem] text-slate-600 hover:text-slate-900">
-                    <input type="checkbox" name="subcategory_ids" value="{{ sub.id }}" class="subcat-checkbox rounded text-brand-600 focus:ring-brand-500 h-3 w-3" data-parent-cat="{{ cat.id }}">
-                    <span>{{ sub.name }}</span>
-                  </label>
-                  {% endfor %}
+              <label class="flex items-start gap-3 rounded-md border border-slate-200 bg-white p-2.5 shadow-sm cursor-pointer hover:border-brand-300 hover:bg-slate-50 transition-colors">
+                <input type="checkbox" name="category_ids" value="{{ cat.id }}" class="cat-checkbox rounded text-brand-600 focus:ring-brand-500 h-4 w-4 mt-0.5" data-cat-id="{{ cat.id }}">
+                <div class="flex-1">
+                  <div class="font-bold text-xs text-slate-900">{{ cat.name }}</div>
+                  <div class="text-[0.7rem] text-slate-500 mt-0.5">
+                    {% if cat.subcategories.all %}
+                      <span class="text-slate-400">Includes:</span> {% for sub in cat.subcategories.all %}{{ sub.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    {% else %}
+                      All scrap orders under this category
+                    {% endif %}
+                  </div>
                 </div>
-                {% endif %}
-              </div>
+              </label>
               {% empty %}
               <p class="text-xs text-slate-400">No active categories configured.</p>
               {% endfor %}
             </div>
-            <p class="mt-1 text-[0.7rem] text-slate-400">Select categories/subcategories this vendor is authorized to collect. Vendors can also select their own from the vendor app.</p>
+            <p class="mt-1 text-[0.7rem] text-slate-400">Vendor is assigned at the Category level and automatically receives and sees orders for all subcategories within them.</p>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">

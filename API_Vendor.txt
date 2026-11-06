@@ -421,20 +421,27 @@ response:
   "subcategories": [{"id": 2, "category_id": 1, "name": "Iron Scrap"}]
 }
 
-API for Update Vendor Categories
+API for Update Vendor Categories (Vendor selects category; automatically receives all subcategories orders)
 url: http://127.0.0.1:8000/api/vendor/categories/
-method: PUT
+method: PUT (or POST)
 
 params:
 Authorization: Bearer <token> (header)
-category_ids: [1]
-subcategory_ids: [2]
+category_ids: [1, 2] (Vendor only needs to select Categories; all subcategories under them are automatically enabled!)
 
 response:
 {
   "success": true,
-  "categories": [{"id": 1, "name": "Metal"}],
-  "subcategories": [{"id": 2, "category_id": 1, "name": "Iron Scrap"}]
+  "message": "Vendor assigned 2 categories. Vendor can view and accept all subcategory orders under these categories.",
+  "categories": [
+    {"id": 1, "name": "Metal"},
+    {"id": 2, "name": "E-Waste"}
+  ],
+  "subcategories": [
+    {"id": 1, "category_id": 1, "name": "Iron Scrap"},
+    {"id": 2, "category_id": 1, "name": "Copper Wire"},
+    {"id": 5, "category_id": 2, "name": "Computer Parts"}
+  ]
 }
 
 API for Initiate Vendor Aadhaar Verification (Optional / Non-Mandatory)

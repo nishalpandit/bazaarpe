@@ -1350,8 +1350,6 @@ def vendor_order_eligibility(order, vendor):
         return False, 'Order is outside the vendor operating zones.'
     if order.category_id not in set(vendor.categories.values_list('id', flat=True)):
         return False, 'Order category is not enabled for this vendor.'
-    if order.subcategory_id not in set(vendor.subcategories.values_list('id', flat=True)):
-        return False, 'Order subcategory is not enabled for this vendor.'
     if VendorOfferRejection.objects.filter(vendor=vendor, order=order).exists():
         return False, 'Vendor rejected this offer.'
     return True, None
@@ -1517,9 +1515,8 @@ def vendor_profile_view(request):
         if cat_ids:
             valid_cats = list(ScrapCategory.objects.filter(id__in=cat_ids, is_active=True))
             vendor.categories.set(valid_cats)
-        if sub_ids:
-            valid_subs = list(ScrapSubCategory.objects.filter(id__in=sub_ids, is_active=True))
-            vendor.subcategories.set(valid_subs)
+            all_child_subcats = list(ScrapSubCategory.objects.filter(category__in=valid_cats, is_active=True))
+            vendor.subcategories.set(all_child_subcats)
 
     return Response({'success': True, 'message': 'Vendor profile saved.', 'vendor': serialize_vendor_profile(vendor)}, status=status.HTTP_201_CREATED if request.method == 'POST' else status.HTTP_200_OK)
 
@@ -1563,7 +1560,7 @@ def vendor_operating_zones_view(request):
     return Response({'success': True, 'zones': [zone.to_dict() for zone in vendor.operating_zones.all()]})
 
 
-@api_view(['GET', 'PUT', 'POST'])
+@api_view(['GET', 'PUT', 'POST']) 
 @authentication_classes([BearerTokenAuthentication])
 @permission_classes([IsAuthenticated])
 @parser_classes([JSONParser, FormParser, MultiPartParser])
@@ -1611,15 +1608,16 @@ def vendor_categories_view(request):
             subcategory_ids = list(set(child_sub_ids))
 
         if not category_ids and not subcategory_ids:
-            return Response({'success': False, 'message': 'category_ids or subcategory_ids is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'success': False, 'message': 'category_ids is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         categories = list(ScrapCategory.objects.filter(id__in=set(category_ids), is_active=True))
-        subcategories = list(ScrapSubCategory.objects.filter(
-            id__in=set(subcategory_ids), is_active=True
-        ).select_related('category'))
-
         if not categories:
             return Response({'success': False, 'message': 'Invalid category selection.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # All subcategories belonging to these categories are automatically enabled for the vendor
+        subcategories = list(ScrapSubCategory.objects.filter(
+            category__in=categories, is_active=True
+        ).select_related('category'))
 
         vendor.categories.set(categories)
         vendor.subcategories.set(subcategories)
@@ -1630,7 +1628,7 @@ def vendor_categories_view(request):
 
     return Response({
         'success': True,
-        'message': f'Vendor assigned {vendor.categories.count()} categories and {vendor.subcategories.count()} subcategories.',
+        'message': f'Vendor assigned {vendor.categories.count()} categories. Vendor can view and accept all subcategory orders under these categories.',
         'categories': [{'id': item.id, 'name': item.name} for item in vendor.categories.all()],
         'subcategories': [
             {'id': item.id, 'category_id': item.category_id, 'name': item.name}
@@ -2275,7 +2273,6 @@ def order_tracking_view(request, order_id):
 def eligible_vendor_orders(vendor):
     zone_ids = vendor.operating_zones.values_list('id', flat=True)
     category_ids = vendor.categories.values_list('id', flat=True)
-    subcategory_ids = vendor.subcategories.values_list('id', flat=True)
     rejected_ids = vendor.offer_rejections.values_list('order_id', flat=True)
     return PickupOrder.objects.filter(
         status=PickupOrder.Status.SEARCHING_VENDOR,
@@ -2284,7 +2281,6 @@ def eligible_vendor_orders(vendor):
         published_at__isnull=False,
         address__service_zone_id__in=zone_ids,
         category_id__in=category_ids,
-        subcategory_id__in=subcategory_ids,
     ).exclude(id__in=rejected_ids).select_related('address__service_zone', 'category', 'subcategory')
 
 

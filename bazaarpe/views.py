@@ -1984,8 +1984,15 @@ def admin_action_view(request, action_path):
                 cat_raw = data.getlist('category_ids') if hasattr(data, 'getlist') and data.getlist('category_ids') else (data.get('category_ids') or data.get('categories'))
                 cat_ids = [int(x) for x in (cat_raw if isinstance(cat_raw, list) else str(cat_raw).split(',')) if str(x).strip().isdigit()]
                 if cat_ids:
-                    vendor.categories.set(cat_ids)
-            if 'subcategory_ids' in data or 'subcategories' in data:
+                    valid_cats = list(ScrapCategory.objects.filter(id__in=cat_ids, is_active=True))
+                    vendor.categories.set(valid_cats)
+                    # Automatically enable all subcategories under the assigned categories
+                    all_subcats = list(ScrapSubCategory.objects.filter(category__in=valid_cats, is_active=True))
+                    vendor.subcategories.set(all_subcats)
+                else:
+                    vendor.categories.clear()
+                    vendor.subcategories.clear()
+            elif 'subcategory_ids' in data or 'subcategories' in data:
                 sub_raw = data.getlist('subcategory_ids') if hasattr(data, 'getlist') and data.getlist('subcategory_ids') else (data.get('subcategory_ids') or data.get('subcategories'))
                 sub_ids = [int(x) for x in (sub_raw if isinstance(sub_raw, list) else str(sub_raw).split(',')) if str(x).strip().isdigit()]
                 if sub_ids:
