@@ -194,6 +194,8 @@ state: Karnataka
 pincode: 560038
 latitude: 12.9784 (optional)
 longitude: 77.6408 (optional)
+category_ids: [1, 2] (optional - can select here OR in popup step)
+subcategory_ids: [1, 2, 3] (optional - can select here OR in popup step)
 
 response:
 {

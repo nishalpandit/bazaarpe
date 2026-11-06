@@ -672,7 +672,42 @@
       if (accountSelect) accountSelect.value = account;
       if (onlineSelect) onlineSelect.value = online;
 
+      // Sync category and subcategory checkboxes
+      let catIds = [];
+      let subIds = [];
+      try {
+        catIds = JSON.parse(btn.getAttribute("data-category-ids") || "[]");
+      } catch (err) { catIds = []; }
+      try {
+        subIds = JSON.parse(btn.getAttribute("data-subcategory-ids") || "[]");
+      } catch (err) { subIds = []; }
+
+      document.querySelectorAll("#modalEditVendor .cat-checkbox").forEach(cb => {
+        cb.checked = catIds.includes(parseInt(cb.value));
+      });
+      document.querySelectorAll("#modalEditVendor .subcat-checkbox").forEach(cb => {
+        cb.checked = subIds.includes(parseInt(cb.value));
+      });
+
       openModal("modalEditVendor");
+    });
+
+    // Parent checkbox toggles child subcategories in Edit Vendor Modal
+    document.addEventListener("change", function (e) {
+      if (e.target.matches("#modalEditVendor .cat-checkbox")) {
+        const catId = e.target.getAttribute("data-cat-id");
+        const checked = e.target.checked;
+        document.querySelectorAll(`#modalEditVendor .subcat-checkbox[data-parent-cat="${catId}"]`).forEach(subCb => {
+          subCb.checked = checked;
+        });
+      }
+      if (e.target.matches("#modalEditVendor .subcat-checkbox")) {
+        const parentId = e.target.getAttribute("data-parent-cat");
+        const parentCb = document.querySelector(`#modalEditVendor .cat-checkbox[data-cat-id="${parentId}"]`);
+        if (parentCb && e.target.checked) {
+          parentCb.checked = true;
+        }
+      }
     });
 
     // 4. Submit Edit Vendor Form

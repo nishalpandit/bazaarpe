@@ -1482,6 +1482,45 @@ def vendor_profile_view(request):
             return Response({'success': False, 'message': 'profile_picture must be an image not exceeding 5 MB.'}, status=status.HTTP_400_BAD_REQUEST)
         vendor.profile_picture = picture
     vendor.save()
+
+    # Optional category & subcategory assignment during profile creation / update
+    raw_cat = data.get('category_ids')
+    raw_sub = data.get('subcategory_ids')
+    if raw_cat is not None or raw_sub is not None:
+        def _parse_id_list(val):
+            if val is None:
+                return []
+            if isinstance(val, (int, float)):
+                return [int(val)]
+            if isinstance(val, str):
+                val = val.strip()
+                if not val:
+                    return []
+                try:
+                    loaded = json.loads(val)
+                    if isinstance(loaded, list):
+                        return [int(x) for x in loaded if not isinstance(x, bool) and str(x).isdigit()]
+                except Exception:
+                    pass
+                return [int(x.strip()) for x in val.split(',') if x.strip().isdigit()]
+            if isinstance(val, list):
+                return [int(x) for x in val if not isinstance(x, bool) and str(x).isdigit()]
+            return []
+
+        cat_ids = _parse_id_list(raw_cat)
+        sub_ids = _parse_id_list(raw_sub)
+        if sub_ids and not cat_ids:
+            parent_cat_ids = list(ScrapSubCategory.objects.filter(id__in=sub_ids, is_active=True).values_list('category_id', flat=True))
+            cat_ids = list(set(parent_cat_ids))
+        if cat_ids and not sub_ids:
+            sub_ids = list(ScrapSubCategory.objects.filter(category_id__in=cat_ids, is_active=True).values_list('id', flat=True))
+        if cat_ids:
+            valid_cats = list(ScrapCategory.objects.filter(id__in=cat_ids, is_active=True))
+            vendor.categories.set(valid_cats)
+        if sub_ids:
+            valid_subs = list(ScrapSubCategory.objects.filter(id__in=sub_ids, is_active=True))
+            vendor.subcategories.set(valid_subs)
+
     return Response({'success': True, 'message': 'Vendor profile saved.', 'vendor': serialize_vendor_profile(vendor)}, status=status.HTTP_201_CREATED if request.method == 'POST' else status.HTTP_200_OK)
 
 

@@ -652,7 +652,7 @@ def page_view(request, page_name):
         category = request.GET.get('category', '').strip()
         page_num = request.GET.get('page', 1)
 
-        vendors_qs = VendorProfile.objects.all().select_related('user').prefetch_related('operating_zones').order_by('-created_at')
+        vendors_qs = VendorProfile.objects.all().select_related('user').prefetch_related('operating_zones', 'categories', 'subcategories').order_by('-created_at')
 
         if q:
             q_filter = (
@@ -717,6 +717,7 @@ def page_view(request, page_name):
 
         cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
         categories = list(ScrapCategory.objects.filter(is_active=True).values_list('name', flat=True).distinct())
+        all_categories = list(ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories'))
 
         page_size = int(request.GET.get('page_size', 8))
         paginator = Paginator(vendors_qs, page_size)
@@ -735,6 +736,7 @@ def page_view(request, page_name):
             eligible_vendors=eligible_vendors,
             cities=cities,
             categories=categories,
+            all_categories=all_categories,
             current_q=q,
             current_account=account,
             current_kyc=kyc,
