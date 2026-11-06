@@ -117,7 +117,82 @@
               </td>
               <td>{{ order.approx_weight }} kg</td><td>{{ order.pickup_date|date:"Y-m-d" }}<div class="text-xs text-slate-500">{{ order.time_slot }}</div></td>
               <td class="text-right font-semibold">₹{{ order.approx_price }}</td><td><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">{{ order.get_status_display }}</span></td>
-              <td>{% if order.final_agreed_price %}<form method="post" action="/admin/orders/{{ order.order_id }}/publish">{% csrf_token %}<div class="text-xs text-emerald-700">User accepted ₹{{ order.final_agreed_price }}</div><button class="bm-btn-primary bm-btn-sm mt-1" type="submit">Publish to Vendors</button></form>{% else %}<form method="post" action="/admin/orders/{{ order.order_id }}/negotiate">{% csrf_token %}<div class="flex min-w-[230px] gap-2"><input class="bm-input" type="number" name="final_agreed_price" min="0.01" step="0.01" value="{{ order.approx_price }}" required><button class="bm-btn-primary bm-btn-sm" type="submit">Send Proposal</button></div></form>{% endif %}</td>
+              <td>
+                {% if order.final_agreed_price %}
+                  <form method="post" action="/admin/orders/{{ order.order_id }}/publish">
+                    {% csrf_token %}
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                      <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                      <span>Price Agreed: ₹{{ order.final_agreed_price }}</span>
+                    </div>
+                    <button class="bm-btn-primary bm-btn-sm mt-1.5 w-full text-center" type="submit">Publish to Vendors</button>
+                  </form>
+                {% elif order.cached_latest_proposal and order.cached_latest_proposal.proposer_role == 'USER' and order.cached_latest_proposal.status == 'PENDING' %}
+                  <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-1 text-xs font-bold text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
+                      <span>Customer Counter: ₹{{ order.cached_latest_proposal.amount }}</span>
+                    </div>
+                    {% if order.cached_latest_proposal.note %}
+                      <div class="text-[0.6875rem] text-slate-500 italic max-w-[220px] truncate" title="{{ order.cached_latest_proposal.note }}">
+                        "{{ order.cached_latest_proposal.note }}"
+                      </div>
+                    {% endif %}
+                    <div class="flex items-center gap-1.5">
+                      <form method="post" action="/admin/orders/{{ order.order_id }}/approve" class="inline">
+                        {% csrf_token %}
+                        <button class="bm-btn-primary bm-btn-sm !bg-emerald-600 hover:!bg-emerald-700 !px-2.5 !py-1" type="submit" title="Accept counter-offer">Accept ₹{{ order.cached_latest_proposal.amount }}</button>
+                      </form>
+                      <button type="button" onclick="const f = document.getElementById('neg-form-{{ order.order_id }}'); f.classList.toggle('hidden');" class="bm-btn-secondary bm-btn-sm !px-2.5 !py-1 text-xs">Counter</button>
+                    </div>
+                    <form id="neg-form-{{ order.order_id }}" class="hidden mt-1 flex gap-1" method="post" action="/admin/orders/{{ order.order_id }}/negotiate">
+                      {% csrf_token %}
+                      <input class="bm-input !py-1 text-xs w-24" type="number" name="final_agreed_price" min="0.01" step="0.01" placeholder="₹ Amount" required>
+                      <button class="bm-btn-primary bm-btn-sm !px-2" type="submit">Send</button>
+                    </form>
+                  </div>
+                {% elif order.cached_latest_proposal and order.cached_latest_proposal.proposer_role == 'ADMIN' and order.cached_latest_proposal.status == 'PENDING' %}
+                  <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      <span class="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      <span>Offered ₹{{ order.cached_latest_proposal.amount }} (Awaiting user)</span>
+                    </div>
+                    <div>
+                      <button type="button" onclick="const f = document.getElementById('rev-form-{{ order.order_id }}'); f.classList.toggle('hidden');" class="text-[0.6875rem] font-semibold text-slate-500 hover:text-slate-800 underline cursor-pointer">
+                        Revise offer
+                      </button>
+                    </div>
+                    <form id="rev-form-{{ order.order_id }}" class="hidden mt-1 flex gap-1" method="post" action="/admin/orders/{{ order.order_id }}/negotiate">
+                      {% csrf_token %}
+                      <input class="bm-input !py-1 text-xs w-24" type="number" name="final_agreed_price" min="0.01" step="0.01" value="{{ order.cached_latest_proposal.amount }}" required>
+                      <button class="bm-btn-primary bm-btn-sm !px-2" type="submit">Update</button>
+                    </form>
+                  </div>
+                {% elif order.cached_latest_proposal and order.cached_latest_proposal.status == 'REJECTED' %}
+                  <div class="space-y-1.5">
+                    <div class="inline-flex items-center gap-1 text-xs font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                      <span>User Rejected ₹{{ order.cached_latest_proposal.amount }}</span>
+                    </div>
+                    {% if order.cached_latest_proposal.rejection_reason %}
+                      <div class="text-[0.6875rem] text-rose-600 italic max-w-[220px] truncate" title="{{ order.cached_latest_proposal.rejection_reason }}">
+                        "{{ order.cached_latest_proposal.rejection_reason }}"
+                      </div>
+                    {% endif %}
+                    <form class="flex gap-1 mt-1" method="post" action="/admin/orders/{{ order.order_id }}/negotiate">
+                      {% csrf_token %}
+                      <input class="bm-input !py-1 text-xs w-24" type="number" name="final_agreed_price" min="0.01" step="0.01" value="{{ order.approx_price }}" required>
+                      <button class="bm-btn-primary bm-btn-sm !px-2" type="submit">New Offer</button>
+                    </form>
+                  </div>
+                {% else %}
+                  <form method="post" action="/admin/orders/{{ order.order_id }}/negotiate">
+                    {% csrf_token %}
+                    <div class="flex min-w-[230px] gap-2">
+                      <input class="bm-input !py-1 text-xs" type="number" name="final_agreed_price" min="0.01" step="0.01" value="{{ order.approx_price }}" required>
+                      <button class="bm-btn-primary bm-btn-sm whitespace-nowrap" type="submit">Send Proposal</button>
+                    </div>
+                  </form>
+                {% endif %}
+              </td>
             </tr>
           {% empty %}<tr><td colspan="8" class="py-8 text-center text-slate-500">No pickup requests are awaiting negotiation.</td></tr>{% endfor %}
           </tbody>

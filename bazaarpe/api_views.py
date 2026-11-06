@@ -1897,10 +1897,7 @@ def create_pickup_order_view(request):
     }, status=status.HTTP_201_CREATED)
 
 
-@api_view(['POST'])
-@authentication_classes([BearerTokenAuthentication])
-@permission_classes([IsAuthenticated])
-def confirm_order_price_view(request, order_id):
+def _handle_accept_price(request, order_id):
     order = order_for_user(order_id, request.user)
     if not order:
         return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -1908,29 +1905,68 @@ def confirm_order_price_view(request, order_id):
         return Response({'success': False, 'message': 'This order is not awaiting price confirmation.'}, status=status.HTTP_409_CONFLICT)
     proposal = order.negotiation_proposals.filter(
         proposer_role=NegotiationProposal.ProposerRole.ADMIN,
-        is_accepted=False,
+        status=NegotiationProposal.Status.PENDING,
     ).order_by('-created_at').first()
     if not proposal:
-        return Response({'success': False, 'message': 'The admin has not submitted a price proposal.'}, status=status.HTTP_409_CONFLICT)
+        proposal = order.negotiation_proposals.filter(
+            proposer_role=NegotiationProposal.ProposerRole.ADMIN,
+            is_accepted=False,
+        ).order_by('-created_at').first()
+    if not proposal:
+        return Response({'success': False, 'message': 'The admin has not submitted a pending price proposal.'}, status=status.HTTP_409_CONFLICT)
     with transaction.atomic():
         proposal.is_accepted = True
+        proposal.status = NegotiationProposal.Status.ACCEPTED
         proposal.accepted_at = timezone.now()
-        proposal.save(update_fields=['is_accepted', 'accepted_at'])
+        proposal.save(update_fields=['is_accepted', 'status', 'accepted_at'])
         order.final_agreed_price = proposal.amount
         order.status = PickupOrder.Status.ADMIN_NEGOTIATION
         order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
+        audit_event(request.user, 'USER', 'PRICE_ACCEPTED', order, metadata={'proposal_id': proposal.id, 'amount': str(proposal.amount)})
     return Response({
         'success': True,
-        'message': 'Price accepted. Awaiting admin publication to vendors.',
+        'message': f'Price ₹{proposal.amount} accepted. Awaiting admin publication to vendors.',
+        'action_taken': 'ACCEPT',
+        'final_agreed_price': float(order.final_agreed_price),
         'awaiting_admin_publication': True,
         'order': serialize_order(order),
     })
 
 
-@api_view(['POST'])
-@authentication_classes([BearerTokenAuthentication])
-@permission_classes([IsAuthenticated])
-def counter_order_price_view(request, order_id):
+def _handle_reject_price(request, order_id):
+    order = order_for_user(order_id, request.user)
+    if not order:
+        return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
+    if order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION):
+        return Response({'success': False, 'message': 'This order is not currently open for negotiation.'}, status=status.HTTP_409_CONFLICT)
+    proposal = order.negotiation_proposals.filter(
+        proposer_role=NegotiationProposal.ProposerRole.ADMIN,
+        status=NegotiationProposal.Status.PENDING,
+    ).order_by('-created_at').first()
+    if not proposal:
+        proposal = order.negotiation_proposals.filter(
+            proposer_role=NegotiationProposal.ProposerRole.ADMIN,
+            is_accepted=False,
+        ).order_by('-created_at').first()
+    if not proposal:
+        return Response({'success': False, 'message': 'No pending admin price proposal to reject.'}, status=status.HTTP_409_CONFLICT)
+    reason = str(request.data.get('reason', '')).strip()
+    with transaction.atomic():
+        proposal.status = NegotiationProposal.Status.REJECTED
+        proposal.rejection_reason = reason
+        proposal.save(update_fields=['status', 'rejection_reason'])
+        order.final_agreed_price = None
+        order.save(update_fields=['final_agreed_price', 'updated_at'])
+        audit_event(request.user, 'USER', 'PRICE_REJECTED', order, metadata={'proposal_id': proposal.id, 'reason': reason})
+    return Response({
+        'success': True,
+        'message': 'Price proposal rejected. You can submit a counter-offer or wait for admin to revise.',
+        'action_taken': 'REJECT',
+        'order': serialize_order(order),
+    })
+
+
+def _handle_counter_price(request, order_id):
     order = order_for_user(order_id, request.user)
     if not order:
         return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
@@ -1941,11 +1977,13 @@ def counter_order_price_view(request, order_id):
     except ValueError as exc:
         return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     with transaction.atomic():
+        order.negotiation_proposals.filter(status=NegotiationProposal.Status.PENDING).update(status=NegotiationProposal.Status.COUNTERED)
         proposal = NegotiationProposal.objects.create(
             order=order,
             proposed_by=request.user,
             proposer_role=NegotiationProposal.ProposerRole.USER,
             amount=money(amount),
+            status=NegotiationProposal.Status.PENDING,
             note=str(request.data.get('note', '')).strip(),
         )
         order.final_agreed_price = None
@@ -1954,10 +1992,56 @@ def counter_order_price_view(request, order_id):
         audit_event(request.user, 'USER', 'PRICE_COUNTERED', order, metadata={'proposal_id': proposal.id, 'amount': str(proposal.amount)})
     return Response({
         'success': True,
-        'message': 'Counter-offer submitted for admin review.',
-        'proposal': {'id': proposal.id, 'amount': float(proposal.amount), 'note': proposal.note},
+        'message': f'Counter-offer of ₹{proposal.amount} submitted for admin review.',
+        'action_taken': 'COUNTER',
+        'proposal': {
+            'id': proposal.id,
+            'amount': float(proposal.amount),
+            'note': proposal.note,
+            'status': proposal.status,
+            'created_at': proposal.created_at.isoformat(),
+        },
         'order': serialize_order(order),
     }, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def confirm_order_price_view(request, order_id):
+    return _handle_accept_price(request, order_id)
+
+
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def reject_order_price_view(request, order_id):
+    return _handle_reject_price(request, order_id)
+
+
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def counter_order_price_view(request, order_id):
+    return _handle_counter_price(request, order_id)
+
+
+@api_view(['POST'])
+@authentication_classes([BearerTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def respond_order_negotiation_view(request, order_id):
+    action = str(request.data.get('action', '')).strip().upper()
+    if action == 'ACCEPT':
+        return _handle_accept_price(request, order_id)
+    elif action == 'REJECT':
+        return _handle_reject_price(request, order_id)
+    elif action == 'COUNTER':
+        return _handle_counter_price(request, order_id)
+    return Response({
+        'success': False,
+        'message': f"Invalid action '{action}'. Must be one of: ACCEPT, REJECT, COUNTER.",
+        'valid_actions': ['ACCEPT', 'REJECT', 'COUNTER'],
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -1967,20 +2051,84 @@ def order_negotiations_view(request, order_id):
     order = order_for_user(order_id, request.user)
     if not order:
         return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
-    proposals = order.negotiation_proposals.select_related('proposed_by')
+    proposals_qs = order.negotiation_proposals.select_related('proposed_by').order_by('created_at')
+    proposals_list = list(proposals_qs)
+    latest_proposal = proposals_list[-1] if proposals_list else None
+    is_price_agreed = order.final_agreed_price is not None
+    is_negotiation_active = order.status in (
+        PickupOrder.Status.NEGOTIATION_PENDING,
+        PickupOrder.Status.ADMIN_NEGOTIATION,
+    ) and not is_price_agreed
+
+    user_actions = []
+    if is_negotiation_active:
+        if latest_proposal and latest_proposal.proposer_role == NegotiationProposal.ProposerRole.ADMIN and latest_proposal.status == NegotiationProposal.Status.PENDING:
+            user_actions = ['ACCEPT', 'REJECT', 'COUNTER']
+        elif latest_proposal and latest_proposal.proposer_role == NegotiationProposal.ProposerRole.USER and latest_proposal.status == NegotiationProposal.Status.PENDING:
+            user_actions = ['WAITING_FOR_ADMIN']
+        elif latest_proposal and latest_proposal.status == NegotiationProposal.Status.REJECTED:
+            user_actions = ['COUNTER']
+        else:
+            user_actions = ['COUNTER']
+
+    history = [
+        {
+            'round': idx + 1,
+            'id': p.id,
+            'proposer_role': p.proposer_role,
+            'proposer_display': 'Bazaarpe Admin' if p.proposer_role == NegotiationProposal.ProposerRole.ADMIN else 'You',
+            'amount': float(p.amount),
+            'note': p.note or '',
+            'status': p.status,
+            'is_accepted': p.is_accepted,
+            'rejection_reason': p.rejection_reason or '',
+            'created_at': p.created_at.isoformat(),
+            'accepted_at': p.accepted_at.isoformat() if p.accepted_at else None,
+        }
+        for idx, p in enumerate(proposals_list)
+    ]
+
+    latest_data = None
+    if latest_proposal:
+        latest_data = {
+            'round': len(proposals_list),
+            'id': latest_proposal.id,
+            'proposer_role': latest_proposal.proposer_role,
+            'proposer_display': 'Bazaarpe Admin' if latest_proposal.proposer_role == NegotiationProposal.ProposerRole.ADMIN else 'You',
+            'amount': float(latest_proposal.amount),
+            'note': latest_proposal.note or '',
+            'status': latest_proposal.status,
+            'is_accepted': latest_proposal.is_accepted,
+            'rejection_reason': latest_proposal.rejection_reason or '',
+            'created_at': latest_proposal.created_at.isoformat(),
+            'accepted_at': latest_proposal.accepted_at.isoformat() if latest_proposal.accepted_at else None,
+        }
+
     return Response({
         'success': True,
         'order_id': order.order_id,
+        'order_status': order.status,
+        'order_status_display': order.get_status_display(),
+        'approx_price': float(order.approx_price),
         'final_agreed_price': float(order.final_agreed_price) if order.final_agreed_price is not None else None,
-        'proposals': [{
-            'id': proposal.id,
-            'proposer_role': proposal.proposer_role,
-            'amount': float(proposal.amount),
-            'note': proposal.note,
-            'is_accepted': proposal.is_accepted,
-            'created_at': proposal.created_at.isoformat(),
-            'accepted_at': proposal.accepted_at.isoformat() if proposal.accepted_at else None,
-        } for proposal in proposals],
+        'is_price_agreed': is_price_agreed,
+        'is_negotiation_active': is_negotiation_active,
+        'latest_proposal': latest_data,
+        'user_actions_available': user_actions,
+        'history': history,
+        'proposals': [
+            {
+                'id': proposal.id,
+                'proposer_role': proposal.proposer_role,
+                'amount': float(proposal.amount),
+                'note': proposal.note,
+                'status': proposal.status,
+                'is_accepted': proposal.is_accepted,
+                'created_at': proposal.created_at.isoformat(),
+                'accepted_at': proposal.accepted_at.isoformat() if proposal.accepted_at else None,
+            }
+            for proposal in proposals_list
+        ],
     })
 
 

@@ -582,26 +582,7 @@ response:
   }
 }
 
-API for Confirm Negotiated Price
-url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/confirm-price/
-method: POST
-
-params:
-Authorization: Bearer <token> (header)
-
-response:
-{
-  "success": true,
-  "message": "Price accepted. Awaiting admin publication to vendors.",
-  "awaiting_admin_publication": true,
-  "order": {
-    "order_id": "ORD-2026-123456",
-    "status": "ADMIN_NEGOTIATION",
-    "final_agreed_price": 1250.0
-  }
-}
-
-API for Get Order Negotiations
+API for Get Order Negotiations (Complete History & Status)
 url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/negotiations/
 method: GET
 
@@ -612,33 +593,199 @@ response:
 {
   "success": true,
   "order_id": "ORD-2026-123456",
-  "final_agreed_price": 1250.0,
+  "order_status": "ADMIN_NEGOTIATION",
+  "order_status_display": "Under Negotiation",
+  "approx_price": 1200.0,
+  "final_agreed_price": null,
+  "is_price_agreed": false,
+  "is_negotiation_active": true,
+  "latest_proposal": {
+    "round": 1,
+    "id": 15,
+    "proposer_role": "ADMIN",
+    "proposer_display": "Bazaarpe Admin",
+    "amount": 1250.0,
+    "note": "Based on photo quality",
+    "status": "PENDING",
+    "is_accepted": false,
+    "rejection_reason": "",
+    "created_at": "2026-11-05T14:30:00Z",
+    "accepted_at": null
+  },
+  "user_actions_available": [
+    "ACCEPT",
+    "REJECT",
+    "COUNTER"
+  ],
+  "history": [
+    {
+      "round": 1,
+      "id": 15,
+      "proposer_role": "ADMIN",
+      "proposer_display": "Bazaarpe Admin",
+      "amount": 1250.0,
+      "note": "Based on photo quality",
+      "status": "PENDING",
+      "is_accepted": false,
+      "rejection_reason": "",
+      "created_at": "2026-11-05T14:30:00Z",
+      "accepted_at": null
+    }
+  ],
   "proposals": [
     {
+      "id": 15,
       "proposer_role": "ADMIN",
       "amount": 1250.0,
-      "is_accepted": true
+      "note": "Based on photo quality",
+      "status": "PENDING",
+      "is_accepted": false,
+      "created_at": "2026-11-05T14:30:00Z",
+      "accepted_at": null
     }
   ]
 }
 
-API for Submit User Counter Offer
+API for Respond to Negotiation (Unified Action Endpoint)
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/negotiations/respond/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+Content-Type: application/json
+
+1) To ACCEPT:
+body:
+{
+  "action": "ACCEPT"
+}
+
+response:
+{
+  "success": true,
+  "message": "Price ₹1250.0 accepted. Awaiting admin publication to vendors.",
+  "action_taken": "ACCEPT",
+  "final_agreed_price": 1250.0,
+  "awaiting_admin_publication": true,
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": 1250.0
+  }
+}
+
+2) To REJECT:
+body:
+{
+  "action": "REJECT",
+  "reason": "Offered price is too low for current scrap condition"
+}
+
+response:
+{
+  "success": true,
+  "message": "Price proposal rejected. You can submit a counter-offer or wait for admin to revise.",
+  "action_taken": "REJECT",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": null
+  }
+}
+
+3) To COUNTER:
+body:
+{
+  "action": "COUNTER",
+  "proposed_price": 1325.50,
+  "note": "Includes sorted copper wires"
+}
+
+response:
+{
+  "success": true,
+  "message": "Counter-offer of ₹1325.5 submitted for admin review.",
+  "action_taken": "COUNTER",
+  "proposal": {
+    "id": 16,
+    "amount": 1325.5,
+    "note": "Includes sorted copper wires",
+    "status": "PENDING",
+    "created_at": "2026-11-05T14:35:00Z"
+  },
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": null
+  }
+}
+
+API for Confirm Negotiated Price (Direct Accept Endpoint)
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/confirm-price/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+
+response:
+{
+  "success": true,
+  "message": "Price ₹1250.0 accepted. Awaiting admin publication to vendors.",
+  "action_taken": "ACCEPT",
+  "final_agreed_price": 1250.0,
+  "awaiting_admin_publication": true,
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": 1250.0
+  }
+}
+
+API for Reject Negotiated Price (Direct Reject Endpoint)
+url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/reject-price/
+method: POST
+
+params:
+Authorization: Bearer <token> (header)
+body:
+{
+  "reason": "Offered price is too low"
+}
+
+response:
+{
+  "success": true,
+  "message": "Price proposal rejected. You can submit a counter-offer or wait for admin to revise.",
+  "action_taken": "REJECT",
+  "order": {
+    "order_id": "ORD-2026-123456",
+    "status": "ADMIN_NEGOTIATION",
+    "final_agreed_price": null
+  }
+}
+
+API for Submit User Counter Offer (Direct Counter Endpoint)
 url: http://127.0.0.1:8000/api/user/orders/ORD-2026-123456/counter-price/
 method: POST
 
 params:
 Authorization: Bearer <token> (header)
-proposed_price: 1325.50
-note: Includes sorted copper (optional)
+body:
+{
+  "proposed_price": 1325.50,
+  "note": "Includes sorted copper (optional)"
+}
 
 response:
 {
   "success": true,
-  "message": "Counter-offer submitted for admin review.",
+  "message": "Counter-offer of ₹1325.5 submitted for admin review.",
+  "action_taken": "COUNTER",
   "proposal": {
-    "id": 3,
+    "id": 16,
     "amount": 1325.5,
-    "note": "Includes sorted copper"
+    "note": "Includes sorted copper",
+    "status": "PENDING"
   },
   "order": {
     "order_id": "ORD-2026-123456",

@@ -183,14 +183,18 @@ def run_verification():
     # Admin negotiate
     neg_resp = client.post(f'/admin/orders/{test_order.order_id}/negotiate', {'proposed_price': '4000.00', 'message': 'Special bulk price agreed'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     test_order.refresh_from_db()
-    assert test_order.final_agreed_price == Decimal('4000.00'), f"Negotiation failed, price: {test_order.final_agreed_price}"
-    print("  [PASS] Negotiate Order: Price updated to Rs.4000.00, Status:", test_order.status)
+    prop = test_order.negotiation_proposals.last()
+    assert prop is not None and prop.amount == Decimal('4000.00'), f"Negotiation proposal failed, got: {prop}"
+    assert test_order.final_agreed_price is None, f"Expected final_agreed_price to remain None until user acceptance, got: {test_order.final_agreed_price}"
+    print("  [PASS] Negotiate Order: Proposal sent for Rs.4000.00, Status:", test_order.status)
 
     # User accepts proposal
-    prop = test_order.negotiation_proposals.last()
     if prop:
         prop.is_accepted = True
+        prop.status = 'ACCEPTED'
         prop.save()
+        test_order.final_agreed_price = prop.amount
+        test_order.save()
 
     # Admin publish
     pub_resp = client.post(f'/admin/orders/{test_order.order_id}/publish', HTTP_X_REQUESTED_WITH='XMLHttpRequest')

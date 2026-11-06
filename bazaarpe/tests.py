@@ -591,6 +591,77 @@ class PickupOrderFlowTests(APITestCase):
         invalid_date = self.client.get('/api/vendor/orders/history/?from=2026-99-99')
         self.assertEqual(invalid_date.status_code, 400, invalid_date.data)
 
+    def test_negotiation_full_flow_history_reject_and_respond(self):
+        order = self.create_order()
+        # Initial state: negotiation open, no proposals yet
+        self.authenticate(self.user_token)
+        res = self.client.get(f'/api/user/orders/{order.order_id}/negotiations/')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data['is_price_agreed'])
+        self.assertTrue(res.data['is_negotiation_active'])
+        self.assertIsNone(res.data['latest_proposal'])
+
+        # 1. Admin proposes price -> order.final_agreed_price must remain None!
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        res_neg = self.client.post(f'/admin/orders/{order.order_id}/negotiate', {'final_agreed_price': '1200.00', 'note': 'First offer'}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(res_neg.status_code, 200)
+        order.refresh_from_db()
+        self.assertIsNone(order.final_agreed_price)
+        self.assertEqual(order.status, PickupOrder.Status.ADMIN_NEGOTIATION)
+
+        # 2. User checks negotiations -> actions available: ACCEPT, REJECT, COUNTER
+        self.authenticate(self.user_token)
+        res = self.client.get(f'/api/user/orders/{order.order_id}/negotiations/')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(res.data['is_price_agreed'])
+        self.assertEqual(res.data['user_actions_available'], ['ACCEPT', 'REJECT', 'COUNTER'])
+        self.assertEqual(res.data['latest_proposal']['amount'], 1200.0)
+        self.assertEqual(res.data['latest_proposal']['status'], 'PENDING')
+        self.assertEqual(len(res.data['history']), 1)
+
+        # 3. User rejects the proposal with a reason
+        res_rej = self.client.post(f'/api/user/orders/{order.order_id}/reject-price/', {'reason': 'Offer too low'}, format='json')
+        self.assertEqual(res_rej.status_code, 200)
+        self.assertEqual(res_rej.data['action_taken'], 'REJECT')
+        order.refresh_from_db()
+        self.assertIsNone(order.final_agreed_price)
+
+        # 4. Check history reflects rejection
+        res = self.client.get(f'/api/user/orders/{order.order_id}/negotiations/')
+        self.assertEqual(res.data['latest_proposal']['status'], 'REJECTED')
+        self.assertEqual(res.data['latest_proposal']['rejection_reason'], 'Offer too low')
+
+        # 5. User submits counter offer via unified respond endpoint
+        res_counter = self.client.post(f'/api/user/orders/{order.order_id}/negotiations/respond/', {
+            'action': 'COUNTER',
+            'proposed_price': '1350.00',
+            'note': 'Can you do 1350?',
+        }, format='json')
+        self.assertEqual(res_counter.status_code, 201)
+        self.assertEqual(res_counter.data['action_taken'], 'COUNTER')
+
+        # 6. User checks negotiations -> waiting for admin
+        res = self.client.get(f'/api/user/orders/{order.order_id}/negotiations/')
+        self.assertEqual(res.data['user_actions_available'], ['WAITING_FOR_ADMIN'])
+        self.assertEqual(len(res.data['history']), 2)
+
+        # 7. Admin approves user counter-offer
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        res_app = self.client.post(f'/admin/orders/{order.order_id}/approve', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(res_app.status_code, 200)
+        order.refresh_from_db()
+        self.assertEqual(float(order.final_agreed_price), 1350.0)
+
+        # 8. User checks negotiations -> price agreed!
+        self.authenticate(self.user_token)
+        res = self.client.get(f'/api/user/orders/{order.order_id}/negotiations/')
+        self.assertTrue(res.data['is_price_agreed'])
+        self.assertFalse(res.data['is_negotiation_active'])
+        self.assertEqual(res.data['final_agreed_price'], 1350.0)
+        self.assertEqual(res.data['user_actions_available'], [])
+
     def test_user_counter_offer_persists_and_is_audited(self):
         order = self.create_order()
         self.client.credentials()

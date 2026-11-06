@@ -1345,7 +1345,7 @@ def page_view(request, page_name):
                 PickupOrder.Status.ADMIN_NEGOTIATION,
             ])
             .select_related('user', 'user__profile', 'address', 'category', 'subcategory')
-            .prefetch_related('images')
+            .prefetch_related('images', 'negotiation_proposals')
             .order_by('-created_at')
         )
         q = request.GET.get('q', '').strip()
@@ -1376,6 +1376,9 @@ def page_view(request, page_name):
         page_size = int(request.GET.get('page_size', 8))
         paginator = Paginator(pickup_requests, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        for req_order in page_obj.object_list:
+            req_order.cached_latest_proposal = req_order.negotiation_proposals.all().order_by('-created_at').first()
 
         return render(request, 'requests.html', admin_context(
             request,
@@ -1547,7 +1550,7 @@ def admin_action_view(request, action_path):
         # -------------------------------------------------------------
         # 1. PICKUP NEGOTIATION & PROPOSAL
         # -------------------------------------------------------------
-        negotiation_match = re.fullmatch(r'orders/([^/]+)/(?:negotiate|approve)', action)
+        negotiation_match = re.fullmatch(r'orders/([^/]+)/negotiate', action)
         if negotiation_match:
             order = PickupOrder.objects.filter(order_id=negotiation_match.group(1)).first()
             if not order:
@@ -1557,16 +1560,24 @@ def admin_action_view(request, action_path):
             except (InvalidOperation, TypeError, ValueError):
                 agreed = Decimal('0')
             if agreed <= 0:
-                return JsonResponse({'success': False, 'message': 'Final agreed price must be greater than zero.'}, status=400)
+                return JsonResponse({'success': False, 'message': 'Proposed price must be greater than zero.'}, status=400)
             if order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.SEARCHING_VENDOR):
                 return JsonResponse({'success': False, 'message': 'Order is no longer in negotiation.'}, status=409)
+
+            order.negotiation_proposals.filter(
+                proposer_role=NegotiationProposal.ProposerRole.ADMIN,
+                status=NegotiationProposal.Status.PENDING,
+            ).update(status=NegotiationProposal.Status.COUNTERED)
 
             proposal = NegotiationProposal.objects.create(
                 order=order, proposed_by=request.user,
                 proposer_role=NegotiationProposal.ProposerRole.ADMIN,
-                amount=agreed, note=str(data.get('note') or data.get('message', '')).strip(),
+                amount=agreed,
+                status=NegotiationProposal.Status.PENDING,
+                note=str(data.get('note') or data.get('message', '')).strip(),
             )
-            order.final_agreed_price = agreed
+            # Crucial: price is NOT final until user accepts!
+            order.final_agreed_price = None
             order.status = PickupOrder.Status.ADMIN_NEGOTIATION
             order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
             UserNotification.objects.create(
@@ -1577,7 +1588,50 @@ def admin_action_view(request, action_path):
             )
             MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='PRICE_PROPOSED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'proposal_id': proposal.id, 'amount': str(agreed)})
             if is_ajax:
-                return JsonResponse({'success': True, 'message': f'Price proposal saved for {order.order_id}.'})
+                return JsonResponse({'success': True, 'message': f'Price proposal of ₹{agreed} sent to customer for {order.order_id}.'})
+            return redirect('/requests.html')
+
+        approve_match = re.fullmatch(r'orders/([^/]+)/approve', action)
+        if approve_match:
+            order = PickupOrder.objects.filter(order_id=approve_match.group(1)).first()
+            if not order:
+                return JsonResponse({'success': False, 'message': 'Pickup order not found.'}, status=404)
+            user_prop = order.negotiation_proposals.filter(
+                proposer_role=NegotiationProposal.ProposerRole.USER,
+                status=NegotiationProposal.Status.PENDING,
+            ).order_by('-created_at').first()
+            if not user_prop:
+                user_prop = order.negotiation_proposals.filter(
+                    proposer_role=NegotiationProposal.ProposerRole.USER,
+                    is_accepted=False,
+                ).order_by('-created_at').first()
+
+            if user_prop:
+                agreed = user_prop.amount
+                user_prop.is_accepted = True
+                user_prop.status = NegotiationProposal.Status.ACCEPTED
+                user_prop.accepted_at = timezone.now()
+                user_prop.save(update_fields=['is_accepted', 'status', 'accepted_at'])
+            else:
+                try:
+                    agreed = Decimal(str(data.get('final_agreed_price') or data.get('proposed_price') or data.get('price') or '0'))
+                except (InvalidOperation, TypeError, ValueError):
+                    agreed = Decimal('0')
+                if agreed <= 0:
+                    return JsonResponse({'success': False, 'message': 'Price must be greater than zero.'}, status=400)
+
+            order.final_agreed_price = agreed
+            order.status = PickupOrder.Status.ADMIN_NEGOTIATION
+            order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
+            UserNotification.objects.create(
+                user=order.user, order=order,
+                event_type=UserNotification.EventType.PRICE_PROPOSED,
+                title='Counter-offer accepted',
+                message=f'Admin accepted price ₹{agreed} for {order.order_id}.',
+            )
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='PRICE_ACCEPTED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'amount': str(agreed)})
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': f'Price ₹{agreed} approved for {order.order_id}.'})
             return redirect('/requests.html')
 
         # -------------------------------------------------------------
