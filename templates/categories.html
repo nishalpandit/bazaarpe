@@ -92,32 +92,65 @@
     <div class="bm-provisional"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg> Provisional – decision pending</p><p class="mt-0.5">The “Battery” category is zone-restricted on a provisional basis: battery handling rules are not confirmed, so the category is not offered in all cities.</p></div>
 
     <div class="mt-3">
-      <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Categories</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd "><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[900px]">
-      <thead><tr><th scope="col" class="">Category</th><th scope="col" class="">Subcategories</th><th scope="col" class="">Vendors</th><th scope="col" class="">Status</th><th scope="col" class=""></th></tr></thead><tbody>
+      <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Categories & Rates</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd "><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[900px]">
+      <thead><tr><th scope="col" class="">Category</th><th scope="col" class="">Subcategories & Scrap Rates (₹ / kg)</th><th scope="col" class="">Types</th><th scope="col" class="">Status</th><th scope="col" class="text-right">Actions</th></tr></thead><tbody>
 {% for cat in categories %}
 <tr>
-  <td class=""><span class="font-semibold text-ink-900">{{ cat.name }}</span><div class="bm-mono text-[0.75rem] text-slate-500">CAT-0{{ cat.id }}</div></td>
-  <td class="">
-    <div class="flex max-w-[24rem] flex-wrap gap-1.5">
+  <td class="py-3">
+    <div class="flex items-center gap-2">
+      <div>
+        <div class="font-semibold text-ink-900 flex items-center gap-1.5">
+          {{ cat.name }}
+          <button type="button" class="text-slate-400 hover:text-emerald-700 p-0.5 rounded hover:bg-slate-100 transition-colors" title="Edit Category {{ cat.name }}" data-edit-category data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-status="{% if cat.is_active %}active{% else %}inactive{% endif %}">
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
+        <div class="bm-mono text-[0.72rem] text-slate-400">CAT-0{{ cat.id }}</div>
+      </div>
+    </div>
+  </td>
+  <td class="py-3">
+    <div class="flex max-w-[34rem] flex-wrap items-center gap-1.5">
       {% for sub in cat.subcategories.all %}
-        <span class="bm-tag">{{ sub.name }} (₹{{ sub.rate_per_kg }}/kg)</span>
+        <button type="button" 
+          class="group inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1 text-xs shadow-sm hover:border-emerald-400 hover:bg-emerald-50/50 hover:shadow transition-all duration-150 cursor-pointer text-left"
+          title="Click to edit rate or details for {{ sub.name }}"
+          data-edit-subcategory
+          data-id="{{ sub.id }}"
+          data-name="{{ sub.name }}"
+          data-category-id="{{ cat.id }}"
+          data-category-name="{{ cat.name }}"
+          data-rate="{{ sub.rate_per_kg }}"
+          data-gst="{{ sub.gst_percent }}"
+          data-min="{{ sub.min_weight_kg }}"
+          data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
+          <span class="font-medium text-slate-800 group-hover:text-emerald-950">{{ sub.name }}</span>
+          <span class="inline-flex items-center rounded bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 font-mono text-[0.6875rem] font-bold text-emerald-700 group-hover:bg-emerald-100 group-hover:text-emerald-900">₹{{ sub.rate_per_kg }}/kg</span>
+          <svg class="h-3 w-3 text-slate-300 group-hover:text-emerald-600 transition-colors ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
       {% empty %}
-        <span class="text-xs text-slate-400 italic">No subcategories</span>
+        <span class="text-xs text-slate-400 italic">No subcategories configured</span>
       {% endfor %}
     </div>
   </td>
-  <td class=""><span class="text-slate-600 text-sm">{{ cat.subcategories.count }} types</span></td>
-  <td class="">
+  <td class="py-3"><span class="text-slate-600 text-sm font-medium">{{ cat.subcategories.count }} types</span></td>
+  <td class="py-3">
     {% if cat.is_active %}
       <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active</span>
     {% else %}
       <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Inactive</span>
     {% endif %}
   </td>
-  <td class="">
-    <div class="flex gap-1.5">
-      <button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-open="modalAddSub" onclick="var sel=document.getElementById('modalAddSub-f-category_id'); if(sel) sel.value='{{ cat.name }}';">Add sub</button>
-      <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-category" data-item-name="{{ cat.name }}"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg> Delete</button>
+  <td class="py-3 text-right">
+    <div class="flex items-center justify-end gap-1.5">
+      <button type="button" class="bm-btn-ghost bm-btn-sm inline-flex items-center gap-1 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800" data-modal-open="modalAddSub" onclick="var sel=document.getElementById('modalAddSub-f-category_id'); if(sel) sel.value='{{ cat.id }}';">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Add sub
+      </button>
+      <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-category" data-item-name="{{ cat.name }}">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+        Delete
+      </button>
     </div>
   </td>
 </tr>
@@ -126,7 +159,7 @@
 {% endfor %}
 </tbody></table></div>
 {% include "includes/pagination.html" with page_obj=cat_page_obj paginator=cat_paginator item_label="categories" %}
-</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a category hides it from new requests and vendor selections. Existing orders keep their category.</p></div></section>
+</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Click on any subcategory pill to edit its rate per kg or specifications. Deactivating a category hides it from new requests and vendor selections.</p></div></section>
     </div>
 
     <div class="mt-3">
@@ -134,32 +167,32 @@
       <thead><tr><th scope="col" class="">Vendor</th><th scope="col" class="">City</th><th scope="col" class="">Categories</th><th scope="col" class="">Subcategories</th><th scope="col" class="">Relationship</th></tr></thead><tbody><tr><td class=""><a class="bm-link font-semibold" href="vendor-detail.html">GreenLoop Recycling</a></td><td class="">Mumbai</td><td class=""><span class="bm-tag">Iron &amp; Steel</span> <span class="bm-tag">Aluminium</span> </td><td class=""><span class="bm-tag">MS scrap</span> <span class="bm-tag">Rods</span> <span class="bm-tag">Extrusions</span> <span class="bm-tag">Cans</span> </td><td class=""><span class="bm-badge bg-brand-50 text-brand-800 ring-brand-600/20">Multiple categories</span></td></tr><tr><td class=""><a class="bm-link font-semibold" href="vendor-detail.html">Sharma Scrap Traders</a></td><td class="">Pune</td><td class=""><span class="bm-tag">Iron &amp; Steel</span> <span class="bm-tag">Plastic</span> </td><td class=""><span class="bm-tag">MS scrap</span> <span class="bm-tag">HDPE containers</span> </td><td class=""><span class="bm-badge bg-brand-50 text-brand-800 ring-brand-600/20">Multiple categories</span></td></tr></tbody></table></div></div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Edits happen on the vendor record so that each category/subcategory selection stays attributable to a vendor.</p></div></section>
     </div>
 
+    <!-- Modal: Add Category -->
     <div class="bm-modal-backdrop" id="modalAddCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddCategory-title" aria-hidden="true">
       <div class="bm-modal" role="document">
         <form method="post" action="/admin/categories/create" data-admin-form>
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-            <h2 class="text-[0.9375rem] font-semibold text-ink-900" id="modalAddCategory-title">Add category</h2>
-            <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-bold text-slate-800" id="modalAddCategory-title">Add Category</h2>
+            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
-          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="space-y-3">
-        <div>
-      <label class="bm-label" for="modalAddCategory-f-name">Category name <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="modalAddCategory-f-name" name="name" type="text" value="" placeholder="e.g. Brass" required >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddCategory-f-description">Description (internal)</label>
-      <textarea class="bm-textarea" id="modalAddCategory-f-description" name="description" rows="2" placeholder="" ></textarea>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddCategory-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddCategory-f-status" name="status" required ><option value="active">Active</option><option value="inactive">Inactive</option></select>
-      
-    </div>
-      </div></div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
+            <div>
+              <label class="bm-label font-semibold" for="modalAddCategory-f-name">Category name <span class="text-rose-600">*</span></label>
+              <input class="bm-input mt-1" id="modalAddCategory-f-name" name="name" type="text" placeholder="e.g. Brass, Copper, Tires" required>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="modalAddCategory-f-description">Description (internal)</label>
+              <textarea class="bm-textarea mt-1" id="modalAddCategory-f-description" name="description" rows="2" placeholder="Internal notes or material guidelines"></textarea>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="modalAddCategory-f-status">Status <span class="text-rose-600">*</span></label>
+              <select class="bm-select mt-1" id="modalAddCategory-f-status" name="status" required>
+                <option value="active" selected>Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
             <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
             <button type="submit" class="bm-btn-primary">Create category</button>
           </div>
@@ -168,73 +201,182 @@
       </div>
     </div>
 
+    <!-- Modal: Edit Category -->
     <div class="bm-modal-backdrop" id="modalEditCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditCategory-title" aria-hidden="true">
       <div class="bm-modal" role="document">
-        <form method="post" action="/admin/categories/CAT-01" data-prototype-form>
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-            <h2 class="text-[0.9375rem] font-semibold text-ink-900" id="modalEditCategory-title">Edit category</h2>
-            <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        <form method="post" action="/admin/categories/edit" data-admin-form>
+          <input type="hidden" name="category_id" id="editCat-id" value="">
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-800" id="modalEditCategory-title">Edit Category</h2>
+              <p class="text-xs text-slate-500 mt-0.5" id="editCat-subtitle">Update category name and status</p>
+            </div>
+            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
-          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="space-y-3">
-        <div>
-      <label class="bm-label" for="modalEditCategory-f-name">Category name <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="modalEditCategory-f-name" name="name" type="text" value="Iron &amp; Steel" placeholder="" required >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditCategory-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalEditCategory-f-status" name="status" required ><option value="active" selected>Active</option><option value="inactive">Inactive</option></select>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalEditCategory-f-change_note">Reason for change <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <textarea class="bm-textarea" id="modalEditCategory-f-change_note" name="change_note" rows="2" placeholder="" required ></textarea>
-      
-    </div>
-      </div></div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
+            <div>
+              <label class="bm-label font-semibold" for="editCat-name">Category name <span class="text-rose-600">*</span></label>
+              <input class="bm-input mt-1" id="editCat-name" name="name" type="text" required>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="editCat-status">Status <span class="text-rose-600">*</span></label>
+              <select class="bm-select mt-1" id="editCat-status" name="status" required>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
             <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="bm-btn-primary">Save category</button>
+            <button type="submit" class="bm-btn-primary">Save Changes</button>
           </div>
           <input type="hidden" name="_token" value="">
         </form>
       </div>
     </div>
 
+    <!-- Modal: Add Subcategory & Set Scrap Rate -->
     <div class="bm-modal-backdrop" id="modalAddSub" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddSub-title" aria-hidden="true">
       <div class="bm-modal" role="document">
         <form method="post" action="/admin/categories/subcategory" data-admin-form>
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-            <h2 class="text-[0.9375rem] font-semibold text-ink-900" id="modalAddSub-title">Add subcategory</h2>
-            <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-800" id="modalAddSub-title">Add Subcategory & Set Rate</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Configure scrap item name, purchasing rate per kg, and thresholds.</p>
+            </div>
+            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
-          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="space-y-3">
-        <div>
-      <label class="bm-label" for="modalAddSub-f-category_id">Parent category <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddSub-f-category_id" name="category_id" required ><option value="Iron &amp; Steel" selected>Iron &amp; Steel</option><option value="Aluminium">Aluminium</option><option value="Copper">Copper</option><option value="E-Waste">E-Waste</option><option value="Paper &amp; Cardboard">Paper &amp; Cardboard</option><option value="Plastic">Plastic</option><option value="Battery">Battery</option></select>
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddSub-f-name">Subcategory name <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="modalAddSub-f-name" name="name" type="text" value="" placeholder="e.g. GI sheets" required >
-      
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddSub-f-order">Display order</label>
-      <input class="bm-input" id="modalAddSub-f-order" name="order" type="number" value="4" placeholder="" aria-describedby="modalAddSub-f-order-help" >
-      <p class="bm-help" id="modalAddSub-f-order-help">Ordering within the parent category.</p>
-    </div>
-        <div>
-      <label class="bm-label" for="modalAddSub-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalAddSub-f-status" name="status" required ><option value="active">Active</option><option value="inactive">Inactive</option></select>
-      
-    </div>
-      </div></div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+          <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
+            <div>
+              <label class="bm-label font-semibold" for="modalAddSub-f-category_id">Parent Category <span class="text-rose-600">*</span></label>
+              <select class="bm-select mt-1" id="modalAddSub-f-category_id" name="category_id" required>
+                {% for cat in all_categories|default:categories %}
+                  <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="modalAddSub-f-name">Subcategory Name <span class="text-rose-600">*</span></label>
+              <input class="bm-input mt-1" id="modalAddSub-f-name" name="name" type="text" placeholder="e.g. Copper Wire, GI Sheets, Carton" required>
+            </div>
+            <div class="rounded-xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/80 p-3.5 space-y-1.5">
+              <label class="bm-label text-emerald-950 font-bold flex items-center justify-between" for="modalAddSub-f-rate">
+                <span>Scrap Rate (₹ / kg) <span class="text-rose-600">*</span></span>
+                <span class="text-[0.6875rem] font-semibold text-emerald-700 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-emerald-200">Required</span>
+              </label>
+              <div class="relative mt-1">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-lg select-none">₹</span>
+                <input class="bm-input pl-8 font-mono font-bold text-slate-900 text-base bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="modalAddSub-f-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="e.g. 180.00" required>
+              </div>
+              <p class="text-[0.72rem] text-emerald-900/80">Default platform buying rate paid to customers / calculated on user pickup requests.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="bm-label font-semibold" for="modalAddSub-f-gst">GST (%)</label>
+                <div class="relative mt-1">
+                  <input class="bm-input font-mono" id="modalAddSub-f-gst" name="gst_percent" type="number" step="0.01" min="0" value="18.00" placeholder="18.00">
+                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
+                </div>
+                <p class="bm-help">Standard scrap GST rate</p>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="modalAddSub-f-min">Min Weight (kg)</label>
+                <div class="relative mt-1">
+                  <input class="bm-input font-mono" id="modalAddSub-f-min" name="min_weight_kg" type="number" step="0.1" min="0.1" value="5.0" placeholder="5.0">
+                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
+                </div>
+                <p class="bm-help">Threshold for scheduled pickup</p>
+              </div>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="modalAddSub-f-status">Status <span class="text-rose-600">*</span></label>
+              <select class="bm-select mt-1" id="modalAddSub-f-status" name="status" required>
+                <option value="active" selected>Active (Available across catalog)</option>
+                <option value="inactive">Inactive (Hidden from users)</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
             <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="bm-btn-primary">Create subcategory</button>
+            <button type="submit" class="bm-btn-primary">Create Subcategory & Set Rate</button>
+          </div>
+          <input type="hidden" name="_token" value="">
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Edit Subcategory & Rate -->
+    <div class="bm-modal-backdrop" id="modalEditSubCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditSubCategory-title" aria-hidden="true">
+      <div class="bm-modal" role="document">
+        <form method="post" action="/admin/categories/subcategory" data-admin-form>
+          <input type="hidden" name="sub_id" id="editSub-id" value="">
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-slate-800" id="modalEditSubCategory-title">Edit Subcategory & Rate</h2>
+                <span class="font-mono text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold" id="editSub-badge">SUB-ID</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5" id="editSub-cat-breadcrumb">Update scrap purchasing rate and settings.</p>
+            </div>
+            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
+            <div>
+              <label class="bm-label font-semibold" for="editSub-category_id">Parent Category <span class="text-rose-600">*</span></label>
+              <select class="bm-select mt-1" id="editSub-category_id" name="category_id" required>
+                {% for cat in all_categories|default:categories %}
+                  <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="editSub-name">Subcategory Name <span class="text-rose-600">*</span></label>
+              <input class="bm-input mt-1" id="editSub-name" name="name" type="text" required>
+            </div>
+            <div class="rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-200/90 p-4 space-y-2">
+              <label class="bm-label text-emerald-950 font-bold flex items-center justify-between" for="editSub-rate">
+                <span>Scrap Rate (₹ / kg) <span class="text-rose-600">*</span></span>
+                <span class="text-[0.6875rem] font-bold text-emerald-800 uppercase tracking-wider bg-white px-2 py-0.5 rounded border border-emerald-200">Current Market Price</span>
+              </label>
+              <div class="relative mt-1">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-xl select-none">₹</span>
+                <input class="bm-input pl-8 font-mono font-bold text-emerald-900 text-lg bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="editSub-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="0.00" required>
+              </div>
+              <p class="text-[0.72rem] text-emerald-900/80">Changing this rate instantly updates user order calculation, vendor pricing estimates, and the scrap catalog rate.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3.5">
+              <div>
+                <label class="bm-label font-semibold" for="editSub-gst">GST (%)</label>
+                <div class="relative mt-1">
+                  <input class="bm-input font-mono" id="editSub-gst" name="gst_percent" type="number" step="0.01" min="0" placeholder="18.00">
+                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
+                </div>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="editSub-min">Min Weight (kg)</label>
+                <div class="relative mt-1">
+                  <input class="bm-input font-mono" id="editSub-min" name="min_weight_kg" type="number" step="0.1" min="0.1" placeholder="5.0">
+                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="bm-label font-semibold" for="editSub-status">Status</label>
+              <select class="bm-select mt-1" id="editSub-status" name="status">
+                <option value="active">Active (Available across catalog)</option>
+                <option value="inactive">Inactive (Hidden from users)</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
+            <button type="button" class="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-rose-50 transition-colors" id="btnDeleteSubCategory">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+              Delete Subcategory
+            </button>
+            <div class="flex items-center gap-2">
+              <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
+              <button type="submit" class="bm-btn-primary">Update Rate & Details</button>
+            </div>
           </div>
           <input type="hidden" name="_token" value="">
         </form>
@@ -254,5 +396,122 @@
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
   <script src="/static/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // 1. Edit Category Modal trigger
+      document.addEventListener('click', function (e) {
+        const catBtn = e.target.closest('[data-edit-category]');
+        if (!catBtn) return;
+        e.preventDefault();
+
+        const catId = catBtn.getAttribute('data-id') || '';
+        const catName = catBtn.getAttribute('data-name') || '';
+        const catStatus = catBtn.getAttribute('data-status') || 'active';
+
+        const fId = document.getElementById('editCat-id');
+        const fName = document.getElementById('editCat-name');
+        const fStatus = document.getElementById('editCat-status');
+        const fSub = document.getElementById('editCat-subtitle');
+
+        if (fId) fId.value = catId;
+        if (fName) fName.value = catName;
+        if (fStatus) fStatus.value = catStatus;
+        if (fSub) fSub.textContent = 'Editing CAT-0' + catId + ' (' + catName + ')';
+
+        const modal = document.getElementById('modalEditCategory');
+        if (modal) {
+          modal.classList.add('is-open');
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('bm-no-scroll');
+          if (fName) setTimeout(() => fName.focus(), 100);
+        }
+      });
+
+      // 2. Edit Subcategory & Rate Modal trigger
+      document.addEventListener('click', function (e) {
+        const pill = e.target.closest('[data-edit-subcategory]');
+        if (!pill) return;
+        e.preventDefault();
+
+        const subId = pill.getAttribute('data-id') || '';
+        const name = pill.getAttribute('data-name') || '';
+        const catId = pill.getAttribute('data-category-id') || '';
+        const catName = pill.getAttribute('data-category-name') || '';
+        const rate = pill.getAttribute('data-rate') || '0.00';
+        const gst = pill.getAttribute('data-gst') || '18.00';
+        const minWeight = pill.getAttribute('data-min') || '5.00';
+        const status = pill.getAttribute('data-status') || 'active';
+
+        const fId = document.getElementById('editSub-id');
+        const fName = document.getElementById('editSub-name');
+        const fCat = document.getElementById('editSub-category_id');
+        const fRate = document.getElementById('editSub-rate');
+        const fGst = document.getElementById('editSub-gst');
+        const fMin = document.getElementById('editSub-min');
+        const fStatus = document.getElementById('editSub-status');
+        const fBadge = document.getElementById('editSub-badge');
+        const fBreadcrumb = document.getElementById('editSub-cat-breadcrumb');
+
+        if (fId) fId.value = subId;
+        if (fName) fName.value = name;
+        if (fCat && catId) fCat.value = catId;
+        if (fRate) fRate.value = rate;
+        if (fGst) fGst.value = gst;
+        if (fMin) fMin.value = minWeight;
+        if (fStatus) fStatus.value = status;
+        if (fBadge) fBadge.textContent = 'SUB-0' + subId;
+        if (fBreadcrumb) fBreadcrumb.textContent = 'Parent Category: ' + catName + ' · Set scrap purchase rate per kg';
+
+        const modal = document.getElementById('modalEditSubCategory');
+        if (modal) {
+          modal.classList.add('is-open');
+          modal.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('bm-no-scroll');
+          if (fRate) setTimeout(() => fRate.focus(), 100);
+        }
+      });
+
+      // 3. Delete Subcategory button in modal
+      const btnDelSub = document.getElementById('btnDeleteSubCategory');
+      if (btnDelSub) {
+        btnDelSub.addEventListener('click', function (e) {
+          e.preventDefault();
+          const subId = document.getElementById('editSub-id')?.value;
+          const subName = document.getElementById('editSub-name')?.value || 'this subcategory';
+          if (!subId) return;
+
+          if (!confirm("Are you sure you want to delete subcategory '" + subName + "'? This will remove it from future orders and vendor catalogs.")) {
+            return;
+          }
+
+          const formData = new FormData();
+          formData.append('sub_id', subId);
+
+          fetch('/admin/categories/delete-sub', {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          })
+          .then(res => res.json().catch(() => ({ success: true })))
+          .then(data => {
+            if (data && data.success === false) {
+              alert(data.message || 'Failed to delete subcategory');
+            } else {
+              const modal = document.getElementById('modalEditSubCategory');
+              if (modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+                document.body.classList.remove('bm-no-scroll');
+              }
+              window.location.reload();
+            }
+          })
+          .catch(() => {
+            window.location.reload();
+          });
+        });
+      }
+    });
+  </script>
 </body>
 </html>

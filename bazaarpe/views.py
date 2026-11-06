@@ -847,6 +847,7 @@ def page_view(request, page_name):
 
     # 6. CATEGORIES & RATES
     if clean_name == 'categories':
+        all_categories = list(ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name'))
         categories = ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name')
         page_num = request.GET.get('page', 1)
         page_size = int(request.GET.get('page_size', 6))
@@ -857,11 +858,12 @@ def page_view(request, page_name):
             request,
             page_name=clean_name,
             categories=cat_page_obj.object_list,
+            all_categories=all_categories,
             page_obj=cat_page_obj,
             paginator=cat_paginator,
             cat_page_obj=cat_page_obj,
             cat_paginator=cat_paginator,
-            total_categories=categories.count(),
+            total_categories=len(all_categories),
         )
         return render(request, 'categories.html', ctx)
 
@@ -2206,7 +2208,51 @@ def admin_action_view(request, action_path):
                     return JsonResponse({'success': True, 'message': f"Category '{name}' created."})
             return redirect('/categories.html')
 
-        if action.startswith('categories/subcategory') or action.startswith('categories/add-sub'):
+        if action.startswith('categories/delete-sub') or ('subcategory' in action and 'delete' in action):
+            sub_id = data.get('sub_id') or data.get('id')
+            if sub_id and str(sub_id).isdigit():
+                sub = ScrapSubCategory.objects.filter(id=int(sub_id)).first()
+                if sub:
+                    sub_name = sub.name
+                    sub.delete()
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'message': f"Subcategory '{sub_name}' deleted."})
+            return redirect('/categories.html')
+
+        if action.startswith('categories/subcategory') or action.startswith('categories/add-sub') or action.startswith('categories/edit-sub'):
+            sub_id = data.get('sub_id') or data.get('id')
+            rate_val = data.get('rate_per_kg')
+            rate = Decimal(str(rate_val)) if (rate_val is not None and str(rate_val).strip() != '') else Decimal('25.00')
+            gst_val = data.get('gst_percent')
+            gst = Decimal(str(gst_val)) if (gst_val is not None and str(gst_val).strip() != '') else Decimal('18.00')
+            min_weight_val = data.get('min_weight_kg')
+            min_weight = Decimal(str(min_weight_val)) if (min_weight_val is not None and str(min_weight_val).strip() != '') else Decimal('5.00')
+            status_val = str(data.get('status', 'active')).lower()
+            is_active = (status_val in ('active', 'true', '1'))
+
+            sub_name = str(data.get('name') or data.get('sub_name', '')).strip()
+
+            sub = None
+            if sub_id and str(sub_id).isdigit():
+                sub = ScrapSubCategory.objects.filter(id=int(sub_id)).first()
+
+            if sub:
+                if sub_name:
+                    sub.name = sub_name
+                sub.rate_per_kg = rate
+                sub.gst_percent = gst
+                sub.min_weight_kg = min_weight
+                sub.is_active = is_active
+                cat_id = data.get('category_id') or data.get('category')
+                if cat_id:
+                    new_cat = ScrapCategory.objects.filter(id=int(cat_id)).first() if str(cat_id).isdigit() else ScrapCategory.objects.filter(name__iexact=str(cat_id).strip()).first()
+                    if new_cat:
+                        sub.category = new_cat
+                sub.save()
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub.name}' updated. Scrap rate set to ₹{sub.rate_per_kg}/kg."})
+                return redirect('/categories.html')
+
             cat_id = data.get('category_id') or data.get('category')
             cat = None
             if cat_id and str(cat_id).isdigit():
@@ -2216,16 +2262,14 @@ def admin_action_view(request, action_path):
             if not cat:
                 cat = ScrapCategory.objects.first()
 
-            sub_name = str(data.get('name') or data.get('sub_name', '')).strip()
-            rate = Decimal(str(data.get('rate_per_kg') or '25.00'))
-            gst = Decimal(str(data.get('gst_percent') or '18.00'))
             if cat and sub_name:
-                ScrapSubCategory.objects.update_or_create(
+                sub, created = ScrapSubCategory.objects.update_or_create(
                     category=cat, name=sub_name,
-                    defaults={'rate_per_kg': rate, 'gst_percent': gst, 'is_active': True}
+                    defaults={'rate_per_kg': rate, 'gst_percent': gst, 'min_weight_kg': min_weight, 'is_active': is_active}
                 )
+                action_word = "created" if created else "updated"
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub_name}' added to '{cat.name}'."})
+                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub_name}' {action_word} with rate ₹{rate}/kg."})
             return redirect('/categories.html')
 
         if 'categories' in action and 'delete' in action:
