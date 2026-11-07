@@ -36,9 +36,8 @@ from .models import (
     VendorProfile, VendorOfferRejection, VendorBillingSetting, RefundRequest,
     PlatformConfiguration, MarketplaceAuditLog,
 )
-from .authentication import BearerTokenAuthentication
+from .authentication import BearerTokenAuthentication, is_vendor_account, request_is_vendor
 
-COOKIE_MAX_AGE = 315360000  # 10 years (non-expiring token cookie)
 OTP_COOLDOWN_SECONDS = 60
 OTP_MAX_ATTEMPTS = 5
 ALLOWED_PICKUP_SLOTS = {
@@ -47,29 +46,10 @@ ALLOWED_PICKUP_SLOTS = {
 }
 
 
-def set_auth_cookies(response, token_key):
-    """
-    Sets persistent, non-expiring authentication cookies for app and web clients.
-    Stores 'auth_token', 'token', and 'bearer_token' with 10-year lifetime.
-    """
-    for cookie_name in ('auth_token', 'token', 'bearer_token'):
-        response.set_cookie(
-            key=cookie_name,
-            value=token_key,
-            max_age=COOKIE_MAX_AGE,
-            path='/',
-            httponly=False,  # Accessible to client apps if needed
-            samesite='Lax',
-            secure=False
-        )
-    return response
-
-
-def clear_auth_cookies(response):
-    """Clears all auth cookies upon logout."""
-    for cookie_name in ('auth_token', 'token', 'bearer_token'):
-        response.delete_cookie(key=cookie_name, path='/')
-    return response
+def auth_role_error(request, profile):
+    if is_vendor_account(profile.user) != request_is_vendor(request):
+        return Response({'success': False, 'message': 'This mobile number is registered as a vendor. Use the vendor app.' if is_vendor_account(profile.user) else 'This mobile number is registered as a customer. Use the customer app.'}, status=status.HTTP_403_FORBIDDEN)
+    return None
 
 
 def clean_phone(phone_input):
@@ -148,6 +128,12 @@ def send_otp_view(request):
             'success': False,
             'message': 'Please provide a valid 10-digit mobile number.'
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    profile = UserProfile.objects.select_related('user').filter(phone=phone).first()
+    if profile:
+        role_error = auth_role_error(request, profile)
+        if role_error is not None:
+            return role_error
 
     latest = OTPVerification.objects.filter(phone=phone, is_verified=False).order_by('-created_at').first()
     if latest:
@@ -231,6 +217,10 @@ def verify_otp_login_view(request):
             'action': 'REGISTER'
         }, status=status.HTTP_404_NOT_FOUND)
 
+    role_error = auth_role_error(request, profile)
+    if role_error is not None:
+        return role_error
+
     if profile.account_status in ('Blocked', 'Suspended'):
         return Response({
             'success': False,
@@ -281,8 +271,6 @@ def verify_otp_login_view(request):
         'user': profile.to_dict()
     }, status=status.HTTP_200_OK)
 
-    # Store token in non-expiring cookies for app & web clients
-    set_auth_cookies(response, token.key)
     return response
 
 
@@ -321,6 +309,14 @@ def register_user_view(request):
             'errors': errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    existing_profile = UserProfile.objects.select_related('user').filter(phone=phone).first()
+    if existing_profile:
+        role_error = auth_role_error(request, existing_profile)
+        if role_error is not None:
+            return role_error
+    elif User.objects.filter(username=phone).exists():
+        return Response({'success': False, 'message': 'Mobile number is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+
     # Check if phone already registered
     if UserProfile.objects.filter(phone=phone).exists():
         return Response({
@@ -350,6 +346,7 @@ def register_user_view(request):
     # Create UserProfile
     profile = UserProfile.objects.create(
         user=user,
+        is_vendor=request_is_vendor(request),
         full_name=full_name,
         phone=phone,
         email=email,
@@ -371,7 +368,7 @@ def register_user_view(request):
 
     response = Response({
         'success': True,
-        'message': 'User registered successfully',
+        'message': 'Vendor registered successfully' if profile.is_vendor else 'User registered successfully',
         'token': token.key,
         'user': {
             'full_name': profile.full_name,
@@ -380,8 +377,6 @@ def register_user_view(request):
         },
     }, status=status.HTTP_201_CREATED)
 
-    # Store token in non-expiring cookies for app & web clients
-    set_auth_cookies(response, token.key)
     return response
 
 
@@ -394,7 +389,7 @@ def user_profile_view(request):
     GET /api/user/profile/
     PUT/PATCH /api/user/profile/
     Inspect or update the authenticated user's profile.
-    Requires: Authorization: Bearer <token> or auth cookies
+    Requires: Authorization: Bearer <token>
     """
     try:
         profile = request.user.profile
@@ -464,8 +459,8 @@ def user_profile_view(request):
 def logout_api_view(request):
     """
     POST /api/user/logout/
-    Logs out the user, deletes their active auth token, and clears auth cookies.
-    Requires: Authorization: Bearer <token> or auth cookies
+    Logs out the user, deletes their active auth token,.
+    Requires: Authorization: Bearer <token>
     """
     try:
         if request.auth:
@@ -475,8 +470,6 @@ def logout_api_view(request):
             'message': 'User successfully logged out'
         }, status=status.HTTP_200_OK)
 
-        # Clear authentication cookies
-        clear_auth_cookies(response)
         return response
     except Exception as e:
         return Response({
@@ -1325,7 +1318,7 @@ def vendor_block_reason(vendor, *, require_online=False):
         return 'A vendor business profile is required.'
     if vendor.user.profile.account_status != 'Active':
         return 'Vendor account is not active.'
-    if vendor.kyc_status != VendorProfile.KYCStatus.APPROVED:
+    if str(vendor.kyc_status).strip().upper() not in (VendorProfile.KYCStatus.APPROVED, 'APPROVED'):
         return 'Admin-approved KYC is required.'
     if missing_required_consents(vendor.user):
         return 'Current Terms and Privacy Policy acceptance is required.'
@@ -1601,14 +1594,19 @@ def vendor_availability_view(request):
     vendor = get_vendor_profile(request.user)
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    
+
+    # Check if account is suspended/inactive
+    if getattr(vendor.user, 'profile', None) and vendor.user.profile.account_status != 'Active':
+        return Response({'success': False, 'message': 'Vendor account is not active.'}, status=status.HTTP_403_FORBIDDEN)
+    if str(vendor.kyc_status).strip().upper() == VendorProfile.KYCStatus.SUSPENDED:
+        return Response({'success': False, 'message': 'Vendor account is suspended.'}, status=status.HTTP_403_FORBIDDEN)
+
     try:
         selected_categories = vendor_category_selection(request.data)
     except ValueError as exc:
         return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
     online_flag = truthy(request.data.get('is_online', True)) if 'is_online' in request.data else not vendor.is_online
-    if vendor.kyc_status != VendorProfile.KYCStatus.APPROVED and online_flag:
-        return Response({'success': False, 'message': 'Only approved vendors can go online.'}, status=status.HTTP_403_FORBIDDEN)
 
     # Auto-assign active categories and subcategories if none selected yet, so vendor is immediately operational
     if online_flag and (not vendor.categories.exists() or not vendor.subcategories.exists()):
@@ -1624,10 +1622,17 @@ def vendor_availability_view(request):
 
     vendor.is_online = online_flag
     vendor.save(update_fields=['is_online', 'updated_at'])
+
+    is_approved = str(vendor.kyc_status).strip().upper() in (VendorProfile.KYCStatus.APPROVED, 'APPROVED')
+    status_label = 'online' if vendor.is_online else 'offline'
+    notice = '' if is_approved else ' (Note: Admin KYC verification is pending before orders can be accepted).'
+
     return Response({
         'success': True,
-        'message': f'Vendor is now {"online" if vendor.is_online else "offline"}.',
+        'message': f'Vendor is now {status_label}.{notice}',
         'is_online': vendor.is_online,
+        'kyc_status': vendor.kyc_status,
+        'is_approved': is_approved,
         'categories_count': vendor.categories.count(),
         'subcategories_count': vendor.subcategories.count(),
     })
@@ -1701,7 +1706,7 @@ def vendor_kyc_view(request):
             'pan_document_uploaded': bool(vendor.pan_document),
             'gst_certificate_uploaded': bool(vendor.gst_certificate),
         }})
-    if vendor.kyc_status == VendorProfile.KYCStatus.APPROVED:
+    if str(vendor.kyc_status).strip().upper() in (VendorProfile.KYCStatus.APPROVED, 'APPROVED'):
         return Response({'success': False, 'message': 'Approved KYC cannot be resubmitted without admin reset.'}, status=status.HTTP_409_CONFLICT)
     
     # Aadhaar verification is completely optional / non-mandatory!

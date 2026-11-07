@@ -1089,3 +1089,14 @@ response:
 Vendor dashboard classification fields:
 GET /api/vendor/dashboard/ also returns top-level categories [{"id": 1, "name": "Metal"}]
 and subcategories [{"id": 1, "category_id": 1, "name": "Iron"}] for the vendor selection.
+
+Authentication and account separation:
+Protected APIs accept ONLY Authorization: Bearer <token>.
+Cookies, Django sessions, Authorization: Token, query tokens and body tokens are not accepted.
+Registration and OTP login return token in JSON and do not set authentication cookies.
+/api/user/register/ creates a customer account; /api/vendor/auth/register/ creates a vendor account.
+The registration endpoint determines the account type; clients cannot change it with is_vendor.
+The same mobile number cannot register or log in as both account types.
+Wrong-app send-otp and login-otp requests return 403 before generating or consuming an OTP.
+Existing bearer tokens also receive 403 when accessing the other account type's APIs.
+Vendors use /api/vendor/consents/ and /api/vendor/change-phone/request/ or confirm/.

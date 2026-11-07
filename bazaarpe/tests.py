@@ -362,15 +362,14 @@ class PickupOrderFlowTests(APITestCase):
         order = self.create_order()
         self.authenticate(self.vendor_token)
         response = self.client.get(f'/api/user/orders/{order.order_id}/tracking/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
-    def test_persistent_auth_cookie_authenticates_order_history(self):
+    def test_auth_cookie_cannot_authenticate_order_history(self):
         self.create_order()
         self.client.credentials()
         self.client.cookies['auth_token'] = self.user_token.key
         response = self.client.get('/api/user/orders/history/')
-        self.assertEqual(response.status_code, 200, response.data)
-        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.status_code, 401, response.data)
 
     def test_admin_pickup_pages_render_from_database(self):
         order = self.create_order()
@@ -694,6 +693,9 @@ class PickupOrderFlowTests(APITestCase):
         self.assertTrue(MarketplaceAuditLog.objects.filter(order=order, action='PRICE_COUNTERED').exists())
 
     def test_vendor_profile_category_only_create_update_and_dashboard(self):
+        # A vendor registered through the vendor app has a role before business onboarding.
+        self.user_profile.is_vendor = True
+        self.user_profile.save(update_fields=['is_vendor'])
         self.authenticate(self.user_token)
         second = ScrapCategory.objects.create(name='Profile Test Paper')
         child = ScrapSubCategory.objects.create(category=second, name='Profile Test Cardboard', rate_per_kg='10')
@@ -838,3 +840,109 @@ class OTPControlTests(APITestCase):
         response = self.client.post('/api/user/login-otp/', {'phone': '9123456789', 'otp': record.otp}, format='json')
         self.assertEqual(response.status_code, 400)
         self.assertIn('expired', response.data['message'].lower())
+
+
+class AccountRoleIsolationTests(APITestCase):
+    def setUp(self):
+        self.customer = User.objects.create_user(username='9100000001')
+        self.customer_profile = UserProfile.objects.create(user=self.customer, phone='9100000001', full_name='Customer Only')
+        self.vendor = User.objects.create_user(username='9100000002')
+        self.vendor_user_profile = UserProfile.objects.create(user=self.vendor, phone='9100000002', full_name='Vendor Only', is_vendor=True)
+        self.business = VendorProfile.objects.create(user=self.vendor, shop_name='Vendor Only Shop', owner_name='Vendor Only', full_address='Delhi', city='Delhi', state='Delhi', pincode='110020')
+        self.customer_token = Token.objects.create(user=self.customer)
+        self.vendor_token = Token.objects.create(user=self.vendor)
+
+    def test_wrong_app_never_generates_otp_or_consumes_existing_otp(self):
+        for phone, prefix in [('9100000001', '/api/vendor/auth/'), ('9100000002', '/api/user/')]:
+            response = self.client.post(prefix + 'send-otp/', {'phone': phone}, format='json')
+            self.assertEqual(response.status_code, 403, response.data)
+            self.assertFalse(OTPVerification.objects.filter(phone=phone).exists())
+            otp = OTPVerification.generate_otp_for_phone(phone, purpose='LOGIN')
+            response = self.client.post(prefix + 'login-otp/', {'phone': phone, 'otp': otp.otp}, format='json')
+            self.assertEqual(response.status_code, 403, response.data)
+            otp.refresh_from_db()
+            self.assertFalse(otp.is_verified)
+            self.assertEqual(otp.attempts, 0)
+
+    def test_correct_app_login_uses_bearer_without_setting_cookies(self):
+        for phone, prefix, token, profile_path in [
+            ('9100000001', '/api/user/', self.customer_token, '/api/user/profile/'),
+            ('9100000002', '/api/vendor/auth/', self.vendor_token, '/api/vendor/profile/'),
+        ]:
+            response = self.client.post(prefix + 'send-otp/', {'phone': phone}, format='json')
+            self.assertEqual(response.status_code, 200, response.data)
+            otp = OTPVerification.objects.get(phone=phone, is_verified=False)
+            response = self.client.post(prefix + 'login-otp/', {'phone': phone, 'otp': otp.otp}, format='json')
+            self.assertEqual(response.status_code, 200, response.data)
+            self.assertEqual(response.data['token'], token.key)
+            self.assertFalse(response.cookies)
+            self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token.key)
+            self.assertEqual(self.client.get(profile_path).status_code, 200)
+            self.client.credentials()
+
+    def test_registration_assigns_role_and_rejects_other_role(self):
+        for prefix, phone, expected in [('/api/user/', '9100000003', False), ('/api/vendor/auth/', '9100000004', True)]:
+            response = self.client.post(prefix + 'register/', {'phone': phone, 'full_name': 'New Account', 'is_vendor': not expected}, format='json')
+            self.assertEqual(response.status_code, 201, response.data)
+            self.assertFalse(response.cookies)
+            self.assertEqual(UserProfile.objects.get(phone=phone).is_vendor, expected)
+        for prefix, phone in [('/api/vendor/auth/', '9100000001'), ('/api/user/', '9100000002')]:
+            response = self.client.post(prefix + 'register/', {'phone': phone, 'full_name': 'Wrong Role'}, format='json')
+            self.assertEqual(response.status_code, 403, response.data)
+
+    def test_non_bearer_sources_and_sessions_are_rejected(self):
+        for name in ('auth_token', 'token', 'bearer_token'):
+            self.client.cookies[name] = self.customer_token.key
+        self.assertEqual(self.client.get('/api/user/profile/').status_code, 401)
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get('/api/user/profile/', {'token': self.customer_token.key}).status_code, 401)
+        self.assertEqual(self.client.patch('/api/user/profile/', {'token': self.customer_token.key}, format='json').status_code, 401)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.customer_token.key)
+        self.assertEqual(self.client.get('/api/user/profile/').status_code, 401)
+        self.client.credentials()
+        self.client.force_login(self.customer)
+        self.assertEqual(self.client.get('/api/user/profile/').status_code, 401)
+
+    def test_existing_bearer_tokens_cannot_cross_roles(self):
+        for token, path in [(self.customer_token, '/api/vendor/profile/'), (self.customer_token, '/api/vendor/dashboard/'), (self.vendor_token, '/api/user/profile/'), (self.vendor_token, '/api/user/orders/history/')]:
+            self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token.key)
+            self.assertEqual(self.client.get(path).status_code, 403)
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.customer_token.key)
+        self.assertEqual(self.client.post('/api/vendor/profile/', {'shop_name': 'Conversion'}, format='json').status_code, 403)
+        self.customer_profile.refresh_from_db()
+        self.assertFalse(self.customer_profile.is_vendor)
+
+    def test_legacy_vendor_profile_is_authoritative(self):
+        self.vendor_user_profile.is_vendor = False
+        self.vendor_user_profile.save()
+        self.assertEqual(self.client.post('/api/user/send-otp/', {'phone': '9100000002'}, format='json').status_code, 403)
+        self.assertFalse(OTPVerification.objects.filter(phone='9100000002').exists())
+
+    def test_admin_lists_counts_exports_and_crud_keep_roles_separate(self):
+        admin = User.objects.create_superuser('role-admin', 'role-admin@example.com', 'Pass123!')
+        self.client.force_login(admin)
+        # Include legacy vendor whose flag is stale.
+        self.vendor_user_profile.is_vendor = False
+        self.vendor_user_profile.save()
+        response = self.client.get('/users.html')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Customer Only')
+        self.assertNotContains(response, 'Vendor Only')
+        self.assertEqual(response.context['total_count'], UserProfile.objects.filter(is_vendor=False, user__vendor_profile__isnull=True).count())
+        response = self.client.get('/users.html?export=csv')
+        self.assertNotIn('Vendor Only', response.content.decode())
+        response = self.client.get('/users.html?q=Vendor Only')
+        self.assertEqual(response.context['paginator'].count, 0)
+        response = self.client.get('/vendors.html')
+        self.assertContains(response, 'Vendor Only Shop')
+        self.assertNotContains(response, 'Customer Only')
+        for path, phone in [('/admin/users/create', '9100000002'), ('/admin/vendors/create', '9100000001')]:
+            response = self.client.post(path, {'name': 'Role Change', 'owner': 'Owner', 'phone': phone}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 403, response.content)
+
+    def test_logout_revokes_bearer_without_setting_cookies(self):
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.customer_token.key)
+        response = self.client.post('/api/user/logout/')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertFalse(response.cookies)
+        self.assertFalse(Token.objects.filter(pk=self.customer_token.pk).exists())

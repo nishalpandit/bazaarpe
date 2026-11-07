@@ -77,12 +77,10 @@ def full_admin_required(view_func):
         if not request.user.is_authenticated:
             auth_header = request.headers.get('Authorization', '')
             token_key = None
-            if auth_header.startswith('Bearer ') or auth_header.startswith('Token '):
+            if auth_header.startswith('Bearer '):
                 parts = auth_header.split()
                 if len(parts) > 1:
                     token_key = parts[1].strip()
-            elif 'auth_token' in request.COOKIES:
-                token_key = request.COOKIES['auth_token'].strip()
             if token_key:
                 try:
                     token_obj = Token.objects.select_related('user').get(key=token_key)
@@ -269,6 +267,10 @@ def logout_view(request):
     return redirect('login')
 
 
+def customer_profiles():
+    return UserProfile.objects.filter(is_vendor=False, user__vendor_profile__isnull=True)
+
+
 def find_user_profile(identifier):
     """Find a UserProfile by id, display_id (USR-1002), phone, or email."""
     if not identifier:
@@ -279,22 +281,22 @@ def find_user_profile(identifier):
         num_part = val[4:]
         if num_part.isdigit():
             user_id = int(num_part) - 1000
-            p = UserProfile.objects.filter(id=user_id).first()
+            p = customer_profiles().filter(id=user_id).first()
             if p:
                 return p
 
     if val.isdigit():
-        p = UserProfile.objects.filter(id=int(val)).first()
+        p = customer_profiles().filter(id=int(val)).first()
         if p:
             return p
 
     digits = re.sub(r'\D', '', val)
     if digits:
-        p = UserProfile.objects.filter(phone=digits[-10:]).first()
+        p = customer_profiles().filter(phone=digits[-10:]).first()
         if p:
             return p
 
-    return UserProfile.objects.filter(email__iexact=val).first() or UserProfile.objects.filter(full_name__iexact=val).first()
+    return customer_profiles().filter(email__iexact=val).first() or customer_profiles().filter(full_name__iexact=val).first()
 
 
 def find_vendor_profile(identifier):
@@ -378,7 +380,7 @@ def dashboard_view(request):
         refund_period = refund_period.filter(requested_at__date__lte=date_to)
     platform_config = PlatformConfiguration.current()
     current_commission = VendorBillingSetting.current()
-    total_users_count = UserProfile.objects.count()
+    total_users_count = customer_profiles().count()
     total_vendors_count = VendorProfile.objects.count()
     active_vendors_count = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).count()
     blocked_vendors_count = VendorProfile.objects.filter(kyc_status__in=[VendorProfile.KYCStatus.REJECTED, VendorProfile.KYCStatus.SUSPENDED]).count()
@@ -526,7 +528,7 @@ def page_view(request, page_name):
         from_date = request.GET.get('from', '').strip()
         page_num = request.GET.get('page', 1)
 
-        users_qs = UserProfile.objects.all().select_related('service_zone', 'service_zone__city', 'user').prefetch_related('saved_addresses').order_by('-created_at')
+        users_qs = customer_profiles().all().select_related('service_zone', 'service_zone__city', 'user').prefetch_related('saved_addresses').order_by('-created_at')
 
         if q:
             id_match = None
@@ -587,10 +589,10 @@ def page_view(request, page_name):
                 ])
             return response
 
-        total_count = UserProfile.objects.count()
-        active_count = UserProfile.objects.filter(account_status='Active').count()
-        blocked_count = UserProfile.objects.filter(account_status='Blocked').count()
-        cities = list(UserProfile.objects.exclude(city__isnull=True).exclude(city='').values_list('city', flat=True).distinct())
+        total_count = customer_profiles().count()
+        active_count = customer_profiles().filter(account_status='Active').count()
+        blocked_count = customer_profiles().filter(account_status='Blocked').count()
+        cities = list(customer_profiles().exclude(city__isnull=True).exclude(city='').values_list('city', flat=True).distinct())
 
         page_size = int(request.GET.get('page_size', 10))
         paginator = Paginator(users_qs, page_size)
@@ -620,7 +622,7 @@ def page_view(request, page_name):
         if identifier:
             profile = find_user_profile(identifier)
         if not profile:
-            profile = UserProfile.objects.first()
+            profile = customer_profiles().first()
 
         saved_addresses = []
         user_orders = []
@@ -1971,6 +1973,10 @@ def admin_action_view(request, action_path):
                     return JsonResponse({'success': False, 'message': 'Shop name, owner name, and phone are required.'}, status=400)
                 return redirect('/vendors.html')
 
+            existing = UserProfile.objects.filter(phone=phone).first()
+            if existing and (existing.is_vendor or VendorProfile.objects.filter(user=existing.user).exists()) != True:
+                return JsonResponse({'success': False, 'message': 'This mobile number belongs to the other account type.'}, status=403)
+
             user, _ = User.objects.get_or_create(username=phone)
             user.set_unusable_password()
             user.save()
@@ -2562,6 +2568,10 @@ def admin_action_view(request, action_path):
                 if is_ajax:
                     return JsonResponse({'success': False, 'message': 'Please provide full name and a valid 10-digit mobile number.'}, status=400)
                 return redirect('page_view', page_name='users.html')
+
+            existing = UserProfile.objects.filter(phone=phone).first()
+            if existing and (existing.is_vendor or VendorProfile.objects.filter(user=existing.user).exists()) != False:
+                return JsonResponse({'success': False, 'message': 'This mobile number belongs to the other account type.'}, status=403)
 
             user, _ = User.objects.get_or_create(username=phone)
             parts = full_name.split()

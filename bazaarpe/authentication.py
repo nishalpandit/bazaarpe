@@ -1,68 +1,29 @@
 from rest_framework import exceptions
-from rest_framework.authentication import TokenAuthentication, get_authorization_header
-from rest_framework.authtoken.models import Token
+from rest_framework.authentication import TokenAuthentication
+
+
+def is_vendor_account(user):
+    """Business profiles are authoritative for legacy accounts with a stale flag."""
+    return bool(getattr(getattr(user, 'profile', None), 'is_vendor', False) or hasattr(user, 'vendor_profile'))
+
+
+def request_is_vendor(request):
+    return request.path.startswith('/api/vendor/')
 
 
 class BearerTokenAuthentication(TokenAuthentication):
-    """
-    Non-expiring Bearer Token Authentication.
-    Accepts tokens via:
-      1. HTTP Header: 'Authorization: Bearer <token>' or 'Authorization: Token <token>'
-      2. Cookies: 'auth_token', 'token', or 'bearer_token'
-      3. Query parameter: ?token=<token>
-      4. Request body: token=<token>
-    """
+    """Accept only Authorization: Bearer <token>, enforcing the app account role."""
     keyword = 'Bearer'
 
     def authenticate(self, request):
-        # 1. Check Authorization header
-        auth = get_authorization_header(request).split()
-        if auth and auth[0].decode().lower() in ('token', 'bearer'):
-            if len(auth) == 1:
-                raise exceptions.AuthenticationFailed('Invalid token header. No credentials provided.')
-            elif len(auth) > 2:
-                raise exceptions.AuthenticationFailed('Invalid token header. Token string should not contain spaces.')
-
-            try:
-                token_key = auth[1].decode()
-            except UnicodeError:
-                raise exceptions.AuthenticationFailed('Invalid token header. Token string should not contain invalid characters.')
-
-            return self.authenticate_credentials(token_key)
-
-        # 2. Check Cookies (auth_token, token, bearer_token)
-        cookie_token = (
-            request.COOKIES.get('auth_token')
-            or request.COOKIES.get('token')
-            or request.COOKIES.get('bearer_token')
-        )
-        if cookie_token:
-            return self.authenticate_credentials(cookie_token.strip())
-
-        # 3. Check query param or request body
-        token_param = request.GET.get('token') or (
-            getattr(request, 'data', {}).get('token') if hasattr(request, 'data') and isinstance(request.data, dict) else None
-        )
-        if token_param:
-            return self.authenticate_credentials(str(token_param).strip())
-
-        return None
-
-    def authenticate_credentials(self, key):
-        model = self.get_model()
-        try:
-            token = model.objects.select_related('user').get(key=key)
-        except model.DoesNotExist:
-            raise exceptions.AuthenticationFailed('Invalid token.')
-
-        if not token.user.is_active:
-            raise exceptions.AuthenticationFailed('User account is inactive.')
-
-        # Check account status if profile exists
-        if hasattr(token.user, 'profile'):
-            if token.user.profile.account_status in ('Blocked', 'Suspended'):
-                raise exceptions.AuthenticationFailed('User account has been deactivated by administrator.')
-
-        # Tokens are non-expiring
-        return (token.user, token)
-
+        result = super().authenticate(request)
+        if result is None:
+            return None
+        user, token = result
+        profile = getattr(user, 'profile', None)
+        if profile and profile.account_status in ('Blocked', 'Suspended'):
+            raise exceptions.AuthenticationFailed('User account has been deactivated by administrator.')
+        if request.path.startswith(('/api/vendor/', '/api/user/')):
+            if is_vendor_account(user) != request_is_vendor(request):
+                raise exceptions.PermissionDenied('This account cannot access this app. Use the vendor app.' if is_vendor_account(user) else 'This account cannot access this app. Use the customer app.')
+        return user, token
