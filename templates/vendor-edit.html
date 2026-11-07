@@ -231,26 +231,27 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
-                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-city">City <span class="text-rose-600">*</span></label>
-                    <input class="bm-input" id="input-vendor-city" name="city" type="text" value="{{ vendor.city }}" placeholder="e.g. Delhi" required>
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-state">State <span class="text-rose-600">*</span></label>
+                    <select class="bm-select" id="input-vendor-state" name="location_state" required><option value="">Select state</option></select>
                   </div>
                   <div>
-                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-state">State</label>
-                    <input class="bm-input" id="input-vendor-state" name="state" type="text" value="{{ vendor.state|default:'' }}" placeholder="e.g. Delhi">
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-city">City <span class="text-rose-600">*</span></label>
+                    <select class="bm-select" id="input-vendor-city" name="location_city_id" required disabled><option value="">Select state first</option></select>
                   </div>
                   <div>
                     <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-pincode">Pincode</label>
-                    <input class="bm-input font-mono" id="input-vendor-pincode" name="pincode" type="text" maxlength="6" value="{{ vendor.pincode|default:'' }}" placeholder="e.g. 110020">
+                    <select class="bm-select" id="input-vendor-pincode" aria-label="Pincode" disabled><option value="">Select location first</option></select>
                   </div>
                 </div>
+                <div><label class="bm-label" for="input-vendor-location">Area / Service zone <span class="text-rose-600">*</span></label><select class="bm-select" id="input-vendor-location" name="location_zone_id" required><option value="">Select city first</option></select><p class="text-xs text-slate-400 mt-1" id="vendor-location-help">Select the yard location to fill its pincode and zone-center GPS coordinates. Operating service zones are selected separately below.</p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lat">GPS Latitude</label>
-                    <input class="bm-input font-mono text-xs" id="input-vendor-lat" name="latitude" type="text" value="{{ vendor.latitude|default:'' }}" placeholder="e.g. 28.5355161">
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lat">Zone-center GPS Latitude</label>
+                    <input class="bm-input font-mono text-xs" id="input-vendor-lat" type="text" readonly value="{{ vendor.latitude|default:'' }}" placeholder="e.g. 28.5355161">
                   </div>
                   <div>
-                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lng">GPS Longitude</label>
-                    <input class="bm-input font-mono text-xs" id="input-vendor-lng" name="longitude" type="text" value="{{ vendor.longitude|default:'' }}" placeholder="e.g. 77.3910265">
+                    <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lng">Zone-center GPS Longitude</label>
+                    <input class="bm-input font-mono text-xs" id="input-vendor-lng" type="text" readonly value="{{ vendor.longitude|default:'' }}" placeholder="e.g. 77.3910265">
                   </div>
                 </div>
               </div>
@@ -424,6 +425,53 @@
   </div>
 
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
+  {{ vendor_location_cities|json_script:"vendor-location-cities" }}
+  {{ vendor_locations|json_script:"vendor-location-data" }}
+  {{ vendor_current_location|json_script:"vendor-current-location" }}
+  <script>
+  (() => {
+    const locations = JSON.parse(document.getElementById('vendor-location-data').textContent);
+    const cities = JSON.parse(document.getElementById('vendor-location-cities').textContent);
+    const current = JSON.parse(document.getElementById('vendor-current-location').textContent);
+    const city = document.getElementById('input-vendor-city');
+    const zone = document.getElementById('input-vendor-location');
+    const state = document.getElementById('input-vendor-state');
+    const pin = document.getElementById('input-vendor-pincode');
+    const lat = document.getElementById('input-vendor-lat');
+    const lng = document.getElementById('input-vendor-lng');
+    function fillZone() {
+      const selected = locations.find(item => String(item.id) === zone.value);
+      pin.replaceChildren(new Option(selected ? selected.pincode || 'Not configured' : 'Select location first', selected ? selected.pincode : ''));
+      lat.value = selected ? selected.latitude : '';
+      lng.value = selected ? selected.longitude : '';
+    }
+    function fillCity() {
+      const entries = locations.filter(item => String(item.city_id) === city.value && item.state === state.value);
+      zone.disabled = !city.value;
+      zone.replaceChildren(new Option(entries.length ? 'Select area / service zone' : 'No active locations in this city', ''));
+      entries.forEach(item => zone.add(new Option(item.name, item.id)));
+      fillZone();
+    }
+    function fillState() {
+      const entries = cities.filter(item => item.state === state.value);
+      city.replaceChildren(new Option(state.value ? 'Select city' : 'Select state first', ''));
+      entries.forEach(item => city.add(new Option(item.name, item.id)));
+      city.disabled = !state.value;
+      fillCity();
+    }
+    Array.from(new Set(cities.map(item => item.state).filter(Boolean))).sort().forEach(value => state.add(new Option(value, value)));
+    const cityMatch = cities.find(item => item.name === current.city && item.state === current.state);
+    const match = cityMatch && locations.find(item => item.city_id === cityMatch.id && item.pincode === current.pincode);
+    if (cities.some(item => item.state === current.state)) state.value = current.state;
+    fillState();
+    if (cityMatch) { city.value = String(cityMatch.id); fillCity(); }
+    if (match) { zone.value = String(match.id); fillZone(); }
+    else document.getElementById('vendor-location-help').textContent = 'The saved address does not match a configured location. Select the correct state, city and area before saving. GPS uses the selected zone center.';
+    state.addEventListener('change', fillState);
+    city.addEventListener('change', fillCity);
+    zone.addEventListener('change', fillZone);
+  })();
+  </script>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
   <script src="/static/js/app.js"></script>
 </body>

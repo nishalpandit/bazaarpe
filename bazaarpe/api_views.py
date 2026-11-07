@@ -52,6 +52,21 @@ def auth_role_error(request, profile):
     return None
 
 
+def identity_payload(profile):
+    return {'full_name': profile.full_name, 'mobile_number': profile.phone, 'email': profile.email}
+
+
+def sync_customer_onboarding(profile):
+    if is_vendor_account(profile.user):
+        return
+    complete = bool(str(profile.full_name or '').strip() and len(clean_phone(profile.phone)) == 10)
+    step = 3 if complete else 2
+    if profile.onboarding_completed != complete or profile.onboarding_step != step:
+        profile.onboarding_completed = complete
+        profile.onboarding_step = step
+        profile.save(update_fields=['onboarding_completed', 'onboarding_step'])
+
+
 def clean_phone(phone_input):
     """Normalize phone to a clean 10-digit number."""
     if not phone_input:
@@ -261,6 +276,7 @@ def verify_otp_login_view(request):
     otp_rec.is_verified = True
     otp_rec.save(update_fields=['is_verified'])
 
+    sync_customer_onboarding(profile)
     token, _ = Token.objects.get_or_create(user=profile.user)
 
     response = Response({
@@ -268,10 +284,154 @@ def verify_otp_login_view(request):
         'message': 'Login successful',
         'is_registered': True,
         'token': token.key,
-        'user': profile.to_dict()
+        'user': identity_payload(profile)
     }, status=status.HTTP_200_OK)
 
     return response
+
+
+def resolve_service_zone_and_city(data):
+    """
+    Resolves ServiceZone, city name, state name, lat, lon from request data.
+    Accepts:
+      - zone / zone_id / service_zone / service_zone_id
+      - city / city_name
+      - state / state_name
+      - latitude / lat, longitude / lon / lng
+      - pincode / postal_code
+    """
+    zone_input = (
+        data.get('service_zone_id')
+        or data.get('zone_id')
+        or data.get('service_zone')
+        or data.get('zone')
+    )
+    city_input = str(data.get('city') or data.get('city_name') or '').strip()
+    state_input = str(data.get('state') or data.get('state_name') or '').strip()
+    pincode_input = str(data.get('pincode') or data.get('postal_code') or '').strip()
+
+    lat = data.get('latitude') if 'latitude' in data else data.get('lat')
+    lon = data.get('longitude') if 'longitude' in data else (data.get('lng') or data.get('lon'))
+    try:
+        lat = float(lat) if lat is not None and str(lat).strip() != '' else None
+    except (ValueError, TypeError):
+        lat = None
+    try:
+        lon = float(lon) if lon is not None and str(lon).strip() != '' else None
+    except (ValueError, TypeError):
+        lon = None
+
+    service_zone = None
+    city_name = city_input or None
+    state_name = state_input or None
+
+    # 1. Match zone by ID if digit
+    if zone_input and str(zone_input).isdigit():
+        service_zone = ServiceZone.objects.filter(id=int(zone_input)).select_related('city').first()
+
+    # 2. Match zone by name
+    if not service_zone and zone_input and isinstance(zone_input, str) and zone_input.strip():
+        z_str = zone_input.strip()
+        qs = ServiceZone.objects.filter(name__icontains=z_str).select_related('city')
+        if city_name:
+            city_qs = qs.filter(city__name__iexact=city_name)
+            if city_qs.exists():
+                service_zone = city_qs.first()
+        if not service_zone:
+            service_zone = qs.first()
+
+    # 3. Match by coordinates via match_service_zone
+    if not service_zone and lat is not None and lon is not None:
+        try:
+            zone_match, dist, is_serv, _ = match_service_zone(lat, lon, detected_city=city_name, detected_pincode=pincode_input)
+            if zone_match:
+                service_zone = zone_match
+        except Exception:
+            pass
+
+    # 4. Match by pincode
+    if not service_zone and pincode_input:
+        for z in ServiceZone.objects.filter(is_active=True).select_related('city'):
+            if pincode_input in z.pincode_list:
+                service_zone = z
+                break
+
+    # 5. Match by city if no zone matched yet
+    if not service_zone and city_name:
+        city_obj = ServiceCity.objects.filter(name__iexact=city_name).first()
+        if city_obj:
+            service_zone = city_obj.zones.filter(is_active=True).first()
+            if not state_name:
+                state_name = city_obj.state
+
+    # Sync city and state from resolved zone
+    if service_zone:
+        if not city_name:
+            city_name = service_zone.city.name
+        if not state_name:
+            state_name = service_zone.city.state
+
+    # If city found but state not provided
+    if city_name and not state_name:
+        city_obj = ServiceCity.objects.filter(name__iexact=city_name).first()
+        if city_obj:
+            state_name = city_obj.state
+        else:
+            state_name = 'Karnataka'
+
+    return service_zone, city_name, state_name, lat, lon
+
+
+def sync_default_user_address(profile, city=None, state=None, service_zone=None, address=None, pincode=None, lat=None, lon=None):
+    """
+    Creates or updates the primary UserAddress so that pickup orders and vendor matching work immediately.
+    """
+    user = profile.user
+    addr = UserAddress.objects.filter(user=user, is_default=True).first() or UserAddress.objects.filter(user=user).first()
+
+    city_val = city or (addr.city if addr else '') or profile.city or 'Bengaluru'
+    state_val = state or (addr.state if addr else '') or getattr(profile, 'state', None) or 'Karnataka'
+    zone_obj = service_zone or (addr.service_zone if addr else None) or profile.service_zone
+    addr_text = address or (addr.formatted_address if addr else '') or profile.address or f"{city_val}, {state_val}"
+    pin_val = pincode or (addr.pincode if addr else '') or profile.pincode or '560001'
+
+    if addr:
+        addr.city = city_val
+        addr.state = state_val
+        if zone_obj:
+            addr.service_zone = zone_obj
+            addr.zone_name = zone_obj.name
+        if address:
+            addr.formatted_address = address
+            addr.street_address = address
+        if pincode:
+            addr.pincode = pin_val
+        if lat is not None:
+            addr.latitude = lat
+        if lon is not None:
+            addr.longitude = lon
+        addr.is_default = True
+        addr.save()
+        return addr
+    else:
+        addr = UserAddress.objects.create(
+            user=user,
+            profile=profile,
+            address_type='HOME',
+            house_no='',
+            street_address=address or '',
+            landmark='',
+            formatted_address=addr_text,
+            city=city_val,
+            state=state_val,
+            pincode=pin_val,
+            service_zone=zone_obj,
+            zone_name=zone_obj.name if zone_obj else '',
+            latitude=lat if lat is not None else profile.latitude,
+            longitude=lon if lon is not None else profile.longitude,
+            is_default=True
+        )
+        return addr
 
 
 @api_view(['POST'])
@@ -279,14 +439,18 @@ def verify_otp_login_view(request):
 def register_user_view(request):
     """
     POST /api/user/register/
-    Registers a new user (no OTP or terms validation required).
+    Registers a new user with optional city, state, zone, and address for instant vendor matching.
     Required credentials:
       - full_name (required, string)
       - mobile_number or phone (required, 10 digits)
     Optional:
       - email (optional, string)
-
-    Address and location are collected later through the address APIs.
+      - city (optional, string e.g. 'Bengaluru')
+      - state (optional, string e.g. 'Karnataka')
+      - zone / zone_id / service_zone_id (optional, zone name or ID)
+      - address / street_address / full_address (optional)
+      - pincode (optional, 6 digits)
+      - latitude, longitude (optional GPS coordinates)
     """
     data = request.data
     full_name = str(data.get('full_name', '')).strip()
@@ -343,6 +507,11 @@ def register_user_view(request):
     user.set_unusable_password()
     user.save()
 
+    # Resolve optional location fields during registration
+    service_zone, city_name, state_name, lat, lon = resolve_service_zone_and_city(data)
+    address_val = str(data.get('address') or data.get('street_address') or data.get('full_address') or '').strip()
+    pincode_val = str(data.get('pincode') or data.get('postal_code') or '').strip()
+
     # Create UserProfile
     profile = UserProfile.objects.create(
         user=user,
@@ -350,13 +519,30 @@ def register_user_view(request):
         full_name=full_name,
         phone=phone,
         email=email,
-        address='',
-        pincode='',
-        city='',
+        address=address_val,
+        pincode=pincode_val,
+        city=city_name or '',
+        state=state_name or 'Karnataka',
+        service_zone=service_zone,
+        latitude=lat,
+        longitude=lon,
         account_status='Active',
-        onboarding_step=2,
-        onboarding_completed=False,
+        onboarding_step=2 if request_is_vendor(request) else 3,
+        onboarding_completed=not request_is_vendor(request),
     )
+
+    # Sync default address for customers so vendor matching works immediately
+    if not profile.is_vendor and (city_name or service_zone or address_val or pincode_val):
+        sync_default_user_address(
+            profile,
+            city=city_name,
+            state=state_name,
+            service_zone=service_zone,
+            address=address_val,
+            pincode=pincode_val,
+            lat=lat,
+            lon=lon
+        )
 
     UserConsent.objects.bulk_create([
         UserConsent(user=user, document=document)
@@ -366,15 +552,26 @@ def register_user_view(request):
     # Issue auth token
     token, _ = Token.objects.get_or_create(user=user)
 
+    user_data = identity_payload(profile)
+    if profile.city:
+        user_data['city'] = profile.city
+    if getattr(profile, 'state', None):
+        user_data['state'] = profile.state
+    if profile.service_zone:
+        user_data['zone'] = profile.service_zone.name
+        user_data['zone_id'] = profile.service_zone_id
+        user_data['service_zone'] = profile.service_zone.name
+        user_data['service_zone_id'] = profile.service_zone_id
+    if profile.address:
+        user_data['address'] = profile.address
+    if profile.pincode:
+        user_data['pincode'] = profile.pincode
+
     response = Response({
         'success': True,
         'message': 'Vendor registered successfully' if profile.is_vendor else 'User registered successfully',
         'token': token.key,
-        'user': {
-            'full_name': profile.full_name,
-            'mobile_number': profile.phone,
-            'email': profile.email,
-        },
+        'user': user_data,
     }, status=status.HTTP_201_CREATED)
 
     return response
@@ -400,6 +597,7 @@ def user_profile_view(request):
         }, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
+        sync_customer_onboarding(profile)
         return Response({
             'success': True,
             'user': profile.to_dict()
@@ -427,11 +625,46 @@ def user_profile_view(request):
         profile.email = data['email'].strip() or None
         request.user.email = profile.email or ''
     if 'address' in data:
-        profile.address = data['address'].strip()
-    if 'pincode' in data:
-        profile.pincode = data['pincode'].strip()
-    if 'city' in data:
-        profile.city = data['city'].strip()
+        profile.address = str(data['address']).strip()
+    if 'pincode' in data and str(data['pincode']).strip():
+        profile.pincode = str(data['pincode']).strip()
+    if 'city' in data and str(data['city']).strip():
+        profile.city = str(data['city']).strip()
+    if 'state' in data and str(data['state']).strip():
+        profile.state = str(data['state']).strip()
+
+    # Location updates: zone, city, state, coords
+    has_location_update = any(k in data for k in (
+        'city', 'city_name', 'state', 'state_name',
+        'zone', 'zone_id', 'service_zone', 'service_zone_id',
+        'address', 'pincode', 'latitude', 'longitude', 'lat', 'lon', 'lng'
+    ))
+
+    if has_location_update:
+        service_zone, city_name, state_name, lat, lon = resolve_service_zone_and_city(data)
+        if city_name:
+            profile.city = city_name
+        if state_name:
+            profile.state = state_name
+        if service_zone:
+            profile.service_zone = service_zone
+        if lat is not None:
+            profile.latitude = lat
+        if lon is not None:
+            profile.longitude = lon
+
+        # Sync to default UserAddress for instant vendor matching
+        if not profile.is_vendor:
+            sync_default_user_address(
+                profile,
+                city=profile.city,
+                state=getattr(profile, 'state', 'Karnataka'),
+                service_zone=profile.service_zone,
+                address=profile.address,
+                pincode=profile.pincode,
+                lat=profile.latitude,
+                lon=profile.longitude
+            )
     if request.FILES.get('profile_photo'):
         uploaded = request.FILES['profile_photo']
         if not str(uploaded.content_type).startswith('image/'):
@@ -440,8 +673,7 @@ def user_profile_view(request):
             return Response({'success': False, 'message': 'profile_photo must not exceed 5 MB.'}, status=status.HTTP_400_BAD_REQUEST)
         profile.profile_photo = uploaded
 
-    profile.onboarding_completed = bool(profile.full_name and profile.address and profile.pincode)
-    profile.onboarding_step = 3 if profile.onboarding_completed else 2
+    sync_customer_onboarding(profile)
 
     request.user.save()
     profile.save()
@@ -1316,7 +1548,7 @@ def get_vendor_profile(user):
 def vendor_block_reason(vendor, *, require_online=False):
     if not vendor or not getattr(vendor.user, 'profile', None) or not vendor.user.profile.is_vendor:
         return 'A vendor business profile is required.'
-    if vendor.user.profile.account_status != 'Active':
+    if not vendor.user.is_active or vendor.user.profile.account_status != 'Active':
         return 'Vendor account is not active.'
     if str(vendor.kyc_status).strip().upper() not in (VendorProfile.KYCStatus.APPROVED, 'APPROVED'):
         return 'Admin-approved KYC is required.'
@@ -1339,6 +1571,10 @@ def vendor_order_eligibility(order, vendor):
         return False, 'Order acceptance deadline has expired.'
     if not order.address_id or not order.address.service_zone_id:
         return False, 'Order does not have a serviceable pickup zone.'
+    if not order.address.service_zone.is_active or not order.address.service_zone.city.is_active:
+        return False, 'Pickup service zone is inactive.'
+    if not order.category_id or not order.category.is_active:
+        return False, 'Order category is inactive.'
     if order.address.service_zone_id not in set(vendor.operating_zones.values_list('id', flat=True)):
         return False, 'Order is outside the vendor operating zones.'
     if order.category_id not in set(vendor.categories.values_list('id', flat=True)):
@@ -1392,6 +1628,9 @@ def serialize_vendor_order(order, vendor, *, assigned=False):
     distance = haversine_km(vendor.latitude, vendor.longitude, address.latitude if address else None, address.longitude if address else None)
     payload = {
         'order_id': order.order_id,
+        'is_assigned': assigned,
+        'order_type': 'assigned' if assigned else 'matching',
+        'can_accept': not assigned,
         'status': order.status,
         'category': order.category.name if order.category else None,
         'subcategory': order.subcategory.name if order.subcategory else None,
@@ -1443,6 +1682,32 @@ def vendor_category_selection(data):
     return categories
 
 
+def vendor_zone_selection(data):
+    if 'zone_ids' not in data:
+        return None
+    raw = data.getlist('zone_ids') if hasattr(data, 'getlist') else data['zone_ids']
+    if isinstance(raw, list) and len(raw) == 1 and isinstance(raw[0], str):
+        raw = raw[0]
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw) if raw.strip().startswith('[') else raw.split(',')
+        except (ValueError, TypeError):
+            raise ValueError('zone_ids must be a non-empty list of positive integers.')
+    if not isinstance(raw, list) or not raw:
+        raise ValueError('zone_ids must be a non-empty list of positive integers.')
+    ids = []
+    for value in raw:
+        if isinstance(value, bool) or not re.fullmatch(r'[1-9]\d*', str(value).strip()):
+            raise ValueError('Every zone_id must be a positive integer.')
+        ids.append(int(value))
+    if len(ids) != len(set(ids)):
+        raise ValueError('zone_ids must contain unique positive integers.')
+    zones = list(ServiceZone.objects.filter(pk__in=ids, is_active=True, city__is_active=True).select_related('city'))
+    if len(zones) != len(ids):
+        raise ValueError('One or more zones are invalid or inactive.')
+    return zones
+
+
 def set_vendor_categories(vendor, categories):
     vendor.categories.set(categories)
     vendor.subcategories.set(ScrapSubCategory.objects.filter(category__in=categories, is_active=True))
@@ -1464,6 +1729,7 @@ def vendor_profile_view(request):
     data = request.data
     try:
         selected_categories = vendor_category_selection(data)
+        selected_zones = vendor_zone_selection(data)
     except ValueError as exc:
         return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
     coordinates = {}
@@ -1511,6 +1777,9 @@ def vendor_profile_view(request):
     if selected_categories is not None:
         set_vendor_categories(vendor, selected_categories)
 
+    if selected_zones is not None:
+        vendor.operating_zones.set(selected_zones)
+
     return Response({'success': True, 'message': 'Vendor profile saved.', 'vendor': serialize_vendor_profile(vendor)}, status=status.HTTP_201_CREATED if request.method == 'POST' else status.HTTP_200_OK)
 
 
@@ -1533,22 +1802,12 @@ def vendor_operating_zones_view(request):
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     if request.method == 'PUT':
-        zone_ids = request.data.get('zone_ids', [])
-        if isinstance(zone_ids, str):
-            try: zone_ids = json.loads(zone_ids)
-            except json.JSONDecodeError: zone_ids = []
-        if not isinstance(zone_ids, list) or not zone_ids:
-            return Response({'success': False, 'message': 'zone_ids must be a non-empty list.'}, status=status.HTTP_400_BAD_REQUEST)
-        normalized_zone_ids = []
-        for zone_id in zone_ids:
-            if isinstance(zone_id, bool) or not re.fullmatch(r'\d+', str(zone_id)) or int(zone_id) <= 0:
-                return Response({'success': False, 'message': 'Every zone_id must be a positive integer.'}, status=status.HTTP_400_BAD_REQUEST)
-            normalized_zone_ids.append(int(zone_id))
-        if len(normalized_zone_ids) != len(set(normalized_zone_ids)):
-            return Response({'success': False, 'message': 'zone_ids must contain unique positive integers.'}, status=status.HTTP_400_BAD_REQUEST)
-        zones = list(ServiceZone.objects.filter(id__in=set(normalized_zone_ids), is_active=True, city__is_active=True))
-        if len(zones) != len(set(normalized_zone_ids)):
-            return Response({'success': False, 'message': 'One or more zones are invalid or inactive.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            zones = vendor_zone_selection(request.data)
+            if zones is None:
+                raise ValueError('zone_ids is required.')
+        except ValueError as exc:
+            return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         vendor.operating_zones.set(zones)
     return Response({'success': True, 'zones': [zone.to_dict() for zone in vendor.operating_zones.all()]})
 
@@ -1841,7 +2100,27 @@ def create_pickup_order_view(request):
     consent_response = consent_required_response(request.user)
     if consent_response:
         return consent_response
-    address = UserAddress.objects.filter(id=request.data.get('address_id'), user=request.user).first()
+    address_id = request.data.get('address_id')
+    address = None
+    if address_id:
+        address = UserAddress.objects.filter(id=address_id, user=request.user).first()
+    if not address:
+        address = UserAddress.objects.filter(user=request.user, is_default=True).first()
+    if not address:
+        address = UserAddress.objects.filter(user=request.user).first()
+    if not address:
+        profile = getattr(request.user, 'profile', None)
+        if profile and (profile.service_zone or profile.city):
+            address = sync_default_user_address(
+                profile,
+                city=profile.city,
+                state=getattr(profile, 'state', 'Karnataka'),
+                service_zone=profile.service_zone,
+                address=profile.address,
+                pincode=profile.pincode,
+                lat=profile.latitude,
+                lon=profile.longitude
+            )
     if not address:
         return Response({'success': False, 'message': 'Address not found or does not belong to you.'}, status=status.HTTP_404_NOT_FOUND)
     if ServiceZone.objects.filter(is_active=True).exists() and (not address.service_zone or not address.service_zone.is_active):
@@ -2233,6 +2512,14 @@ def order_tracking_view(request, order_id):
     return Response(response_data)
 
 
+ACTIVE_VENDOR_ORDER_STATUSES = (
+    PickupOrder.Status.VENDOR_ASSIGNED, PickupOrder.Status.VENDOR_ON_THE_WAY,
+    PickupOrder.Status.REACHED_LOCATION, PickupOrder.Status.PICKUP_IN_PROGRESS,
+    PickupOrder.Status.OTP_VERIFIED, PickupOrder.Status.PAYMENT_COMPLETED,
+    PickupOrder.Status.INVOICE_GENERATED,
+)
+
+
 def eligible_vendor_orders(vendor):
     zone_ids = vendor.operating_zones.values_list('id', flat=True)
     category_ids = vendor.categories.values_list('id', flat=True)
@@ -2243,8 +2530,40 @@ def eligible_vendor_orders(vendor):
         final_agreed_price__isnull=False,
         published_at__isnull=False,
         address__service_zone_id__in=zone_ids,
+        address__service_zone__is_active=True,
+        address__service_zone__city__is_active=True,
         category_id__in=category_ids,
+        category__is_active=True,
     ).exclude(id__in=rejected_ids).select_related('address__service_zone', 'category', 'subcategory')
+
+
+def vendor_matching_orders(vendor):
+    if vendor_block_reason(vendor, require_online=True):
+        return PickupOrder.objects.none()
+    return eligible_vendor_orders(vendor).filter(
+        Q(acceptance_deadline__isnull=True) | Q(acceptance_deadline__gte=timezone.now())
+    )
+
+
+def vendor_active_assigned_orders(vendor):
+    return PickupOrder.objects.filter(assigned_vendor=vendor.user, status__in=ACTIVE_VENDOR_ORDER_STATUSES)
+
+
+def vendor_order_feed(vendor):
+    return PickupOrder.objects.filter(
+        Q(pk__in=vendor_active_assigned_orders(vendor).values('pk')) |
+        Q(pk__in=vendor_matching_orders(vendor).values('pk'))
+    ).select_related('address__service_zone', 'category', 'subcategory', 'user__profile').order_by('-created_at', '-pk')
+
+
+def vendor_empty_orders_reason(vendor):
+    if not vendor.categories.exists():
+        return 'NO_CATEGORIES', 'Select vendor categories before receiving orders.'
+    if not vendor.operating_zones.exists():
+        return 'NO_OPERATING_ZONES', 'Select vendor operating service zones before receiving orders.'
+    if eligible_vendor_orders(vendor).filter(acceptance_deadline__lt=timezone.now()).exists():
+        return 'MATCHING_OFFERS_EXPIRED', 'Matching orders have passed their acceptance deadline and require admin review.'
+    return 'NO_MATCHING_ORDERS', 'No published, unexpired orders match both your categories and operating service zones.'
 
 
 @api_view(['GET'])
@@ -2254,14 +2573,16 @@ def vendor_dashboard_view(request):
     vendor = get_vendor_profile(request.user)
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    available = eligible_vendor_orders(vendor).filter(Q(acceptance_deadline__isnull=True) | Q(acceptance_deadline__gte=timezone.now())).count() if not vendor_block_reason(vendor, require_online=True) else 0
+    available = vendor_matching_orders(vendor).count()
+    active = vendor_active_assigned_orders(vendor).count()
     assigned = PickupOrder.objects.filter(assigned_vendor=request.user)
     completed_statuses = [PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT]
     classifications = serialize_vendor_profile(vendor)
     return Response({'success': True, 'categories': classifications['categories'],
                      'subcategories': classifications['subcategories'], 'summary': {
-        'available_orders': available,
-        'active_orders': assigned.exclude(status__in=completed_statuses + [PickupOrder.Status.CANCELLED]).count(),
+        'available_orders': available + active,
+        'new_offers': available,
+        'active_orders': active,
         'completed_orders': assigned.filter(status__in=completed_statuses).count(),
         'unread_notifications': UserNotification.objects.filter(user=request.user, is_read=False).count(),
         'is_online': vendor.is_online,
@@ -2274,17 +2595,22 @@ def vendor_dashboard_view(request):
 @permission_classes([IsAuthenticated])
 def vendor_available_orders_view(request):
     vendor = get_vendor_profile(request.user)
+    if not vendor:
+        return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     reason = vendor_block_reason(vendor, require_online=True)
-    if reason:
+    if reason and not vendor_active_assigned_orders(vendor).exists():
         return Response({'success': False, 'message': reason}, status=status.HTTP_403_FORBIDDEN)
-    orders = eligible_vendor_orders(vendor).filter(Q(acceptance_deadline__isnull=True) | Q(acceptance_deadline__gte=timezone.now()))
+    orders = vendor_order_feed(vendor)
     try:
         page_size = min(max(int(request.GET.get('page_size', 20)), 1), 100)
     except (TypeError, ValueError):
         page_size = 20
     paginator = Paginator(orders, page_size)
     page = paginator.get_page(request.GET.get('page', 1))
-    return Response({'success': True, 'count': paginator.count, 'page': page.number, 'total_pages': paginator.num_pages, 'orders': [serialize_vendor_order(order, vendor) for order in page.object_list]})
+    payload = {'success': True, 'count': paginator.count, 'page': page.number, 'total_pages': paginator.num_pages, 'orders': [serialize_vendor_order(order, vendor, assigned=order.assigned_vendor_id == request.user.id) for order in page.object_list]}
+    if not paginator.count:
+        payload['reason_code'], payload['message'] = vendor_empty_orders_reason(vendor)
+    return Response(payload)
 
 
 @api_view(['GET'])
@@ -2327,7 +2653,16 @@ def vendor_order_history_view(request):
     vendor = get_vendor_profile(request.user)
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
-    orders = PickupOrder.objects.filter(assigned_vendor=request.user).select_related('address__service_zone', 'category', 'subcategory')
+    scope = str(request.GET.get('scope', 'all')).lower()
+    if scope not in ('all', 'assigned', 'available'):
+        return Response({'success': False, 'message': 'scope must be all, assigned or available.'}, status=status.HTTP_400_BAD_REQUEST)
+    available = vendor_matching_orders(vendor)
+    visibility = Q(assigned_vendor=request.user)
+    if scope == 'available':
+        visibility = Q(pk__in=available.values('pk'))
+    elif scope == 'all':
+        visibility |= Q(pk__in=available.values('pk'))
+    orders = PickupOrder.objects.filter(visibility).select_related('address__service_zone', 'category', 'subcategory').order_by('-created_at', '-pk')
     status_filter = str(request.GET.get('status', '')).upper()
     if status_filter and status_filter not in dict(PickupOrder.Status.choices):
         return Response({'success': False, 'message': 'status filter is invalid.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -2353,7 +2688,7 @@ def vendor_order_history_view(request):
     try: page_size = min(max(int(request.GET.get('page_size', 20)), 1), 100)
     except (TypeError, ValueError): page_size = 20
     paginator = Paginator(orders, page_size); page = paginator.get_page(request.GET.get('page', 1))
-    return Response({'success': True, 'count': paginator.count, 'page': page.number, 'total_pages': paginator.num_pages, 'orders': [serialize_vendor_order(order, vendor, assigned=True) for order in page.object_list]})
+    return Response({'success': True, 'count': paginator.count, 'page': page.number, 'total_pages': paginator.num_pages, 'orders': [serialize_vendor_order(order, vendor, assigned=order.assigned_vendor_id == request.user.id) for order in page.object_list]})
 
 
 @api_view(['GET'])

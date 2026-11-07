@@ -53,8 +53,6 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'bazaarpe.authentication.BearerTokenAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -174,8 +172,6 @@ MAILERS = {
     },
 }
 
-# Persistent, non-expiring authentication & cookie configuration (10 years)
-SESSION_COOKIE_AGE = 315360000  # 10 years in seconds
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+# Mobile APIs use bearer tokens only. Admin browser sessions use Django defaults.
 
 

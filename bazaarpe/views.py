@@ -30,7 +30,18 @@ from .models import (
     LegalDocument, UserConsent, VendorLocationTrack,
     PlatformConfiguration, MarketplaceAuditLog,
 )
-from .api_views import clean_phone
+from .api_views import clean_phone, vendor_block_reason
+
+
+def assignment_vendors(order):
+    if not order or not order.address_id or not order.address.service_zone_id or not order.category_id:
+        return []
+    candidates = VendorProfile.objects.filter(
+        categories=order.category_id, operating_zones=order.address.service_zone_id,
+        kyc_status=VendorProfile.KYCStatus.APPROVED, user__is_active=True,
+        user__profile__is_vendor=True, user__profile__account_status='Active',
+    ).select_related('user__profile').distinct()
+    return [vendor for vendor in candidates if not vendor_block_reason(vendor)]
 
 
 def normalize_pincode(raw_str):
@@ -808,7 +819,7 @@ def page_view(request, page_name):
         if not vendor:
             vendor = VendorProfile.objects.select_related('user', 'user__profile').first()
 
-        all_zones = list(ServiceZone.objects.filter(is_active=True).select_related('city'))
+        all_zones = list(ServiceZone.objects.filter(is_active=True, city__is_active=True).select_related('city'))
         all_categories = list(ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories'))
         all_cities = list(ServiceCity.objects.filter(is_active=True))
         ctx = admin_context(
@@ -818,6 +829,9 @@ def page_view(request, page_name):
             all_zones=all_zones,
             all_categories=all_categories,
             all_cities=all_cities,
+            vendor_locations=[{'id': z.pk, 'city_id': z.city_id, 'city': z.city.name, 'state': z.city.state, 'name': z.name, 'pincode': z.pincode, 'latitude': str(z.center_latitude) if z.center_latitude is not None else '', 'longitude': str(z.center_longitude) if z.center_longitude is not None else ''} for z in all_zones],
+            vendor_location_cities=[{'id': c.pk, 'name': c.name, 'state': c.state} for c in all_cities],
+            vendor_current_location={'city': vendor.city if vendor else '', 'state': vendor.state if vendor else '', 'pincode': vendor.pincode if vendor else ''},
             saved=request.GET.get('saved') == '1',
         )
         return render(request, 'vendor-edit.html', ctx)
@@ -1549,7 +1563,7 @@ def page_view(request, page_name):
             for i, (value, label) in enumerate(step_values)
         ]
 
-        available_vendors = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).select_related('user')
+        available_vendors = assignment_vendors(order)
         return render(request, 'order-detail.html', admin_context(
             request,
             page_name=clean_name,
@@ -1719,6 +1733,8 @@ def admin_action_view(request, action_path):
             order = PickupOrder.objects.filter(order_id=publication_match.group(1)).first()
             if not order:
                 return JsonResponse({'success': False, 'message': 'Pickup order not found.'}, status=404)
+            if order.assigned_vendor_id or order.status not in (PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.SEARCHING_VENDOR):
+                return JsonResponse({'success': False, 'message': 'Assigned, completed or cancelled orders cannot be published.'}, status=409)
             accepted = order.negotiation_proposals.filter(is_accepted=True).exists()
             if not accepted or order.final_agreed_price is None:
                 if data.get('admin_override') == 'true':
@@ -1751,28 +1767,17 @@ def admin_action_view(request, action_path):
         # -------------------------------------------------------------
         assignment_match = re.fullmatch(r'orders/([^/]+)/assign-vendor', action)
         if assignment_match:
-            order = PickupOrder.objects.filter(order_id=assignment_match.group(1)).first()
+            order = PickupOrder.objects.select_for_update().select_related('address').filter(order_id=assignment_match.group(1)).first()
             if not order:
                 return JsonResponse({'success': False, 'message': 'Pickup order not found.'}, status=404)
-            vendor_name = str(data.get('vendor_name', '')).strip()
-            vendor_phone = clean_phone(data.get('vendor_phone', ''))
-            vendor_id = data.get('vendor_id')
-
-            vendor_profile = None
-            if vendor_id:
-                vendor_profile = find_vendor_profile(vendor_id)
-            if not vendor_profile and vendor_phone:
-                u = User.objects.filter(username=vendor_phone).first()
-                if u:
-                    vendor_profile = getattr(u, 'vendor_profile', None)
-            if not vendor_profile and vendor_name:
-                vendor_profile = find_vendor_profile(vendor_name)
-
+            if order.status != PickupOrder.Status.SEARCHING_VENDOR or order.assigned_vendor_id:
+                return JsonResponse({'success': False, 'message': 'Only unassigned searching orders can be assigned.'}, status=409)
+            if order.published_at is None or order.final_agreed_price is None:
+                return JsonResponse({'success': False, 'message': 'Price agreement and publication are required.'}, status=409)
+            vendor_id = str(data.get('vendor_id', '')).strip()
+            vendor_profile = next((v for v in assignment_vendors(order) if str(v.pk) == vendor_id), None)
             if not vendor_profile:
-                vendor_profile = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).first()
-
-            if not vendor_profile:
-                return JsonResponse({'success': False, 'message': 'An active vendor with approved KYC is required.'}, status=400)
+                return JsonResponse({'success': False, 'message': 'Select an active, approved vendor matching the order category and service zone using vendor_id.'}, status=400)
 
             order.assigned_vendor = vendor_profile.user
             order.assigned_vendor_name = vendor_profile.shop_name
@@ -2041,6 +2046,17 @@ def admin_action_view(request, action_path):
                     return JsonResponse({'success': False, 'message': 'Vendor profile not found.'}, status=404)
                 return redirect('/vendors.html')
 
+            location_zone = None
+            if 'location_zone_id' in data:
+                raw_zone = str(data.get('location_zone_id', '')).strip()
+                location_zone = ServiceZone.objects.select_related('city').filter(pk=int(raw_zone), is_active=True, city__is_active=True).first() if raw_zone.isdigit() else None
+                if not location_zone:
+                    return JsonResponse({'success': False, 'message': 'Select an active location from the city and service zone dropdowns.'}, status=400)
+                if 'location_state' in data and str(data.get('location_state', '')).strip() != location_zone.city.state:
+                    return JsonResponse({'success': False, 'message': 'Selected city does not belong to this state.'}, status=400)
+                if str(data.get('location_city_id', '')) != str(location_zone.city_id):
+                    return JsonResponse({'success': False, 'message': 'Selected location does not belong to this city.'}, status=400)
+
             # 1. Business & Owner credentials
             if data.get('name') or data.get('shop_name'):
                 vendor.shop_name = str(data.get('name') or data.get('shop_name')).strip()
@@ -2080,6 +2096,13 @@ def admin_action_view(request, action_path):
                     except Exception: pass
                 else:
                     vendor.longitude = None
+
+            if location_zone:
+                vendor.city = location_zone.city.name
+                vendor.state = location_zone.city.state
+                vendor.pincode = location_zone.pincode
+                vendor.latitude = location_zone.center_latitude
+                vendor.longitude = location_zone.center_longitude
 
             # 3. Government IDs & KYC Verification
             if data.get('aadhaar') or data.get('aadhaar_number'):

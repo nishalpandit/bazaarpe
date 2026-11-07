@@ -47,12 +47,26 @@ params (fields):
 full_name: Ashish Prabhakar (required, string)
 mobile_number: 9876543215 (required, 10 digits)
 email: ashish@example.com (optional, string)
+city: Bengaluru (optional, string - auto-resolves service zone for vendor matching)
+state: Karnataka (optional, string)
+zone_id: 1 (optional, integer - ServiceZone ID) OR zone: "Indiranagar" (zone name)
+address: Plot 45, 2nd Cross, Indiranagar (optional, string - creates default UserAddress)
+pincode: 560038 (optional, string)
+latitude: 12.9716 (optional, float - matches nearest active ServiceZone)
+longitude: 77.5946 (optional, float)
 
 Postman raw JSON body:
 {
   "full_name": "Ashish Prabhakar",
   "mobile_number": "9876543215",
-  "email": "ashish@example.com"
+  "email": "ashish@example.com",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "zone_id": 1,
+  "address": "Plot 45, 2nd Cross, Indiranagar",
+  "pincode": "560038",
+  "latitude": 12.9716,
+  "longitude": 77.5946
 }
 
 response:
@@ -63,7 +77,15 @@ response:
   "user": {
     "full_name": "Ashish Prabhakar",
     "mobile_number": "9876543215",
-    "email": "ashish@example.com"
+    "email": "ashish@example.com",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "zone": "Indiranagar",
+    "zone_id": 1,
+    "service_zone": "Indiranagar",
+    "service_zone_id": 1,
+    "address": "Plot 45, 2nd Cross, Indiranagar",
+    "pincode": "560038"
   }
 }
 
@@ -83,7 +105,8 @@ response:
   "token": "authentication-token",
   "user": {
     "full_name": "Ramesh Patel",
-    "mobile_number": "9876543210"
+    "mobile_number": "9876543210",
+    "email": "ramesh@example.com"
   }
 }
 
@@ -104,24 +127,44 @@ response:
     "address": "Plot 45, Sector 18",
     "pincode": "400703",
     "city": "Bengaluru",
+    "state": "Karnataka",
+    "zone": "Indiranagar",
+    "zone_id": 1,
+    "service_zone": "Indiranagar",
+    "service_zone_id": 1,
     "profile_photo": null,
-    "onboarding_completed": true
+    "onboarding_completed": true,
+    "onboarding_step": 3
   }
 }
 
 API for Update User Profile
 url: http://127.0.0.1:8000/api/user/profile/
-method: PATCH
+method: PATCH / PUT
 
 params:
 Authorization: Bearer <token> (header)
-Content-Type: multipart/form-data (header)
-full_name: Ramesh Patel
-email: ramesh@example.com
-address: Plot 45, Sector 18
-pincode: 400703
-city: Bengaluru
+Content-Type: multipart/form-data or application/json (header)
+full_name: Ramesh Patel (optional, string)
+email: ramesh@example.com (optional, string)
+city: Bengaluru (optional, string - auto-resolves service zone for vendor matching)
+state: Karnataka (optional, string)
+zone_id: 1 (optional, integer - ServiceZone ID) OR zone: "Indiranagar"
+address: Plot 45, Sector 18 (optional, string - syncs default UserAddress)
+pincode: 400703 (optional, string)
+latitude: 12.9716 (optional, float)
+longitude: 77.5946 (optional, float)
 profile_photo: <image file> (optional, max 5 MB)
+
+Postman raw JSON / form-data:
+{
+  "full_name": "Ramesh Patel",
+  "city": "Bengaluru",
+  "state": "Karnataka",
+  "zone_id": 1,
+  "address": "Plot 45, Sector 18",
+  "pincode": "400703"
+}
 
 response:
 {
@@ -130,7 +173,18 @@ response:
   "user": {
     "full_name": "Ramesh Patel",
     "mobile_number": "9876543210",
-    "profile_photo": "/media/profile_photos/photo.jpg"
+    "email": "ramesh@example.com",
+    "address": "Plot 45, Sector 18",
+    "pincode": "400703",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "zone": "Indiranagar",
+    "zone_id": 1,
+    "service_zone": "Indiranagar",
+    "service_zone_id": 1,
+    "profile_photo": "/media/profile_photos/photo.jpg",
+    "onboarding_completed": true,
+    "onboarding_step": 3
   }
 }
 
@@ -1144,3 +1198,11 @@ The same mobile number cannot register or log in as both account types.
 Wrong-app send-otp and login-otp requests return 403 before generating or consuming an OTP.
 Existing bearer tokens also receive 403 when accessing the other account type's APIs.
 Vendors use /api/vendor/consents/ and /api/vendor/change-phone/request/ or confirm/.
+
+OTP login response contract update:
+POST login-otp returns success, message, is_registered, token and user only.
+user contains full_name, mobile_number and email (nullable); no full profile or onboarding fields.
+On success with is_registered=true, store the token and continue into the app.
+Read existing details with GET /api/user/profile/ (or /api/vendor/profile/ for vendors).
+Customer onboarding is complete with name and phone; address and GPS are separate pickup details.
+Do not require registration/profile submission again after successful login. Vendor business/KYC requirements still apply.

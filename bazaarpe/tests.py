@@ -107,28 +107,46 @@ class FullAdminAccessTests(TestCase):
 
 
 class RegistrationAPITests(APITestCase):
-    def test_registration_uses_only_identity_fields_and_returns_compact_payload(self):
+    def test_registration_saves_identity_and_location_for_vendor_matching(self):
+        city, _ = ServiceCity.objects.get_or_create(name='Bengaluru', defaults={'state': 'Karnataka'})
+        zone, _ = ServiceZone.objects.get_or_create(
+            name='Indiranagar', city=city,
+            defaults={'code': 'BLR-IND-01', 'pincodes': '560038', 'center_latitude': '12.9784', 'center_longitude': '77.6408'}
+        )
+
         response = self.client.post('/api/user/register/', {
             'full_name': 'Ashish Prabhakar',
             'mobile_number': '9876543214',
             'email': 'ashish@example.com',
-            'address': 'This must be ignored',
-            'pincode': '400703',
-            'city': 'Mumbai',
+            'address': 'Plot 45, Sector 18',
+            'pincode': '560038',
+            'city': 'Bengaluru',
+            'state': 'Karnataka',
+            'zone': 'Indiranagar',
         }, format='json')
 
         self.assertEqual(response.status_code, 201, response.data)
         self.assertEqual(set(response.data), {'success', 'message', 'token', 'user'})
-        self.assertEqual(response.data['user'], {
-            'full_name': 'Ashish Prabhakar',
-            'mobile_number': '9876543214',
-            'email': 'ashish@example.com',
-        })
+        self.assertEqual(response.data['user']['full_name'], 'Ashish Prabhakar')
+        self.assertEqual(response.data['user']['mobile_number'], '9876543214')
+        self.assertEqual(response.data['user']['email'], 'ashish@example.com')
+        self.assertEqual(response.data['user']['city'], 'Bengaluru')
+        self.assertEqual(response.data['user']['state'], 'Karnataka')
+        self.assertEqual(response.data['user']['zone'], 'Indiranagar')
+
         profile = UserProfile.objects.get(phone='9876543214')
-        self.assertEqual(profile.address, '')
-        self.assertEqual(profile.pincode, '')
-        self.assertEqual(profile.city, '')
-        self.assertFalse(profile.onboarding_completed)
+        self.assertEqual(profile.address, 'Plot 45, Sector 18')
+        self.assertEqual(profile.pincode, '560038')
+        self.assertEqual(profile.city, 'Bengaluru')
+        self.assertEqual(profile.state, 'Karnataka')
+        self.assertEqual(profile.service_zone, zone)
+        self.assertTrue(profile.onboarding_completed)
+
+        # Default UserAddress must be created for vendor matching
+        default_addr = UserAddress.objects.filter(user=profile.user, is_default=True).first()
+        self.assertIsNotNone(default_addr)
+        self.assertEqual(default_addr.service_zone, zone)
+        self.assertEqual(default_addr.city, 'Bengaluru')
 
     def test_email_is_optional(self):
         response = self.client.post('/api/user/register/', {
@@ -221,6 +239,245 @@ class PickupOrderFlowTests(APITestCase):
         order.acceptance_deadline = timezone.now() + timedelta(minutes=30)
         order.save(update_fields=['status', 'final_agreed_price', 'published_at', 'acceptance_deadline', 'updated_at'])
         return order
+
+    def test_history_includes_matching_offers_without_customer_details(self):
+        order = self.publish_order(self.create_order())
+        self.authenticate(self.vendor_token)
+        response = self.client.get('/api/vendor/orders/history/?page=1')
+        offer = next(o for o in response.data['orders'] if o['order_id'] == order.order_id)
+        self.assertFalse(offer['is_assigned'])
+        self.assertNotIn('customer', offer)
+        self.assertNotIn('pickup_address', offer)
+        self.assertEqual(self.client.get('/api/vendor/orders/history/?scope=assigned').data['count'], 0)
+        self.vendor_profile.categories.clear()
+        self.assertEqual(self.client.get('/api/vendor/orders/history/').data['count'], 0)
+
+    def test_history_excludes_expired_rejected_and_wrong_zone_offers(self):
+        order = self.publish_order(self.create_order())
+        self.authenticate(self.vendor_token)
+        order.acceptance_deadline = timezone.now() - timedelta(minutes=1)
+        order.save()
+        self.assertEqual(self.client.get('/api/vendor/orders/history/').data['count'], 0)
+        self.publish_order(order)
+        VendorOfferRejection.objects.create(vendor=self.vendor_profile, order=order)
+        self.assertEqual(self.client.get('/api/vendor/orders/history/').data['count'], 0)
+        VendorOfferRejection.objects.filter(order=order).delete()
+        self.vendor_profile.operating_zones.clear()
+        self.assertEqual(self.client.get('/api/vendor/orders/history/').data['count'], 0)
+
+    def test_admin_dropdown_and_assignment_validate_category(self):
+        order = self.publish_order(self.create_order())
+        admin = User.objects.create_superuser(username='assignment-admin', password='TestPass123!')
+        self.client.credentials()
+        self.client.force_login(admin)
+        response = self.client.get('/order-detail.html?id=' + order.order_id)
+        self.assertContains(response, 'name="vendor_id"')
+        self.assertNotContains(response, 'name="vendor_name"')
+        path = '/admin/orders/' + order.order_id + '/assign-vendor'
+        self.assertEqual(self.client.post(path, {}, format='json').status_code, 400)
+        self.vendor_profile.categories.clear()
+        self.assertEqual(self.client.post(path, {'vendor_id': self.vendor_profile.pk}, format='json').status_code, 400)
+        order.refresh_from_db()
+        self.assertIsNone(order.assigned_vendor_id)
+        self.vendor_profile.categories.add(self.subcategory.category)
+        response = self.client.post(path, {'vendor_id': self.vendor_profile.pk}, format='json')
+        self.assertEqual(response.status_code, 200, response.content)
+        order.refresh_from_db()
+        self.assertEqual(order.assigned_vendor_id, self.vendor.pk)
+        self.assertEqual(self.client.post(path, {'vendor_id': self.vendor_profile.pk}, format='json').status_code, 409)
+        self.authenticate(self.vendor_token)
+        assigned = self.client.get('/api/vendor/orders/history/?scope=assigned').data['orders'][0]
+        self.assertTrue(assigned['is_assigned'])
+        self.assertIn('customer', assigned)
+
+    def test_vendor_location_selection_is_validated_and_saved_from_zone(self):
+        admin = User.objects.create_superuser(username='location-admin', password='TestPass123!')
+        self.client.force_login(admin)
+        path = '/admin/vendors/edit'
+        data = {'vendor_id': self.vendor_profile.pk, 'location_city_id': self.city.pk, 'location_zone_id': self.zone.pk, 'city': 'Forged', 'pincode': '000000', 'latitude': '90'}
+        response = self.client.post(path, data, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.vendor_profile.refresh_from_db()
+        self.assertEqual(self.vendor_profile.city, self.city.name)
+        self.assertEqual(self.vendor_profile.pincode, self.zone.pincode)
+        self.zone.refresh_from_db()
+        self.assertEqual(self.vendor_profile.latitude, self.zone.center_latitude)
+        data['location_state'] = 'Invalid state'
+        self.assertEqual(self.client.post(path, data, format='json').status_code, 400)
+        data['location_state'] = self.city.state
+        data['location_city_id'] = 999999
+        self.assertEqual(self.client.post(path, data, format='json').status_code, 400)
+        data['location_city_id'] = self.city.pk
+        self.zone.is_active = False
+        self.zone.save()
+        self.assertEqual(self.client.post(path, data, format='json').status_code, 400)
+
+    def test_available_orders_require_category_zone_and_unexpired_publication(self):
+        order = self.publish_order(self.create_order())
+        self.authenticate(self.vendor_token)
+        path = '/api/vendor/orders/available/'
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(order.order_id, [item['order_id'] for item in response.data['orders']])
+        self.assertNotIn('reason_code', response.data)
+        self.assertNotIn('customer', response.data['orders'][0])
+        self.assertEqual(self.client.get('/api/vendor/dashboard/').data['summary']['available_orders'], response.data['count'])
+        order.acceptance_deadline = timezone.now() - timedelta(seconds=1)
+        order.save()
+        response = self.client.get(path)
+        self.assertEqual(response.data['count'], 0)
+        self.assertEqual(response.data['reason_code'], 'MATCHING_OFFERS_EXPIRED')
+        self.publish_order(order)
+        self.vendor_profile.operating_zones.clear()
+        self.assertEqual(self.client.get(path).data['reason_code'], 'NO_OPERATING_ZONES')
+        other_zone = ServiceZone.objects.create(city=self.city, name='Other audit zone', pincodes='560001')
+        self.vendor_profile.operating_zones.add(other_zone)
+        response = self.client.get(path)
+        self.assertEqual(response.data['reason_code'], 'NO_MATCHING_ORDERS')
+        self.assertEqual(response.data['count'], 0)
+        self.vendor_profile.categories.clear()
+        self.assertEqual(self.client.get(path).data['reason_code'], 'NO_CATEGORIES')
+
+    def test_vendor_profile_create_and_update_persist_zone_selection(self):
+        self.user_profile.is_vendor = True
+        self.user_profile.save(update_fields=['is_vendor'])
+        self.authenticate(self.user_token)
+        path = '/api/vendor/profile/'
+        data = {'shop_name': 'Zone Test Shop', 'owner_name': 'Owner', 'full_address': 'Test address', 'city': self.city.name, 'state': self.city.state, 'pincode': '560038', 'zone_ids': '[%s]' % self.zone.pk, 'category_ids': str([self.subcategory.category_id])}
+        response = self.client.post(path, data, format='multipart')
+        self.assertEqual(response.status_code, 201, response.data)
+        vendor = VendorProfile.objects.get(user=self.user)
+        self.assertEqual(list(vendor.operating_zones.values_list('pk', flat=True)), [self.zone.pk])
+        other = ServiceZone.objects.create(city=self.city, name='Profile zone option', pincodes='560001')
+        for value in [[self.zone.pk, other.pk], '%s,%s' % (self.zone.pk, other.pk), '[%s, %s]' % (self.zone.pk, other.pk)]:
+            response = self.client.patch(path, {'zone_ids': value}, format='multipart')
+            self.assertEqual(response.status_code, 200, response.data)
+            self.assertEqual({z['id'] for z in response.data['vendor']['operating_zones']}, {self.zone.pk, other.pk})
+        response = self.client.patch(path, {'owner_name': 'Updated Owner'}, format='multipart')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(vendor.operating_zones.count(), 2)
+        response = self.client.patch(path, {'zone_ids': [other.pk]}, format='json')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(vendor.operating_zones.values_list('pk', flat=True)), [other.pk])
+
+    def test_invalid_profile_zone_selection_cannot_partially_save(self):
+        self.authenticate(self.vendor_token)
+        path = '/api/vendor/profile/'
+        for invalid in [[], [True], [0], [-1], [999999], [self.zone.pk, self.zone.pk], 'bad', None]:
+            response = self.client.patch(path, {'shop_name': 'Must not save', 'zone_ids': invalid}, format='json')
+            self.assertEqual(response.status_code, 400, response.data)
+        self.zone.is_active = False
+        self.zone.save()
+        self.assertEqual(self.client.patch(path, {'zone_ids': [self.zone.pk]}, format='json').status_code, 400)
+        self.zone.is_active = True
+        self.zone.save()
+        self.city.is_active = False
+        self.city.save()
+        self.assertEqual(self.client.patch(path, {'zone_ids': [self.zone.pk]}, format='multipart').status_code, 400)
+        self.vendor_profile.refresh_from_db()
+        self.assertNotEqual(self.vendor_profile.shop_name, 'Must not save')
+        self.assertEqual(list(self.vendor_profile.operating_zones.values_list('pk', flat=True)), [self.zone.pk])
+
+    def test_available_feed_includes_own_active_assignment_after_offer_expires(self):
+        own = self.publish_order(self.create_order())
+        other = self.publish_order(self.create_order())
+        own.assigned_vendor = self.vendor
+        own.status = PickupOrder.Status.VENDOR_ASSIGNED
+        own.acceptance_deadline = timezone.now() - timedelta(days=1)
+        own.save()
+        other.assigned_vendor = self.user
+        other.status = PickupOrder.Status.VENDOR_ASSIGNED
+        other.save()
+        self.authenticate(self.vendor_token)
+        path = '/api/vendor/orders/available/'
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([o['order_id'] for o in response.data['orders']], [own.order_id])
+        summary = self.client.get('/api/vendor/dashboard/').data['summary']
+        self.assertEqual(summary['available_orders'], response.data['count'])
+        self.assertEqual(summary['active_orders'], 1)
+        self.assertEqual(summary['new_offers'], 0)
+        item = response.data['orders'][0]
+        self.assertTrue(item['is_assigned'])
+        self.assertFalse(item['can_accept'])
+        self.assertIn('customer', item)
+        self.assertIn('pickup_address', item)
+        self.vendor_profile.is_online = False
+        self.vendor_profile.save()
+        self.vendor_profile.categories.clear()
+        self.vendor_profile.operating_zones.clear()
+        self.assertEqual(self.client.get(path).data['orders'][0]['order_id'], own.order_id)
+        for terminal in [PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT, PickupOrder.Status.CANCELLED]:
+            own.status = terminal
+            own.save()
+            self.vendor_profile.is_online = True
+            self.vendor_profile.save()
+            self.assertEqual(self.client.get(path).data['count'], 0)
+
+    def test_normalized_feed_moves_matching_to_assigned_without_duplicates(self):
+        assigned = self.publish_order(self.create_order())
+        offer = self.publish_order(self.create_order())
+        assigned.assigned_vendor = self.vendor
+        assigned.status = PickupOrder.Status.VENDOR_ASSIGNED
+        assigned.save()
+        self.authenticate(self.vendor_token)
+        path = '/api/vendor/orders/available/'
+        response = self.client.get(path)
+        self.assertEqual(response.data['count'], 2)
+        items = {item['order_id']: item for item in response.data['orders']}
+        self.assertEqual(items[assigned.order_id]['order_type'], 'assigned')
+        self.assertFalse(items[assigned.order_id]['can_accept'])
+        self.assertEqual(items[offer.order_id]['order_type'], 'matching')
+        self.assertTrue(items[offer.order_id]['can_accept'])
+        self.assertNotIn('customer', items[offer.order_id])
+        page1 = self.client.get(path + '?page_size=1&page=1').data
+        page2 = self.client.get(path + '?page_size=1&page=2').data
+        self.assertEqual(page1['total_pages'], 2)
+        self.assertNotEqual(page1['orders'][0]['order_id'], page2['orders'][0]['order_id'])
+        accepted = self.client.post('/api/vendor/orders/' + offer.order_id + '/accept/', {}, format='json')
+        self.assertEqual(accepted.status_code, 200, accepted.data)
+        items = self.client.get(path).data['orders']
+        self.assertEqual(len(items), 2)
+        self.assertTrue(all(item['order_type'] == 'assigned' and not item['can_accept'] for item in items))
+        summary = self.client.get('/api/vendor/dashboard/').data['summary']
+        self.assertEqual((summary['available_orders'], summary['active_orders'], summary['new_offers']), (2, 2, 0))
+        self.assertEqual(self.client.post('/api/vendor/orders/' + offer.order_id + '/accept/', {}, format='json').status_code, 409)
+        offer.refresh_from_db()
+        offer.status = PickupOrder.Status.COMPLETED
+        offer.save()
+        self.assertEqual(self.client.get(path).data['count'], 1)
+        history = self.client.get('/api/vendor/orders/history/?scope=assigned').data['orders']
+        self.assertIn(offer.order_id, [item['order_id'] for item in history])
+
+    def test_inactive_zone_or_category_cannot_be_listed_or_accepted(self):
+        order = self.publish_order(self.create_order())
+        self.authenticate(self.vendor_token)
+        self.zone.is_active = False
+        self.zone.save()
+        self.assertEqual(self.client.get('/api/vendor/orders/available/').data['count'], 0)
+        self.assertEqual(self.client.post('/api/vendor/orders/' + order.order_id + '/accept/', {}, format='json').status_code, 403)
+        self.zone.is_active = True
+        self.zone.save()
+        category = self.subcategory.category
+        category.is_active = False
+        category.save()
+        self.assertEqual(self.client.get('/api/vendor/orders/available/').data['count'], 0)
+        self.assertEqual(self.client.get('/api/vendor/orders/' + order.order_id + '/').status_code, 403)
+
+    def test_admin_cannot_republish_assigned_or_terminal_orders(self):
+        order = self.publish_order(self.create_order())
+        admin = User.objects.create_superuser(username='republish-admin', password='TestPass123!')
+        self.client.credentials()
+        self.client.force_login(admin)
+        for state in [PickupOrder.Status.VENDOR_ASSIGNED, PickupOrder.Status.COMPLETED, PickupOrder.Status.CANCELLED]:
+            order.assigned_vendor = self.vendor
+            order.status = state
+            order.save()
+            response = self.client.post('/admin/orders/' + order.order_id + '/publish', {'admin_override': 'true'}, format='json')
+            self.assertEqual(response.status_code, 409)
+            order.refresh_from_db()
+            self.assertEqual(order.status, state)
+            self.assertEqual(order.assigned_vendor_id, self.vendor.pk)
 
     def test_price_calculation_uses_rate_and_gst(self):
         response = self.client.post('/api/pricing/calculate/', {
@@ -442,6 +699,33 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(response.status_code, 200, response.data)
         self.user_profile.refresh_from_db()
         self.assertTrue(self.user_profile.profile_photo.name)
+
+    def test_user_profile_update_city_state_zone_and_sync_address(self):
+        self.authenticate(self.user_token)
+        response = self.client.patch('/api/user/profile/', {
+            'city': 'Bengaluru',
+            'state': 'Karnataka',
+            'zone': self.zone.name,
+            'address': '55, 100ft Road, Indiranagar',
+            'pincode': '560038',
+        }, format='json')
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data['user']['city'], 'Bengaluru')
+        self.assertEqual(response.data['user']['state'], 'Karnataka')
+        self.assertEqual(response.data['user']['zone'], self.zone.name)
+        self.assertEqual(response.data['user']['zone_id'], self.zone.id)
+
+        self.user_profile.refresh_from_db()
+        self.assertEqual(self.user_profile.city, 'Bengaluru')
+        self.assertEqual(self.user_profile.state, 'Karnataka')
+        self.assertEqual(self.user_profile.service_zone, self.zone)
+        self.assertEqual(self.user_profile.address, '55, 100ft Road, Indiranagar')
+
+        # Verify default UserAddress exists and is synced for vendor matching
+        default_addr = UserAddress.objects.filter(user=self.user, is_default=True).first()
+        self.assertIsNotNone(default_addr)
+        self.assertEqual(default_addr.service_zone, self.zone)
+        self.assertEqual(default_addr.city, 'Bengaluru')
 
     def test_phone_change_requires_new_number_otp(self):
         self.authenticate(self.user_token)
@@ -831,6 +1115,40 @@ class OTPControlTests(APITestCase):
         self.assertEqual(success.status_code, 200, success.data)
         reused = self.client.post('/api/user/login-otp/', {'phone': '9123456789', 'otp': record.otp}, format='json')
         self.assertEqual(reused.status_code, 400)
+
+    def test_repeat_login_returns_compact_identity_and_preserves_saved_profile(self):
+        profile = self.user.profile
+        profile.email = 'otp@example.com'
+        profile.address = 'Saved street'
+        profile.pincode = '110016'
+        profile.city = 'Delhi NCR'
+        profile.save()
+        for path in ['/api/user/login-otp/', '/api/user/verify-otp-login/']:
+            otp = OTPVerification.generate_otp_for_phone(profile.phone, purpose='LOGIN')
+            response = self.client.post(path, {'mobile_number': profile.phone, 'otp': otp.otp}, format='multipart')
+            self.assertEqual(response.status_code, 200, response.data)
+            self.assertEqual(set(response.data), {'success', 'message', 'is_registered', 'token', 'user'})
+            self.assertEqual(response.data['user'], {'full_name': 'OTP User', 'mobile_number': profile.phone, 'email': profile.email})
+            self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + response.data['token'])
+            saved = self.client.get('/api/user/profile/').data['user']
+            self.assertEqual(saved['address'], 'Saved street')
+            self.assertEqual(saved['pincode'], '110016')
+            self.assertEqual(saved['city'], 'Delhi NCR')
+            self.assertTrue(saved['onboarding_completed'])
+            self.client.credentials()
+
+    def test_identity_only_customer_needs_no_repeat_profile_or_address_submission(self):
+        profile = self.user.profile
+        otp = OTPVerification.generate_otp_for_phone(profile.phone, purpose='LOGIN')
+        response = self.client.post('/api/user/login-otp/', {'phone': profile.phone, 'otp': otp.otp}, format='json')
+        self.assertEqual(response.status_code, 200)
+        profile.refresh_from_db()
+        self.assertTrue(profile.onboarding_completed)
+        self.assertFalse(profile.address)
+        self.assertFalse(profile.pincode)
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + response.data['token'])
+        response = self.client.patch('/api/user/profile/', {'email': 'new@example.com'}, format='json')
+        self.assertTrue(response.data['user']['onboarding_completed'])
 
     def test_expired_otp_is_rejected(self):
         self.assertEqual(self.client.post('/api/user/send-otp/', {'phone': '9123456789'}, format='json').status_code, 200)

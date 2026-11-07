@@ -127,6 +127,7 @@ class UserProfile(models.Model):
     address = models.TextField(blank=True, null=True, help_text="Primary pickup address")
     pincode = models.CharField(max_length=10, blank=True, null=True, help_text="Postal Pincode (6 digits)")
     city = models.CharField(max_length=100, blank=True, null=True, default="Bengaluru")
+    state = models.CharField(max_length=100, blank=True, null=True, default="Karnataka", help_text="State name")
     
     # Location coordinates & zone
     latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
@@ -181,6 +182,9 @@ class UserProfile(models.Model):
         return "BP"
 
     def to_dict(self):
+        zone_name = self.service_zone.name if self.service_zone else None
+        zone_id = self.service_zone_id if self.service_zone else None
+        state_val = self.state or (self.service_zone.city.state if self.service_zone else 'Karnataka')
         return {
             'id': self.id,
             'user_id': self.display_user_id,
@@ -191,10 +195,13 @@ class UserProfile(models.Model):
             'address': self.address or '',
             'pincode': self.pincode or '',
             'city': self.city or '',
+            'state': state_val,
             'latitude': float(self.latitude) if self.latitude is not None else None,
             'longitude': float(self.longitude) if self.longitude is not None else None,
-            'service_zone': self.service_zone.name if self.service_zone else None,
-            'service_zone_id': self.service_zone_id if self.service_zone else None,
+            'service_zone': zone_name,
+            'service_zone_id': zone_id,
+            'zone': zone_name,
+            'zone_id': zone_id,
             'profile_photo': self.profile_photo.url if self.profile_photo else None,
             'onboarding_step': self.onboarding_step,
             'onboarding_completed': self.onboarding_completed,

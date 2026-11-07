@@ -194,9 +194,17 @@ state: Karnataka
 pincode: 560038
 latitude: 12.9784 (optional)
 longitude: 77.6408 (optional)
+zone_ids: [1, 2] (optional; selected operating service zones)
 category_ids: [1, 2] (optional; JSON array text in multipart, or repeated category_ids fields)
 Select multiple categories only. All active subcategories under them are enabled automatically.
 Do not send subcategory_ids.
+
+Zone options: GET /api/vendor/states-zones/?state=Karnataka or /api/vendor/zones/?city=Bengaluru.
+Send actual zone IDs from these endpoints, not zone names.
+zone_ids supports JSON array text, repeated multipart fields, or comma-separated IDs.
+Supplied zone_ids replaces existing operating zones; omission preserves them.
+Empty lists, duplicate IDs, invalid IDs, inactive zones/cities return 400 before saving.
+The vendor response includes operating_zones with the saved zone objects.
 
 response:
 {
@@ -218,6 +226,13 @@ method: GET
 
 params:
 Authorization: Bearer <token> (header)
+
+Zone options: GET /api/vendor/states-zones/?state=Karnataka or /api/vendor/zones/?city=Bengaluru.
+Send actual zone IDs from these endpoints, not zone names.
+zone_ids supports JSON array text, repeated multipart fields, or comma-separated IDs.
+Supplied zone_ids replaces existing operating zones; omission preserves them.
+Empty lists, duplicate IDs, invalid IDs, inactive zones/cities return 400 before saving.
+The vendor response includes operating_zones with the saved zone objects.
 
 response:
 {
@@ -254,8 +269,16 @@ pincode: 560038
 latitude: 12.9784 (optional)
 longitude: 77.6408 (optional)
 
+zone_ids: [1, 2] (optional; selected operating service zones)
 category_ids: [1, 2] (optional; replaces selected categories and automatically refreshes subcategories)
 Omit category_ids to keep the existing selection. Invalid/inactive IDs or an empty list return 400.
+
+Zone options: GET /api/vendor/states-zones/?state=Karnataka or /api/vendor/zones/?city=Bengaluru.
+Send actual zone IDs from these endpoints, not zone names.
+zone_ids supports JSON array text, repeated multipart fields, or comma-separated IDs.
+Supplied zone_ids replaces existing operating zones; omission preserves them.
+Empty lists, duplicate IDs, invalid IDs, inactive zones/cities return 400 before saving.
+The vendor response includes operating_zones with the saved zone objects.
 
 response:
 {
@@ -568,6 +591,7 @@ response:
   "success": true,
   "summary": {
     "available_orders": 2,
+    "new_offers": 1,
     "active_orders": 1,
     "completed_orders": 5,
     "unread_notifications": 3,
@@ -587,16 +611,22 @@ Authorization: Bearer <token> (header)
 page: 1 (optional)
 page_size: 20 (optional, maximum 100)
 
+This is the combined active feed: own assigned orders plus category AND zone matched offers.
+Only entries with can_accept=true should show an Accept button.
+
 response:
 {
   "success": true,
-  "count": 1,
+  "count": 2,
   "page": 1,
   "total_pages": 1,
   "orders": [
     {
       "order_id": "ORD-2026-123456",
       "status": "SEARCHING_VENDOR",
+      "order_type": "matching",
+      "is_assigned": false,
+      "can_accept": true,
       "category": "Metal",
       "subcategory": "Iron Scrap",
       "approx_weight": 30.0,
@@ -608,6 +638,16 @@ response:
       },
       "distance_km": 2.4,
       "distance_method": "haversine_great_circle"
+    },
+    {
+      "order_id": "ORD-2026-812314",
+      "status": "VENDOR_ASSIGNED",
+      "order_type": "assigned",
+      "is_assigned": true,
+      "can_accept": false,
+      "category": "Metal",
+      "pickup_address": "Saved pickup address",
+      "customer": {"name": "Ramesh Patel", "phone": "9811223344"}
     }
   ]
 }
@@ -860,6 +900,18 @@ response:
   }
 }
 
+Vendor order feed update:
+GET /api/vendor/orders/history/?page=1 defaults to scope=all: assigned orders plus
+published, unexpired offers matching vendor category and operating zone.
+Offers require an active, online, approved vendor with current consents and exclude
+rejected offers. scope=assigned returns only own orders; scope=available only offers.
+Each order includes is_assigned and can_accept. Customer name, phone and pickup
+address are returned only for assigned orders. Existing status/date/page filters apply.
+Admin assignment: POST /admin/orders/<order_id>/assign-vendor with vendor_id
+(VendorProfile primary key). Name/phone assignment and automatic fallback removed.
+Backend validates active approved vendor, category, zone, consents and order state.
+Manual assignment may select offline vendors and escalated/expired published orders.
+
 API for List Vendor Order History
 url: http://127.0.0.1:8000/api/vendor/orders/history/
 method: GET
@@ -1100,3 +1152,50 @@ The same mobile number cannot register or log in as both account types.
 Wrong-app send-otp and login-otp requests return 403 before generating or consuming an OTP.
 Existing bearer tokens also receive 403 when accessing the other account type's APIs.
 Vendors use /api/vendor/consents/ and /api/vendor/change-phone/request/ or confirm/.
+
+OTP login response contract update:
+POST login-otp returns success, message, is_registered, token and user only.
+user contains full_name, mobile_number and email (nullable); no full profile or onboarding fields.
+On success with is_registered=true, store the token and continue into the app.
+Read existing details with GET /api/user/profile/ (or /api/vendor/profile/ for vendors).
+Customer onboarding is complete with name and phone; address and GPS are separate pickup details.
+Do not require registration/profile submission again after successful login. Vendor business/KYC requirements still apply.
+
+Available-orders empty response:
+GET /api/vendor/orders/available/ retains category AND operating-zone matching.
+When count=0, reason_code and message explain NO_CATEGORIES, NO_OPERATING_ZONES,
+MATCHING_OFFERS_EXPIRED, or NO_MATCHING_ORDERS. Published, price-agreed, unassigned
+orders must also have a pickup zone matching the vendor zones and an unexpired
+acceptance deadline (or no deadline). Rejected offers remain excluded.
+
+Assigned-order visibility fix:
+GET /api/vendor/orders/available/ returns both eligible unassigned offers AND the
+authenticated vendor own active assigned orders. Completed/cancelled orders remain
+in /api/vendor/orders/history/. Assignment remains visible after the offer deadline
+or changes to categories, operating zones or online status. Only new offers require
+category + zone matching, online/KYC/consent eligibility and an open deadline.
+Assigned entries have is_assigned=true and can_accept=false, plus customer and pickup
+address details. Other vendors assignments are never included. Pagination covers
+the combined list, ordered newest first.
+
+Dashboard summary.available_orders now matches the combined available endpoint count.
+summary.new_offers counts only eligible unassigned offers; summary.active_orders
+counts own active assignments.
+
+Normalized vendor order feed (current contract)
+GET /api/vendor/orders/available/?page=1&page_size=20
+Authorization: Bearer <vendor token>
+One paginated, newest-first list contains:
+- order_type=assigned: your active assigned orders, is_assigned=true, can_accept=false.
+- order_type=matching: published unassigned offers matching BOTH category and service
+  zone, is_assigned=false, can_accept=true. Category, zone and city must be active.
+Customer contact and full address are included only after assignment.
+Accept a matching offer with POST /api/vendor/orders/<order_id>/accept/.
+After acceptance it stays in this feed as assigned, with no duplicate entry.
+Admin-assigned orders appear immediately. Existing assignments remain visible if
+online status, category/zone selections or offer deadlines later change.
+Completed/cancelled orders leave this active feed and remain in order history.
+Dashboard available_orders = active_orders + new_offers uses the same feed rules.
+Offline/KYC/consent restrictions apply to new offers; existing active assignments
+remain readable. Account blocking and bearer ownership checks still apply.
+Admin publication cannot reset assigned, completed or cancelled orders.
