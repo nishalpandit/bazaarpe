@@ -522,12 +522,55 @@
       })
       .then(function (res) { return res.json().catch(function () { return { success: true }; }); })
       .then(function (data) {
-        toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
-        setTimeout(function () { window.location.reload(); }, 500);
+        if (data && data.success === false) {
+          toast(data.message || "Failed to publish order.", "error");
+        } else {
+          toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
+          setTimeout(function () { window.location.reload(); }, 600);
+        }
       })
       .catch(function () {
         toast("Order Published: " + reqId + " is now published to the marketplace.", "success");
-        setTimeout(function () { window.location.reload(); }, 500);
+        setTimeout(function () { window.location.reload(); }, 600);
+      });
+    });
+  }
+
+  /* ---------------------------------------------------- Negotiation & Price Actions */
+  function initNegotiationActions() {
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-accept-offer]");
+      if (!btn) return;
+      e.preventDefault();
+      const orderId = btn.getAttribute("data-accept-offer");
+      const amount = btn.getAttribute("data-amount");
+      if (!orderId) return;
+
+      const confirmed = window.confirm(
+        "Accept customer proposal of ₹" + amount + " for order " + orderId + "? This will finalize the purchase price."
+      );
+      if (!confirmed) return;
+
+      const formData = new FormData();
+      if (amount) formData.append("final_agreed_price", amount);
+
+      fetch('/admin/orders/' + orderId + '/approve', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function (res) { return res.json().catch(function() { return { success: true }; }); })
+      .then(function (data) {
+        if (data && data.success === false) {
+          toast(data.message || "Failed to approve price.", "error");
+        } else {
+          toast("Price Accepted: ₹" + (amount || "") + " recorded for " + orderId + ".", "success");
+          setTimeout(function () { window.location.reload(); }, 600);
+        }
+      })
+      .catch(function () {
+        toast("Price Accepted: ₹" + (amount || "") + " recorded for " + orderId + ".", "success");
+        setTimeout(function () { window.location.reload(); }, 600);
       });
     });
   }
@@ -977,6 +1020,7 @@
     initAccountReveal();
     initAdminPurchase();
     initAdminPublish();
+    initNegotiationActions();
     initUserVendorManagement();
     initPrint();
     initReveal();

@@ -1813,27 +1813,48 @@ def vendor_operating_zones_view(request):
 
 
 @api_view(['GET', 'PUT', 'POST']) 
-@authentication_classes([BearerTokenAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 @parser_classes([JSONParser, FormParser, MultiPartParser])
 def vendor_categories_view(request):
+    # GET: return all active categories and subcategories (public, no auth required)
+    if request.method == 'GET':
+        categories = ScrapCategory.objects.filter(is_active=True).prefetch_related('subcategories')
+        cats_data = []
+        subcats_data = []
+        for category in categories:
+            cats_data.append({'id': category.id, 'name': category.name})
+            for item in category.subcategories.filter(is_active=True):
+                subcats_data.append({
+                    'id': item.id,
+                    'category_id': item.category_id,
+                    'name': item.name,
+                })
+        return Response({
+            'success': True,
+            'categories': cats_data,
+            'subcategories': subcats_data,
+        })
+
+    # PUT/POST: require authentication to identify the vendor
+    if not request.user or not request.user.is_authenticated:
+        return Response({'success': False, 'message': 'Authentication required.'}, status=status.HTTP_401_UNAUTHORIZED)
+
     vendor = get_vendor_profile(request.user)
     if not vendor:
         return Response({'success': False, 'message': 'Vendor profile not found.'}, status=status.HTTP_404_NOT_FOUND)
     
-    if request.method in ('PUT', 'POST'):
-        try:
-            categories = vendor_category_selection(request.data)
-            if categories is None:
-                raise ValueError('category_ids is required.')
-        except ValueError as exc:
-            return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-        set_vendor_categories(vendor, categories)
-        subcategories = vendor.subcategories.all()
-        audit_event(request.user, 'VENDOR', 'VENDOR_CLASSIFICATIONS_UPDATED', vendor, metadata={
-            'category_ids': [c.id for c in categories],
-            'subcategory_ids': [s.id for s in subcategories],
-        })
+    try:
+        categories = vendor_category_selection(request.data)
+        if categories is None:
+            raise ValueError('category_ids is required.')
+    except ValueError as exc:
+        return Response({'success': False, 'message': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+    set_vendor_categories(vendor, categories)
+    subcategories = vendor.subcategories.all()
+    audit_event(request.user, 'VENDOR', 'VENDOR_CLASSIFICATIONS_UPDATED', vendor, metadata={
+        'category_ids': [c.id for c in categories],
+        'subcategory_ids': [s.id for s in subcategories],
+    })
 
     return Response({
         'success': True,
@@ -1843,6 +1864,22 @@ def vendor_categories_view(request):
             {'id': item.id, 'category_id': item.category_id, 'name': item.name}
             for item in vendor.subcategories.select_related('category').all()
         ],
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def order_statuses_view(request):
+    """Return all available PickupOrder status types with their labels."""
+    statuses = [
+        {'value': choice[0], 'label': choice[1]}
+        for choice in PickupOrder.Status.choices
+    ]
+    return Response({
+        'success': True,
+        'count': len(statuses),
+        'statuses': statuses,
     })
 
 
@@ -1970,8 +2007,6 @@ def vendor_kyc_view(request):
     
     # Aadhaar verification is completely optional / non-mandatory!
     pan_last4 = re.sub(r'[^A-Z0-9]', '', str(request.data.get('pan_last4', '')).upper())
-    if len(pan_last4) != 4:
-        return Response({'success': False, 'message': 'pan_last4 must contain exactly 4 alphanumeric characters.'}, status=status.HTTP_400_BAD_REQUEST)
     aadhaar_file = request.FILES.get('aadhaar_document')
     pan_file = request.FILES.get('pan_document')
     gst_file = request.FILES.get('gst_certificate')
@@ -2891,7 +2926,7 @@ def submit_pickup_details_view(request, order_id):
         return Response({'success': False, 'message': 'Order not found.'}, status=status.HTTP_404_NOT_FOUND)
     if not vendor_can_manage(order, request.user):
         return Response({'success': False, 'message': 'This order is not assigned to you.'}, status=status.HTTP_403_FORBIDDEN)
-    if order.status != PickupOrder.Status.REACHED_LOCATION or order.is_otp_verified:
+    if order.status not in (PickupOrder.Status.REACHED_LOCATION, PickupOrder.Status.PICKUP_IN_PROGRESS) or order.is_otp_verified:
         return Response({'success': False, 'message': 'Pickup details must be submitted after arrival and before OTP verification.'}, status=status.HTTP_409_CONFLICT)
     if order.proof_submitted_at or order.images.exists():
         return Response({'success': False, 'message': 'Pickup details were already submitted.'}, status=status.HTTP_409_CONFLICT)

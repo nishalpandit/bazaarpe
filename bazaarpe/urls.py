@@ -85,6 +85,7 @@ urlpatterns = [
     path('api/vendor/zones/', api_views.user_zones_view, name='api_vendor_zones'),
     path('api/vendor/operating-zones/', api_views.vendor_operating_zones_view, name='api_vendor_operating_zones'),
     path('api/vendor/categories/', api_views.vendor_categories_view, name='api_vendor_categories'),
+    path('api/order/statuses/', api_views.order_statuses_view, name='api_order_statuses'),
     path('api/vendor/availability/', api_views.vendor_availability_view, name='api_vendor_availability'),
     path('api/vendor/kyc/', api_views.vendor_kyc_view, name='api_vendor_kyc'),
     path('api/vendor/kyc/aadhaar/initiate/', api_views.vendor_aadhaar_initiate_view, name='api_vendor_aadhaar_initiate'),

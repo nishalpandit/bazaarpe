@@ -1528,13 +1528,35 @@ def page_view(request, page_name):
         order_id = request.GET.get('id') or request.GET.get('order_id')
         req_order = None
         if order_id:
-            req_order = PickupOrder.objects.filter(order_id=order_id).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
+            req_order = PickupOrder.objects.filter(order_id=order_id).select_related(
+                'user', 'user__profile', 'address', 'category', 'subcategory'
+            ).prefetch_related('images', 'negotiation_proposals').first()
         if not req_order:
-            req_order = PickupOrder.objects.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
+            req_order = PickupOrder.objects.filter(
+                status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]
+            ).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
 
-        proposals = req_order.negotiation_proposals.all().order_by('created_at') if req_order else []
+        proposals = list(req_order.negotiation_proposals.all().order_by('created_at')) if req_order else []
+        latest_proposal = proposals[-1] if proposals else None
+        latest_user_proposal = None
+        for p in reversed(proposals):
+            if p.proposer_role == NegotiationProposal.ProposerRole.USER:
+                latest_user_proposal = p
+                break
+
+        has_pending_user_offer = bool(latest_user_proposal and latest_user_proposal.status == NegotiationProposal.Status.PENDING)
+        is_price_agreed = bool(req_order and req_order.final_agreed_price is not None)
+
         return render(request, 'request-detail.html', admin_context(
-            request, page_name=clean_name, req_order=req_order, pickup_order=req_order, proposals=proposals,
+            request,
+            page_name=clean_name,
+            req_order=req_order,
+            pickup_order=req_order,
+            proposals=proposals,
+            latest_proposal=latest_proposal,
+            latest_user_proposal=latest_user_proposal,
+            has_pending_user_offer=has_pending_user_offer,
+            is_price_agreed=is_price_agreed,
         ))
 
     # 19. ORDERS LIST
@@ -1778,7 +1800,7 @@ def admin_action_view(request, action_path):
         # -------------------------------------------------------------
         # 1. PICKUP NEGOTIATION & PROPOSAL
         # -------------------------------------------------------------
-        negotiation_match = re.fullmatch(r'orders/([^/]+)/negotiate', action)
+        negotiation_match = re.fullmatch(r'(?:orders|requests)/([^/]+)/negotiate', action)
         if negotiation_match:
             order = PickupOrder.objects.filter(order_id=negotiation_match.group(1)).first()
             if not order:
@@ -1789,16 +1811,17 @@ def admin_action_view(request, action_path):
                 agreed = Decimal('0')
             if agreed <= 0:
                 return JsonResponse({'success': False, 'message': 'Proposed price must be greater than zero.'}, status=400)
-            if order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.SEARCHING_VENDOR):
-                return JsonResponse({'success': False, 'message': 'Order is no longer in negotiation.'}, status=409)
+            if order.status in (PickupOrder.Status.COMPLETED, PickupOrder.Status.CANCELLED, PickupOrder.Status.USER_PAYOUT):
+                return JsonResponse({'success': False, 'message': 'Completed or cancelled orders cannot be negotiated.'}, status=409)
 
             order.negotiation_proposals.filter(
                 proposer_role=NegotiationProposal.ProposerRole.ADMIN,
                 status=NegotiationProposal.Status.PENDING,
             ).update(status=NegotiationProposal.Status.COUNTERED)
 
+            admin_user = request.user if (hasattr(request, 'user') and request.user.is_authenticated) else None
             proposal = NegotiationProposal.objects.create(
-                order=order, proposed_by=request.user,
+                order=order, proposed_by=admin_user,
                 proposer_role=NegotiationProposal.ProposerRole.ADMIN,
                 amount=agreed,
                 status=NegotiationProposal.Status.PENDING,
@@ -1806,7 +1829,8 @@ def admin_action_view(request, action_path):
             )
             # Crucial: price is NOT final until user accepts!
             order.final_agreed_price = None
-            order.status = PickupOrder.Status.ADMIN_NEGOTIATION
+            if not order.assigned_vendor_id:
+                order.status = PickupOrder.Status.ADMIN_NEGOTIATION
             order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
             UserNotification.objects.create(
                 user=order.user, order=order,
@@ -1817,9 +1841,9 @@ def admin_action_view(request, action_path):
             MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='PRICE_PROPOSED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'proposal_id': proposal.id, 'amount': str(agreed)})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'Price proposal of ₹{agreed} sent to customer for {order.order_id}.'})
-            return redirect('/requests.html')
+            return redirect(f'/request-detail.html?id={order.order_id}')
 
-        approve_match = re.fullmatch(r'orders/([^/]+)/approve', action)
+        approve_match = re.fullmatch(r'(?:orders|requests)/([^/]+)/(?:approve|agree-price|record-price)', action)
         if approve_match:
             order = PickupOrder.objects.filter(order_id=approve_match.group(1)).first()
             if not order:
@@ -1834,22 +1858,44 @@ def admin_action_view(request, action_path):
                     is_accepted=False,
                 ).order_by('-created_at').first()
 
-            if user_prop:
+            custom_price_val = data.get('final_agreed_price') or data.get('proposed_price') or data.get('price')
+            if custom_price_val is not None and str(custom_price_val).strip() != '':
+                try:
+                    agreed = Decimal(str(custom_price_val).strip())
+                except (InvalidOperation, TypeError, ValueError):
+                    agreed = Decimal('0')
+            elif user_prop:
                 agreed = user_prop.amount
+            else:
+                try:
+                    agreed = Decimal(str(order.approx_price or '0'))
+                except (InvalidOperation, TypeError, ValueError):
+                    agreed = Decimal('0')
+
+            if agreed <= 0:
+                return JsonResponse({'success': False, 'message': 'Price must be greater than zero.'}, status=400)
+
+            if user_prop and agreed == user_prop.amount:
                 user_prop.is_accepted = True
                 user_prop.status = NegotiationProposal.Status.ACCEPTED
                 user_prop.accepted_at = timezone.now()
                 user_prop.save(update_fields=['is_accepted', 'status', 'accepted_at'])
             else:
-                try:
-                    agreed = Decimal(str(data.get('final_agreed_price') or data.get('proposed_price') or data.get('price') or '0'))
-                except (InvalidOperation, TypeError, ValueError):
-                    agreed = Decimal('0')
-                if agreed <= 0:
-                    return JsonResponse({'success': False, 'message': 'Price must be greater than zero.'}, status=400)
+                order.negotiation_proposals.filter(status=NegotiationProposal.Status.PENDING).update(status=NegotiationProposal.Status.COUNTERED)
+                admin_user = request.user if (hasattr(request, 'user') and request.user.is_authenticated) else None
+                NegotiationProposal.objects.create(
+                    order=order, proposed_by=admin_user,
+                    proposer_role=NegotiationProposal.ProposerRole.ADMIN,
+                    amount=agreed,
+                    status=NegotiationProposal.Status.ACCEPTED,
+                    is_accepted=True,
+                    accepted_at=timezone.now(),
+                    note=str(data.get('note') or 'Agreed by administrator').strip(),
+                )
 
             order.final_agreed_price = agreed
-            order.status = PickupOrder.Status.ADMIN_NEGOTIATION
+            if not order.assigned_vendor_id:
+                order.status = PickupOrder.Status.ADMIN_NEGOTIATION
             order.save(update_fields=['final_agreed_price', 'status', 'updated_at'])
             UserNotification.objects.create(
                 user=order.user, order=order,
@@ -1859,19 +1905,20 @@ def admin_action_view(request, action_path):
             )
             MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='PRICE_ACCEPTED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'amount': str(agreed)})
             if is_ajax:
-                return JsonResponse({'success': True, 'message': f'Price ₹{agreed} approved for {order.order_id}.'})
-            return redirect('/requests.html')
+                return JsonResponse({'success': True, 'message': f'Price ₹{agreed} approved for {order.order_id}.', 'final_agreed_price': str(agreed)})
+            return redirect(f'/request-detail.html?id={order.order_id}')
 
         # -------------------------------------------------------------
         # 2. MARKETPLACE PUBLICATION
         # -------------------------------------------------------------
-        publication_match = re.fullmatch(r'orders/([^/]+)/publish', action)
+        publication_match = re.fullmatch(r'(?:orders|requests)/([^/]+)/publish', action)
         if publication_match:
             order = PickupOrder.objects.filter(order_id=publication_match.group(1)).first()
             if not order:
                 return JsonResponse({'success': False, 'message': 'Pickup order not found.'}, status=404)
             if order.assigned_vendor_id or order.status not in (PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.SEARCHING_VENDOR):
                 return JsonResponse({'success': False, 'message': 'Assigned, completed or cancelled orders cannot be published.'}, status=409)
+
             accepted = order.negotiation_proposals.filter(is_accepted=True).exists()
             if not accepted or order.final_agreed_price is None:
                 if data.get('admin_override') == 'true':
@@ -1879,9 +1926,6 @@ def admin_action_view(request, action_path):
                         order.final_agreed_price = order.approx_price
                 else:
                     return JsonResponse({'success': False, 'message': 'User must accept a price proposal before publication.'}, status=409)
-            if order.status not in (PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.NEGOTIATION_PENDING):
-                if data.get('admin_override') != 'true':
-                    return JsonResponse({'success': False, 'message': 'Order is not ready for publication.'}, status=409)
 
             order.status = PickupOrder.Status.SEARCHING_VENDOR
             order.published_at = timezone.now()
@@ -1897,7 +1941,7 @@ def admin_action_view(request, action_path):
             MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='ORDER_PUBLISHED', entity_type='PickupOrder', entity_id=order.order_id, order=order, metadata={'acceptance_deadline': order.acceptance_deadline.isoformat()})
             if is_ajax:
                 return JsonResponse({'success': True, 'message': f'{order.order_id} published to vendors.'})
-            return redirect('/orders.html')
+            return redirect(f'/request-detail.html?id={order.order_id}')
 
         # -------------------------------------------------------------
         # 3. MANUAL / ASSISTED VENDOR ASSIGNMENT
@@ -1933,9 +1977,9 @@ def admin_action_view(request, action_path):
             return redirect(f'/order-detail.html?id={order.order_id}')
 
         # -------------------------------------------------------------
-        # 4. ORDER CANCELLATION
+        # 4. ORDER CANCELLATION / REJECTION
         # -------------------------------------------------------------
-        cancel_match = re.fullmatch(r'orders/([^/]+)/cancel', action)
+        cancel_match = re.fullmatch(r'(?:orders|requests)/([^/]+)/(?:cancel|reject)', action)
         if cancel_match:
             order = PickupOrder.objects.filter(order_id=cancel_match.group(1)).first()
             if order:
@@ -1944,7 +1988,7 @@ def admin_action_view(request, action_path):
                 UserNotification.objects.create(user=order.user, order=order, event_type=UserNotification.EventType.STATUS_UPDATED, title='Order cancelled', message=f'{order.order_id} was cancelled by administrator.')
                 if is_ajax:
                     return JsonResponse({'success': True, 'message': f'{order.order_id} cancelled.'})
-            return redirect('/orders.html')
+            return redirect(f'/request-detail.html?id={order.order_id}' if order else '/requests.html')
 
         # -------------------------------------------------------------
         # 5. CREATE ORDER MANUALLY (ADMIN DISPATCH)
