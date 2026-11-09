@@ -176,7 +176,7 @@
                   <span>•</span>
                   <span>Issued {{ invoice.paid_at|date:"d M Y, H:i"|default:invoice.order.created_at|date:"d M Y, H:i" }}</span>
                   <span>•</span>
-                  <span>Billed to: <strong class="text-slate-800">{{ invoice.order.assigned_vendor.shop_name|default:"Assigned Collector" }}</strong> ({{ invoice.order.assigned_vendor.city|default:invoice.order.address.city|default:"Service Area" }})</span>
+                  <span>Billed to: <strong class="text-slate-800">{{ invoice.order.assigned_vendor.shop_name|default:"Assigned Collector" }}</strong> ({% if invoice.order.assigned_vendor and invoice.order.assigned_vendor.city %}{{ invoice.order.assigned_vendor.city }}{% elif invoice.order.address and invoice.order.address.city %}{{ invoice.order.address.city }}{% else %}Service Area{% endif %})</span>
                 </div>
               </div>
             </div>
@@ -237,7 +237,13 @@
               <div class="text-xs pt-2 border-t border-slate-100">
                 <span class="text-slate-400 block font-medium">Billing Address</span>
                 <p class="text-slate-700 mt-0.5 leading-relaxed font-medium">
-                  {{ invoice.order.assigned_vendor.address|default:invoice.order.address.formatted_address|default:"Service Operations Base" }}
+                  {% if invoice.order.assigned_vendor and invoice.order.assigned_vendor.address %}
+                    {{ invoice.order.assigned_vendor.address }}
+                  {% elif invoice.order.address and invoice.order.address.formatted_address %}
+                    {{ invoice.order.address.formatted_address }}
+                  {% else %}
+                    Service Operations Base
+                  {% endif %}
                 </p>
               </div>
               <div class="text-xs pt-2 border-t border-slate-100 flex items-center justify-between">

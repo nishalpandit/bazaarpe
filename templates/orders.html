@@ -241,8 +241,14 @@
                     <span>📍</span>
                     <span>{{ order.address.city|default:"Area" }}</span>
                   </div>
-                  <div class="text-[0.75rem] text-slate-500 truncate max-w-[200px]" title="{{ order.address.formatted_address }}">
-                    {{ order.address.service_zone.name|default:order.address.formatted_address|default:"Service Zone" }}
+                  <div class="text-[0.75rem] text-slate-500 truncate max-w-[200px]" title="{% if order.address %}{{ order.address.formatted_address }}{% endif %}">
+                    {% if order.address and order.address.service_zone %}
+                      {{ order.address.service_zone.name }}
+                    {% elif order.address and order.address.formatted_address %}
+                      {{ order.address.formatted_address }}
+                    {% else %}
+                      Service Zone
+                    {% endif %}
                   </div>
                 </td>
                 <td class="text-right">
