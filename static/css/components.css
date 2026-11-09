@@ -1425,3 +1425,67 @@ a.bm-card:hover {
   vertical-align: middle !important;
 }
 
+/* Universal SVG and Table Layout Rules */
+.bm-table,
+table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+.bm-table th,
+table th {
+  padding: 10px 16px !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  white-space: nowrap !important;
+}
+.bm-table td,
+table td {
+  padding: 11px 16px !important;
+  vertical-align: middle !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 0.8125rem !important;
+}
+.bm-table tbody tr:hover,
+table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+.bm-table svg,
+table svg {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+  max-width: 16px !important;
+  max-height: 16px !important;
+}
+svg.h-3, svg.w-3 {
+  width: 12px !important;
+  height: 12px !important;
+  min-width: 12px !important;
+  max-width: 12px !important;
+}
+svg.h-3\.5, svg.w-3\.5 {
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  max-width: 14px !important;
+}
+svg.h-4, svg.w-4 {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  max-width: 16px !important;
+}
+svg.h-5, svg.w-5 {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  max-width: 20px !important;
+}
+
+
