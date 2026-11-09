@@ -94,7 +94,9 @@
       {% empty %}
       <tr><td colspan="5" class="py-6 text-center text-slate-400">No states configured.</td></tr>
       {% endfor %}
-      </tbody></table></div></div></section>
+      </tbody></table></div>
+      {% include "includes/pagination.html" with page_obj=state_page_obj paginator=state_paginator page_param='state_page' query_string=state_query_string item_label="states" %}
+      </div></section>
       </div>
       <div class="col-12 col-xl-6">
         <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Cities</h2></div><div class="flex flex-wrap items-center gap-2"><button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-open="modalAddCity">Add city</button></div></div><div class="bm-card-bd "><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[620px]">

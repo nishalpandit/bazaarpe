@@ -895,16 +895,28 @@ def page_view(request, page_name):
     if clean_name == 'categories':
         all_categories = list(ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name'))
         categories = ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name')
+
+        # Filter subcategories by category or query
+        selected_cat_id = request.GET.get('cat_id', '').strip()
+        sub_q = request.GET.get('sub_q', '').strip()
+
         cat_page_num = request.GET.get('cat_page', request.GET.get('page', 1))
-        cat_page_size = int(request.GET.get('cat_page_size', 8))
+        cat_page_size = int(request.GET.get('cat_page_size', 6))
         cat_paginator = Paginator(categories, cat_page_size)
         cat_page_obj = cat_paginator.get_page(cat_page_num)
+        cat_query_string = build_query_string(request, 'cat_page')
 
         subcategories_qs = ScrapSubCategory.objects.select_related('category').order_by('category__name', 'name')
+        if selected_cat_id:
+            subcategories_qs = subcategories_qs.filter(category_id=selected_cat_id)
+        if sub_q:
+            subcategories_qs = subcategories_qs.filter(name__icontains=sub_q)
+
         sub_page_num = request.GET.get('sub_page', 1)
-        sub_page_size = int(request.GET.get('sub_page_size', 12))
+        sub_page_size = int(request.GET.get('sub_page_size', 8))
         sub_paginator = Paginator(subcategories_qs, sub_page_size)
         sub_page_obj = sub_paginator.get_page(sub_page_num)
+        sub_query_string = build_query_string(request, 'sub_page')
 
         ctx = admin_context(
             request,
@@ -915,12 +927,17 @@ def page_view(request, page_name):
             paginator=cat_paginator,
             cat_page_obj=cat_page_obj,
             cat_paginator=cat_paginator,
+            cat_query_string=cat_query_string,
             total_categories=len(all_categories),
             subcategories=sub_page_obj.object_list,
-            all_subcategories=list(subcategories_qs),
+            all_subcategories=list(ScrapSubCategory.objects.select_related('category').order_by('category__name', 'name')),
             sub_page_obj=sub_page_obj,
             sub_paginator=sub_paginator,
-            total_subcategories=subcategories_qs.count(),
+            sub_query_string=sub_query_string,
+            total_subcategories=ScrapSubCategory.objects.count(),
+            filtered_subcategories_count=subcategories_qs.count(),
+            selected_cat_id=selected_cat_id,
+            sub_q=sub_q,
         )
         return render(request, 'categories.html', ctx)
 
@@ -928,7 +945,9 @@ def page_view(request, page_name):
     if clean_name == 'locations':
         cities = ServiceCity.objects.all().prefetch_related('zones').order_by('state', 'name')
         zones = ServiceZone.objects.all().select_related('city').order_by('city__name', 'name')
-        states_qs = ServiceCity.objects.values('state').distinct().annotate(cities_count=Count('id'))
+        
+        # Clear default ordering to accurately aggregate distinct states without row duplication
+        states_qs = ServiceCity.objects.order_by().values('state').annotate(cities_count=Count('id')).order_by('state')
         states = []
         for s in states_qs:
             state_name = s['state']
@@ -939,6 +958,12 @@ def page_view(request, page_name):
         all_cities = ServiceCity.objects.filter(is_active=True).order_by('state', 'name')
         if not all_cities.exists():
             all_cities = list(cities)
+
+        # Pagination for states
+        state_page_size = int(request.GET.get('state_page_size', 5))
+        state_paginator = Paginator(states, state_page_size)
+        state_page_obj = state_paginator.get_page(request.GET.get('state_page', 1))
+        state_query_string = build_query_string(request, 'state_page')
 
         # Separate pagination for cities
         city_page_size = int(request.GET.get('city_page_size', 5))
@@ -974,7 +999,11 @@ def page_view(request, page_name):
             vendor_area_page_obj=va_page_obj,
             vendor_area_paginator=va_paginator,
             vendor_query_string=va_query_string,
-            states=states,
+            states=state_page_obj.object_list,
+            state_page_obj=state_page_obj,
+            state_paginator=state_paginator,
+            state_query_string=state_query_string,
+            total_states=len(states),
             total_cities=cities.count(),
             total_zones=zones.count(),
             all_cities=all_cities,

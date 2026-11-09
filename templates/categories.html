@@ -3,23 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Categories · Bazaarpe Admin</title>
+  <title>Categories &amp; Rates · Bazaarpe Admin</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="/static/images/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Phosphor Icons CDN -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
   <link rel="stylesheet" href="/static/css/tailwind.css">
   <link rel="stylesheet" href="/static/css/components.css">
+  <style>
+    /* Remove any default button focus outline boxes */
+    button:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  </style>
 </head>
 <body class="" data-active="categories">
   <a href="#bmMain" class="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-white">Skip to content</a>
   
-    {% include 'includes/sidebar.html' %}
-    <div class="fixed inset-0 z-30 hidden bg-ink-900/30 lg:hidden" id="bmSidebarOverlay" data-sidebar-close aria-hidden="true"></div>
+  {% include 'includes/sidebar.html' %}
+  
+  <div class="fixed inset-0 z-30 hidden bg-ink-900/30 lg:hidden" id="bmSidebarOverlay" data-sidebar-close aria-hidden="true"></div>
+
   <div class="bm-main">
-    
     <header class="bm-topbar">
       <div class="flex items-center gap-2 px-3 py-2.5 sm:px-5">
         <button type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="bmSidebar">
@@ -27,9 +37,9 @@
         </button>
 
         <div class="hidden items-center gap-2 sm:flex">
-          <span class="text-[0.8125rem] font-medium text-slate-400">Bazaarpe</span>
-          <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></span>
-          <span class="text-[0.8125rem] font-semibold text-slate-700">Categories</span>
+          <a class="text-[0.8125rem] font-medium text-slate-400 hover:text-brand-700" href="index.html">Bazaarpe</a>
+          <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></span>
+          <span class="text-[0.8125rem] font-bold text-slate-800">Categories &amp; Scrap Rates</span>
         </div>
 
         <div class="ml-auto flex items-center gap-2" style="margin-left: auto !important;">
@@ -49,450 +59,489 @@
                   <span class="bm-perm-badge">Super Admin</span>
                 </div>
                 <p class="text-[0.6875rem] text-slate-500 font-medium mt-0.5 mb-1">admin@gmail.com</p>
-                <div class="flex items-center gap-1.5 text-[0.6875rem] text-emerald-700 font-semibold">
-                  <svg class="bm-shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                  <span>Full Permissions: Manage · Create · Edit · Delete</span>
-                </div>
               </div>
-              <a class="bm-dropdown-item" role="menuitem" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/></svg> Platform settings</a>
-              <a class="bm-dropdown-item" role="menuitem" href="/django-admin/" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg> Django Admin Console</a>
-              <a class="bm-dropdown-item bm-signout" role="menuitem" href="login.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h9"/></svg> Sign out</a>
+              <a class="bm-dropdown-item" role="menuitem" href="settings.html">Platform settings</a>
+              <a class="bm-dropdown-item bm-signout" role="menuitem" href="login.html">Sign out</a>
             </div>
           </div>
         </div>
       </div>
     </header>
+
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
       
-    
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <h1 class="text-[1.0625rem] font-bold text-slate-800 tracking-tight">Categories & Rates</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" class="bm-btn-primary bm-btn-sm" data-modal-open="modalAddCategory">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add category
-        </button>
-        <button type="button" class="bm-btn-ghost bm-btn-sm text-emerald-700 hover:bg-emerald-50" data-modal-open="modalAddSub">
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add subcategory & rate
-        </button>
-      </div>
-    </div>
-
-    <!-- 1. CATEGORIES LIST -->
-    <div class="mt-3">
-      <section class="bm-card">
-        <div class="bm-card-hd flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <h2 class="bm-card-title">Categories</h2>
-            <span class="rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[0.6875rem] font-bold text-slate-600">{{ total_categories|default:categories|length }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="bm-btn-primary bm-btn-sm" data-modal-open="modalAddCategory">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add category
-            </button>
-          </div>
+      <!-- Top Title Bar -->
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">Categories &amp; Rates</h1>
+          <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+            {{ total_categories }} Categories · {{ total_subcategories }} Subcategories
+          </span>
         </div>
-        <div class="bm-card-bd p-0">
-          <div class="bm-table-wrap bm-scroll">
-            <table class="bm-table min-w-[720px]">
-              <thead>
-                <tr>
-                  <th scope="col" style="width: 280px;">Category</th>
-                  <th scope="col">Subcategories</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="text-right" style="width: 200px;">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-              {% for cat in categories %}
-                <tr class="hover:bg-slate-50/80 transition">
-                  <td class="py-3">
-                    <div class="flex items-center gap-2.5">
-                      <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center font-mono font-bold text-xs shrink-0">
-                        {{ forloop.counter }}
-                      </div>
-                      <div>
-                        <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                          {{ cat.name }}
-                          <button type="button" class="text-slate-400 hover:text-emerald-700 p-0.5 rounded hover:bg-slate-100 transition-colors" title="Edit Category {{ cat.name }}" data-edit-category data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-status="{% if cat.is_active %}active{% else %}inactive{% endif %}">
-                            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="bm-btn-primary bm-btn-sm font-bold shadow-xs" data-modal-open="modalAddCategory">
+            <i class="ph-bold ph-plus text-sm"></i>
+            <span>Add Category</span>
+          </button>
+          <button type="button" class="bm-btn-ghost bm-btn-sm font-bold text-emerald-800 border-emerald-300 hover:bg-emerald-50" data-modal-open="modalAddSub">
+            <i class="ph-bold ph-tag text-sm text-emerald-700"></i>
+            <span>Add Subcategory &amp; Rate</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modern 2-Column Symmetrical Grid (Categories on Left, Subcategories on Right) -->
+      <div class="row g-3">
+        
+        <!-- LEFT COLUMN: Categories List -->
+        <div class="col-12 col-xl-5">
+          <section class="bm-card overflow-hidden shadow-xs border border-slate-200 h-full flex flex-col justify-between">
+            <div>
+              <div class="bm-card-hd flex items-center justify-between py-3 px-4 bg-slate-50/70 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <i class="ph-fill ph-tag text-emerald-700 text-base"></i>
+                  <h2 class="text-sm font-bold text-slate-900">Scrap Categories</h2>
+                  <span class="rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[0.6875rem] font-bold text-slate-600">{{ total_categories }}</span>
+                </div>
+                <button type="button" class="bm-btn-ghost bm-btn-sm font-bold text-xs" data-modal-open="modalAddCategory">
+                  + Add Category
+                </button>
+              </div>
+
+              <div class="bm-card-bd p-0">
+                <div class="bm-table-wrap bm-scroll">
+                  <table class="bm-table min-w-[480px]">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="width: 200px;">Category</th>
+                        <th scope="col">Subcategories</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-right" style="width: 140px;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for cat in categories %}
+                      <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-2.5">
+                          <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                              {{ forloop.counter }}
+                            </div>
+                            <div>
+                              <div class="font-bold text-slate-900 text-sm flex items-center gap-1">
+                                <a href="categories.html?cat_id={{ cat.id }}" class="hover:text-emerald-700 hover:underline {% if selected_cat_id == cat.id|stringformat:'s' %}text-emerald-700 font-extrabold{% endif %}" title="Filter subcategories by {{ cat.name }}">
+                                  {{ cat.name }}
+                                </a>
+                                <button type="button" class="text-slate-400 hover:text-emerald-700 p-0.5 rounded hover:bg-slate-100 transition-colors" title="Edit Category {{ cat.name }}" data-edit-category data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-status="{% if cat.is_active %}active{% else %}inactive{% endif %}">
+                                  <i class="ph-bold ph-pencil-simple text-xs"></i>
+                                </button>
+                              </div>
+                              <div class="font-mono text-[0.6875rem] text-slate-400">CAT-0{{ cat.id }}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="py-2.5">
+                          <a href="categories.html?cat_id={{ cat.id }}" class="rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-200 border border-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700 inline-block transition">
+                            {{ cat.subcategories.count }} types
+                          </a>
+                        </td>
+                        <td class="py-2.5">
+                          {% if cat.is_active %}
+                            <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold"><span class="bm-dot"></span>Active</span>
+                          {% else %}
+                            <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20 font-bold"><span class="bm-dot"></span>Inactive</span>
+                          {% endif %}
+                        </td>
+                        <td class="py-2.5 text-right">
+                          <div class="flex items-center justify-end gap-1">
+                            <button type="button" class="bm-btn-ghost bm-btn-sm text-emerald-700 hover:bg-emerald-50 font-bold px-2 py-1 text-xs" data-modal-open="modalAddSub" onclick="var sel=document.getElementById('modalAddSub-f-category_id'); if(sel) sel.value='{{ cat.id }}';" title="Add subcategory to {{ cat.name }}">
+                              + Add Sub
+                            </button>
+                            <button type="button" class="bm-btn-ghost bm-btn-sm text-slate-600 hover:bg-slate-100 px-2 py-1 text-xs" data-edit-category data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-status="{% if cat.is_active %}active{% else %}inactive{% endif %}" title="Edit category">
+                              <i class="ph-bold ph-pencil-simple"></i>
+                            </button>
+                            <button type="button" class="bm-btn-danger bm-btn-sm px-2 py-1 text-xs" data-action="delete-category" data-item-name="{{ cat.name }}" title="Delete category">
+                              <i class="ph-bold ph-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs">No categories configured yet.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Categories Pagination -->
+            {% include "includes/pagination.html" with page_obj=cat_page_obj paginator=cat_paginator page_param='cat_page' query_string=cat_query_string item_label="categories" %}
+          </section>
+        </div>
+
+        <!-- RIGHT COLUMN: Subcategories & Scrap Rates List -->
+        <div class="col-12 col-xl-7">
+          <section class="bm-card overflow-hidden shadow-xs border border-slate-200 h-full flex flex-col justify-between">
+            <div>
+              <div class="bm-card-hd flex items-center justify-between py-3 px-4 bg-slate-50/70 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <i class="ph-fill ph-scales text-emerald-700 text-base"></i>
+                  <h2 class="text-sm font-bold text-slate-900">Subcategories &amp; Scrap Rates</h2>
+                  <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[0.6875rem] font-bold text-emerald-800">
+                    {{ filtered_subcategories_count|default:total_subcategories }}
+                  </span>
+                </div>
+                <button type="button" class="bm-btn-primary bm-btn-sm font-bold text-xs" data-modal-open="modalAddSub">
+                  + Add Subcategory
+                </button>
+              </div>
+
+              <!-- Quick Filter Bar by Parent Category -->
+              <div class="px-3.5 py-2 bg-slate-50/60 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="text-slate-400 text-[11px] font-semibold mr-0.5">Filter:</span>
+                  <a href="categories.html?{% if sub_q %}sub_q={{ sub_q }}&{% endif %}" class="px-2.5 py-0.5 rounded-full text-xs font-bold transition {% if not selected_cat_id %}bg-emerald-700 text-white shadow-2xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-100{% endif %}">
+                    All ({{ total_subcategories }})
+                  </a>
+                  {% for cat in all_categories %}
+                    <a href="categories.html?cat_id={{ cat.id }}{% if sub_q %}&sub_q={{ sub_q }}{% endif %}" class="px-2.5 py-0.5 rounded-full text-xs font-bold transition {% if selected_cat_id == cat.id|stringformat:'s' %}bg-emerald-700 text-white shadow-2xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-100{% endif %}">
+                      {{ cat.name }} ({{ cat.subcategories.count }})
+                    </a>
+                  {% endfor %}
+                </div>
+
+                <!-- Subcategory quick search -->
+                <form method="get" action="categories.html" class="flex items-center gap-1.5">
+                  {% if selected_cat_id %}<input type="hidden" name="cat_id" value="{{ selected_cat_id }}">{% endif %}
+                  <div class="relative">
+                    <input type="text" name="sub_q" value="{{ sub_q|default:'' }}" placeholder="Search grade..." class="text-xs py-1 pl-6 pr-2 rounded border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 w-36 sm:w-44">
+                    <i class="ph-bold ph-magnifying-glass absolute left-2 top-1.5 text-slate-400 text-xs"></i>
+                  </div>
+                  {% if sub_q %}
+                    <a href="categories.html{% if selected_cat_id %}?cat_id={{ selected_cat_id }}{% endif %}" class="text-slate-400 hover:text-slate-700 text-xs" title="Clear search">✕</a>
+                  {% endif %}
+                </form>
+              </div>
+
+              <div class="bm-card-bd p-0">
+                <div class="bm-table-wrap bm-scroll">
+                  <table class="bm-table min-w-[660px]">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="width: 200px;">Subcategory</th>
+                        <th scope="col">Parent Category</th>
+                        <th scope="col">Scrap Buying Rate</th>
+                        <th scope="col">GST &amp; Min</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-right" style="width: 140px;">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for sub in subcategories %}
+                      <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-2.5">
+                          <button type="button" 
+                            class="text-left font-bold text-slate-900 text-sm hover:text-emerald-700 transition border-0 bg-transparent p-0 block focus:outline-none focus:ring-0 cursor-pointer"
+                            data-edit-subcategory
+                            data-id="{{ sub.id }}"
+                            data-name="{{ sub.name }}"
+                            data-category-id="{{ sub.category.id }}"
+                            data-category-name="{{ sub.category.name }}"
+                            data-rate="{{ sub.rate_per_kg }}"
+                            data-gst="{{ sub.gst_percent }}"
+                            data-min="{{ sub.min_weight_kg }}"
+                            data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}"
+                            title="Click to edit subcategory details">
+                            {{ sub.name }}
                           </button>
-                        </div>
-                        <div class="bm-mono text-[0.72rem] text-slate-400">CAT-0{{ cat.id }}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="py-3">
-                    <span class="rounded-full bg-slate-100 border border-slate-200/80 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                      {{ cat.subcategories.count }} types configured
-                    </span>
-                  </td>
-                  <td class="py-3">
-                    {% if cat.is_active %}
-                      <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold"><span class="bm-dot"></span>Active</span>
-                    {% else %}
-                      <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20 font-bold"><span class="bm-dot"></span>Inactive</span>
-                    {% endif %}
-                  </td>
-                  <td class="py-3 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <button type="button" class="bm-btn-ghost bm-btn-sm inline-flex items-center gap-1 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 font-bold" data-modal-open="modalAddSub" onclick="var sel=document.getElementById('modalAddSub-f-category_id'); if(sel) sel.value='{{ cat.id }}';">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Sub
-                      </button>
-                      <button type="button" class="bm-btn-ghost bm-btn-sm text-slate-600 font-bold" data-edit-category data-id="{{ cat.id }}" data-name="{{ cat.name }}" data-status="{% if cat.is_active %}active{% else %}inactive{% endif %}">
-                        Edit
-                      </button>
-                      <button type="button" class="bm-btn-danger bm-btn-sm font-bold" data-action="delete-category" data-item-name="{{ cat.name }}">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="4" class="py-8 text-center text-slate-400">No categories configured yet.</td></tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% include "includes/pagination.html" with page_obj=cat_page_obj paginator=cat_paginator page_param='cat_page' item_label="categories" %}
+                          <div class="font-mono text-[0.6875rem] text-slate-400">SUB-0{{ sub.id }}</div>
+                        </td>
+                        <td class="py-2.5">
+                          <span class="bm-tag text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            {{ sub.category.name }}
+                          </span>
+                        </td>
+                        <td class="py-2.5">
+                          <button type="button"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 text-xs font-mono font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition cursor-pointer focus:outline-none focus:ring-0"
+                            title="Click to edit buying rate"
+                            data-edit-subcategory
+                            data-id="{{ sub.id }}"
+                            data-name="{{ sub.name }}"
+                            data-category-id="{{ sub.category.id }}"
+                            data-category-name="{{ sub.category.name }}"
+                            data-rate="{{ sub.rate_per_kg }}"
+                            data-gst="{{ sub.gst_percent }}"
+                            data-min="{{ sub.min_weight_kg }}"
+                            data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
+                            <span class="text-sm font-extrabold text-emerald-900">₹{{ sub.rate_per_kg }}</span>
+                            <span class="text-emerald-700 text-[0.6875rem]">/kg</span>
+                            <i class="ph-bold ph-pencil-simple text-emerald-600 text-[10px]"></i>
+                          </button>
+                        </td>
+                        <td class="py-2.5">
+                          <span class="text-xs font-mono text-slate-600">{{ sub.gst_percent }}% GST · Min {{ sub.min_weight_kg }}kg</span>
+                        </td>
+                        <td class="py-2.5">
+                          {% if sub.is_active %}
+                            <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold"><span class="bm-dot"></span>Active</span>
+                          {% else %}
+                            <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20 font-bold"><span class="bm-dot"></span>Inactive</span>
+                          {% endif %}
+                        </td>
+                        <td class="py-2.5 text-right">
+                          <div class="flex items-center justify-end gap-1.5">
+                            <button type="button" 
+                              class="bm-btn-ghost bm-btn-sm font-bold text-emerald-700 hover:bg-emerald-50 text-xs px-2 py-1"
+                              data-edit-subcategory
+                              data-id="{{ sub.id }}"
+                              data-name="{{ sub.name }}"
+                              data-category-id="{{ sub.category.id }}"
+                              data-category-name="{{ sub.category.name }}"
+                              data-rate="{{ sub.rate_per_kg }}"
+                              data-gst="{{ sub.gst_percent }}"
+                              data-min="{{ sub.min_weight_kg }}"
+                              data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
+                              Edit Rate
+                            </button>
+                            <button type="button" class="bm-btn-danger bm-btn-sm px-2 py-1 text-xs" data-action="delete-subcategory" data-sub-id="{{ sub.id }}" data-item-name="{{ sub.name }}" title="Delete subcategory">
+                              <i class="ph-bold ph-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs">No subcategories matching criteria. Click '+ Add Subcategory' above.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Subcategories Pagination -->
+            {% include "includes/pagination.html" with page_obj=sub_page_obj paginator=sub_paginator page_param='sub_page' query_string=sub_query_string item_label="subcategories" %}
+          </section>
         </div>
-      </section>
-    </div>
 
-    <!-- 2. SUBCATEGORIES & SCRAP RATES LIST -->
-    <div class="mt-4">
-      <section class="bm-card">
-        <div class="bm-card-hd flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <h2 class="bm-card-title">Subcategories & Scrap Rates</h2>
-            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[0.6875rem] font-bold text-emerald-800">{{ total_subcategories|default:subcategories|length }}</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <button type="button" class="bm-btn-primary bm-btn-sm" data-modal-open="modalAddSub">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add Subcategory & Rate
-            </button>
-          </div>
-        </div>
-        <div class="bm-card-bd p-0">
-          <div class="bm-table-wrap bm-scroll">
-            <table class="bm-table min-w-[880px]">
-              <thead>
-                <tr>
-                  <th scope="col" style="width: 220px;">Subcategory</th>
-                  <th scope="col">Parent Category</th>
-                  <th scope="col">Scrap Buying Rate (₹ / kg)</th>
-                  <th scope="col">GST (%)</th>
-                  <th scope="col">Min Weight</th>
-                  <th scope="col">Status</th>
-                  <th scope="col" class="text-right" style="width: 170px;">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-              {% for sub in subcategories %}
-                <tr class="hover:bg-slate-50/80 transition">
-                  <td class="py-3">
-                    <button type="button" 
-                      class="text-left font-bold text-slate-900 text-sm hover:text-emerald-700 transition"
-                      data-edit-subcategory
-                      data-id="{{ sub.id }}"
-                      data-name="{{ sub.name }}"
-                      data-category-id="{{ sub.category.id }}"
-                      data-category-name="{{ sub.category.name }}"
-                      data-rate="{{ sub.rate_per_kg }}"
-                      data-gst="{{ sub.gst_percent }}"
-                      data-min="{{ sub.min_weight_kg }}"
-                      data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
-                      {{ sub.name }}
-                    </button>
-                    <div class="bm-mono text-[0.72rem] text-slate-400">SUB-0{{ sub.id }}</div>
-                  </td>
-                  <td class="py-3">
-                    <span class="bm-tag text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                      {{ sub.category.name }}
-                    </span>
-                  </td>
-                  <td class="py-3">
-                    <button type="button"
-                      class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-300 px-2.5 py-1 text-xs font-mono font-bold text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition"
-                      title="Click to edit rate"
-                      data-edit-subcategory
-                      data-id="{{ sub.id }}"
-                      data-name="{{ sub.name }}"
-                      data-category-id="{{ sub.category.id }}"
-                      data-category-name="{{ sub.category.name }}"
-                      data-rate="{{ sub.rate_per_kg }}"
-                      data-gst="{{ sub.gst_percent }}"
-                      data-min="{{ sub.min_weight_kg }}"
-                      data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
-                      <span class="text-sm font-extrabold text-emerald-900">₹{{ sub.rate_per_kg }}</span>
-                      <span class="text-emerald-700 text-[0.6875rem]">/ kg</span>
-                      <svg class="h-3 w-3 text-emerald-600 ml-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                    </button>
-                  </td>
-                  <td class="py-3">
-                    <span class="text-xs font-mono font-bold text-slate-700">{{ sub.gst_percent }}%</span>
-                  </td>
-                  <td class="py-3">
-                    <span class="text-xs font-mono font-bold text-slate-700">{{ sub.min_weight_kg }} kg</span>
-                  </td>
-                  <td class="py-3">
-                    {% if sub.is_active %}
-                      <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold"><span class="bm-dot"></span>Active</span>
-                    {% else %}
-                      <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20 font-bold"><span class="bm-dot"></span>Inactive</span>
-                    {% endif %}
-                  </td>
-                  <td class="py-3 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <button type="button" 
-                        class="bm-btn-ghost bm-btn-sm font-bold text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
-                        data-edit-subcategory
-                        data-id="{{ sub.id }}"
-                        data-name="{{ sub.name }}"
-                        data-category-id="{{ sub.category.id }}"
-                        data-category-name="{{ sub.category.name }}"
-                        data-rate="{{ sub.rate_per_kg }}"
-                        data-gst="{{ sub.gst_percent }}"
-                        data-min="{{ sub.min_weight_kg }}"
-                        data-status="{% if sub.is_active %}active{% else %}inactive{% endif %}">
-                        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                        Edit Rate
-                      </button>
-                      <button type="button" class="bm-btn-danger bm-btn-sm font-bold" data-action="delete-subcategory" data-sub-id="{{ sub.id }}" data-item-name="{{ sub.name }}">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              {% empty %}
-                <tr><td colspan="7" class="py-8 text-center text-slate-400">No subcategories configured yet. Click 'Add Subcategory & Rate' above.</td></tr>
-              {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% include "includes/pagination.html" with page_obj=sub_page_obj paginator=sub_paginator page_param='sub_page' item_label="subcategories" %}
-        </div>
-      </section>
-    </div>
-
-    <!-- Modal: Add Category -->
-    <div class="bm-modal-backdrop" id="modalAddCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddCategory-title" aria-hidden="true">
-      <div class="bm-modal" role="document">
-        <form method="post" action="/admin/categories/create" data-admin-form>
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <h2 class="text-base font-bold text-slate-800" id="modalAddCategory-title">Add Category</h2>
-            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-          </div>
-          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
-            <div>
-              <label class="bm-label font-semibold" for="modalAddCategory-f-name">Category name <span class="text-rose-600">*</span></label>
-              <input class="bm-input mt-1" id="modalAddCategory-f-name" name="name" type="text" placeholder="e.g. Brass, Copper, Tires" required>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="modalAddCategory-f-description">Description</label>
-              <textarea class="bm-textarea mt-1" id="modalAddCategory-f-description" name="description" rows="2" placeholder="Internal notes or material guidelines"></textarea>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="modalAddCategory-f-status">Status <span class="text-rose-600">*</span></label>
-              <select class="bm-select mt-1" id="modalAddCategory-f-status" name="status" required>
-                <option value="active" selected>Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
-            <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="bm-btn-primary">Create category</button>
-          </div>
-          <input type="hidden" name="_token" value="">
-        </form>
       </div>
-    </div>
 
-    <!-- Modal: Edit Category -->
-    <div class="bm-modal-backdrop" id="modalEditCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditCategory-title" aria-hidden="true">
-      <div class="bm-modal" role="document">
-        <form method="post" action="/admin/categories/edit" data-admin-form>
-          <input type="hidden" name="category_id" id="editCat-id" value="">
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div>
-              <h2 class="text-base font-bold text-slate-800" id="modalEditCategory-title">Edit Category</h2>
+      <!-- Modal: Add Category -->
+      <div class="bm-modal-backdrop" id="modalAddCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddCategory-title" aria-hidden="true">
+        <div class="bm-modal" role="document">
+          <form method="post" action="/admin/categories/create" data-admin-form>
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <h2 class="text-base font-bold text-slate-800" id="modalAddCategory-title">Add Category</h2>
+              <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
             </div>
-            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-          </div>
-          <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
-            <div>
-              <label class="bm-label font-semibold" for="editCat-name">Category name <span class="text-rose-600">*</span></label>
-              <input class="bm-input mt-1" id="editCat-name" name="name" type="text" required>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="editCat-status">Status <span class="text-rose-600">*</span></label>
-              <select class="bm-select mt-1" id="editCat-status" name="status" required>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
-            <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="bm-btn-primary">Save Changes</button>
-          </div>
-          <input type="hidden" name="_token" value="">
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal: Add Subcategory & Set Scrap Rate -->
-    <div class="bm-modal-backdrop" id="modalAddSub" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddSub-title" aria-hidden="true">
-      <div class="bm-modal" role="document">
-        <form method="post" action="/admin/categories/subcategory" data-admin-form>
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div>
-              <h2 class="text-base font-bold text-slate-800" id="modalAddSub-title">Add Subcategory & Set Rate</h2>
-            </div>
-            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-          </div>
-          <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
-            <div>
-              <label class="bm-label font-semibold" for="modalAddSub-f-category_id">Parent Category <span class="text-rose-600">*</span></label>
-              <select class="bm-select mt-1" id="modalAddSub-f-category_id" name="category_id" required>
-                {% for cat in all_categories|default:categories %}
-                  <option value="{{ cat.id }}">{{ cat.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="modalAddSub-f-name">Subcategory Name <span class="text-rose-600">*</span></label>
-              <input class="bm-input mt-1" id="modalAddSub-f-name" name="name" type="text" placeholder="e.g. Copper Wire, GI Sheets, Carton" required>
-            </div>
-            <div class="rounded-xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/80 p-3.5 space-y-1.5">
-              <label class="bm-label text-emerald-950 font-bold" for="modalAddSub-f-rate">
-                Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
-              </label>
-              <div class="relative mt-1">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-lg select-none">₹</span>
-                <input class="bm-input pl-8 font-mono font-bold text-slate-900 text-base bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="modalAddSub-f-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="e.g. 180.00" required>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3.5">
+            <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
               <div>
-                <label class="bm-label font-semibold" for="modalAddSub-f-gst">GST (%)</label>
-                <div class="relative mt-1">
-                  <input class="bm-input font-mono" id="modalAddSub-f-gst" name="gst_percent" type="number" step="0.01" min="0" value="18.00" placeholder="18.00">
-                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
-                </div>
+                <label class="bm-label font-semibold" for="modalAddCategory-f-name">Category name <span class="text-rose-600">*</span></label>
+                <input class="bm-input mt-1" id="modalAddCategory-f-name" name="name" type="text" placeholder="e.g. Brass, Copper, Tires" required>
               </div>
               <div>
-                <label class="bm-label font-semibold" for="modalAddSub-f-min">Min Weight (kg)</label>
-                <div class="relative mt-1">
-                  <input class="bm-input font-mono" id="modalAddSub-f-min" name="min_weight_kg" type="number" step="0.1" min="0.1" value="5.0" placeholder="5.0">
-                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="modalAddSub-f-status">Status <span class="text-rose-600">*</span></label>
-              <select class="bm-select mt-1" id="modalAddSub-f-status" name="status" required>
-                <option value="active" selected>Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
-            <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-            <button type="submit" class="bm-btn-primary">Create Subcategory & Set Rate</button>
-          </div>
-          <input type="hidden" name="_token" value="">
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal: Edit Subcategory & Rate -->
-    <div class="bm-modal-backdrop" id="modalEditSubCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditSubCategory-title" aria-hidden="true">
-      <div class="bm-modal" role="document">
-        <form method="post" action="/admin/categories/subcategory" data-admin-form>
-          <input type="hidden" name="sub_id" id="editSub-id" value="">
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-base font-bold text-slate-800" id="modalEditSubCategory-title">Edit Subcategory & Rate</h2>
-                <span class="font-mono text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold" id="editSub-badge">SUB-ID</span>
-              </div>
-            </div>
-            <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-          </div>
-          <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
-            <div>
-              <label class="bm-label font-semibold" for="editSub-category_id">Parent Category <span class="text-rose-600">*</span></label>
-              <select class="bm-select mt-1" id="editSub-category_id" name="category_id" required>
-                {% for cat in all_categories|default:categories %}
-                  <option value="{{ cat.id }}">{{ cat.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div>
-              <label class="bm-label font-semibold" for="editSub-name">Subcategory Name <span class="text-rose-600">*</span></label>
-              <input class="bm-input mt-1" id="editSub-name" name="name" type="text" required>
-            </div>
-            <div class="rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-200/90 p-4 space-y-2">
-              <label class="bm-label text-emerald-950 font-bold" for="editSub-rate">
-                Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
-              </label>
-              <div class="relative mt-1">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-xl select-none">₹</span>
-                <input class="bm-input pl-8 font-mono font-bold text-emerald-900 text-lg bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="editSub-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="0.00" required>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3.5">
-              <div>
-                <label class="bm-label font-semibold" for="editSub-gst">GST (%)</label>
-                <div class="relative mt-1">
-                  <input class="bm-input font-mono" id="editSub-gst" name="gst_percent" type="number" step="0.01" min="0" placeholder="18.00">
-                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
-                </div>
+                <label class="bm-label font-semibold" for="modalAddCategory-f-description">Description</label>
+                <textarea class="bm-textarea mt-1" id="modalAddCategory-f-description" name="description" rows="2" placeholder="Internal notes or material guidelines"></textarea>
               </div>
               <div>
-                <label class="bm-label font-semibold" for="editSub-min">Min Weight (kg)</label>
-                <div class="relative mt-1">
-                  <input class="bm-input font-mono" id="editSub-min" name="min_weight_kg" type="number" step="0.1" min="0.1" placeholder="5.0">
-                  <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
-                </div>
+                <label class="bm-label font-semibold" for="modalAddCategory-f-status">Status <span class="text-rose-600">*</span></label>
+                <select class="bm-select mt-1" id="modalAddCategory-f-status" name="status" required>
+                  <option value="active" selected>Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
               </div>
             </div>
-            <div>
-              <label class="bm-label font-semibold" for="editSub-status">Status</label>
-              <select class="bm-select mt-1" id="editSub-status" name="status">
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-          </div>
-          <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
-            <button type="button" class="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-rose-50 transition-colors" id="btnDeleteSubCategory">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-              Delete Subcategory
-            </button>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
               <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
-              <button type="submit" class="bm-btn-primary">Update Rate & Details</button>
+              <button type="submit" class="bm-btn-primary">Create category</button>
             </div>
-          </div>
-          <input type="hidden" name="_token" value="">
-        </form>
+            <input type="hidden" name="_token" value="">
+          </form>
+        </div>
       </div>
-    </div>
+
+      <!-- Modal: Edit Category -->
+      <div class="bm-modal-backdrop" id="modalEditCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditCategory-title" aria-hidden="true">
+        <div class="bm-modal" role="document">
+          <form method="post" action="/admin/categories/edit" data-admin-form>
+            <input type="hidden" name="category_id" id="editCat-id" value="">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 class="text-base font-bold text-slate-800" id="modalEditCategory-title">Edit Category</h2>
+              </div>
+              <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll p-5 space-y-3.5">
+              <div>
+                <label class="bm-label font-semibold" for="editCat-name">Category name <span class="text-rose-600">*</span></label>
+                <input class="bm-input mt-1" id="editCat-name" name="name" type="text" required>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="editCat-status">Status <span class="text-rose-600">*</span></label>
+                <select class="bm-select mt-1" id="editCat-status" name="status" required>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
+              <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
+              <button type="submit" class="bm-btn-primary">Save Changes</button>
+            </div>
+            <input type="hidden" name="_token" value="">
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Add Subcategory & Set Scrap Rate -->
+      <div class="bm-modal-backdrop" id="modalAddSub" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddSub-title" aria-hidden="true">
+        <div class="bm-modal" role="document">
+          <form method="post" action="/admin/categories/subcategory" data-admin-form>
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 class="text-base font-bold text-slate-800" id="modalAddSub-title">Add Subcategory &amp; Set Rate</h2>
+              </div>
+              <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
+              <div>
+                <label class="bm-label font-semibold" for="modalAddSub-f-category_id">Parent Category <span class="text-rose-600">*</span></label>
+                <select class="bm-select mt-1" id="modalAddSub-f-category_id" name="category_id" required>
+                  {% for cat in all_categories|default:categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="modalAddSub-f-name">Subcategory Name <span class="text-rose-600">*</span></label>
+                <input class="bm-input mt-1" id="modalAddSub-f-name" name="name" type="text" placeholder="e.g. Copper Wire, GI Sheets, Carton" required>
+              </div>
+              <div class="rounded-xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/80 p-3.5 space-y-1.5">
+                <label class="bm-label text-emerald-950 font-bold" for="modalAddSub-f-rate">
+                  Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
+                </label>
+                <div class="relative mt-1">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-lg select-none">₹</span>
+                  <input class="bm-input pl-8 font-mono font-bold text-slate-900 text-base bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="modalAddSub-f-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="e.g. 180.00" required>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label class="bm-label font-semibold" for="modalAddSub-f-gst">GST (%)</label>
+                  <div class="relative mt-1">
+                    <input class="bm-input font-mono" id="modalAddSub-f-gst" name="gst_percent" type="number" step="0.01" min="0" value="18.00" placeholder="18.00">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="bm-label font-semibold" for="modalAddSub-f-min">Min Weight (kg)</label>
+                  <div class="relative mt-1">
+                    <input class="bm-input font-mono" id="modalAddSub-f-min" name="min_weight_kg" type="number" step="0.1" min="0.1" value="5.0" placeholder="5.0">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="modalAddSub-f-status">Status <span class="text-rose-600">*</span></label>
+                <select class="bm-select mt-1" id="modalAddSub-f-status" name="status" required>
+                  <option value="active" selected>Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
+              <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
+              <button type="submit" class="bm-btn-primary">Create Subcategory &amp; Set Rate</button>
+            </div>
+            <input type="hidden" name="_token" value="">
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Subcategory & Rate -->
+      <div class="bm-modal-backdrop" id="modalEditSubCategory" data-modal role="dialog" aria-modal="true" aria-labelledby="modalEditSubCategory-title" aria-hidden="true">
+        <div class="bm-modal" role="document">
+          <form method="post" action="/admin/categories/subcategory" data-admin-form>
+            <input type="hidden" name="sub_id" id="editSub-id" value="">
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="text-base font-bold text-slate-800" id="modalEditSubCategory-title">Edit Subcategory &amp; Rate</h2>
+                  <span class="font-mono text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold" id="editSub-badge">SUB-ID</span>
+                </div>
+              </div>
+              <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="bm-card-bd max-h-[70vh] overflow-y-auto bm-scroll p-5 space-y-4">
+              <div>
+                <label class="bm-label font-semibold" for="editSub-category_id">Parent Category <span class="text-rose-600">*</span></label>
+                <select class="bm-select mt-1" id="editSub-category_id" name="category_id" required>
+                  {% for cat in all_categories|default:categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="editSub-name">Subcategory Name <span class="text-rose-600">*</span></label>
+                <input class="bm-input mt-1" id="editSub-name" name="name" type="text" required>
+              </div>
+              <div class="rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-200/90 p-4 space-y-2">
+                <label class="bm-label text-emerald-950 font-bold" for="editSub-rate">
+                  Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
+                </label>
+                <div class="relative mt-1">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-xl select-none">₹</span>
+                  <input class="bm-input pl-8 font-mono font-bold text-emerald-900 text-lg bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="editSub-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="0.00" required>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label class="bm-label font-semibold" for="editSub-gst">GST (%)</label>
+                  <div class="relative mt-1">
+                    <input class="bm-input font-mono" id="editSub-gst" name="gst_percent" type="number" step="0.01" min="0" placeholder="18.00">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="bm-label font-semibold" for="editSub-min">Min Weight (kg)</label>
+                  <div class="relative mt-1">
+                    <input class="bm-input font-mono" id="editSub-min" name="min_weight_kg" type="number" step="0.1" min="0.1" placeholder="5.0">
+                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">kg</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="bm-label font-semibold" for="editSub-status">Status</label>
+                <select class="bm-select mt-1" id="editSub-status" name="status">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-5 py-3.5">
+              <button type="button" class="text-xs text-rose-600 hover:text-rose-700 font-semibold inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg hover:bg-rose-50 transition-colors" id="btnDeleteSubCategory">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+                Delete Subcategory
+              </button>
+              <div class="flex items-center gap-2">
+                <button type="button" class="bm-btn-ghost" data-modal-close>Cancel</button>
+                <button type="submit" class="bm-btn-primary">Update Rate &amp; Details</button>
+              </div>
+            </div>
+            <input type="hidden" name="_token" value="">
+          </form>
+        </div>
+      </div>
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
       <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup & Vendor Marketplace</p>
-        <p class="flex items-center gap-3">
-          <a class="hover:text-brand-700" href="../docs/backend-integration.md">Backend integration</a>
-        </p>
+        <p>© Bazaarpe Admin · Scrap Pickup &amp; Vendor Marketplace</p>
       </div>
     </footer>
   </div>
+
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
   <script src="/static/js/app.js"></script>
@@ -511,12 +560,10 @@
         const fId = document.getElementById('editCat-id');
         const fName = document.getElementById('editCat-name');
         const fStatus = document.getElementById('editCat-status');
-        const fSub = document.getElementById('editCat-subtitle');
 
         if (fId) fId.value = catId;
         if (fName) fName.value = catName;
         if (fStatus) fStatus.value = catStatus;
-        if (fSub) fSub.textContent = 'Editing CAT-0' + catId + ' (' + catName + ')';
 
         const modal = document.getElementById('modalEditCategory');
         if (modal) {
@@ -536,7 +583,6 @@
         const subId = pill.getAttribute('data-id') || '';
         const name = pill.getAttribute('data-name') || '';
         const catId = pill.getAttribute('data-category-id') || '';
-        const catName = pill.getAttribute('data-category-name') || '';
         const rate = pill.getAttribute('data-rate') || '0.00';
         const gst = pill.getAttribute('data-gst') || '18.00';
         const minWeight = pill.getAttribute('data-min') || '5.00';
@@ -550,7 +596,6 @@
         const fMin = document.getElementById('editSub-min');
         const fStatus = document.getElementById('editSub-status');
         const fBadge = document.getElementById('editSub-badge');
-        const fBreadcrumb = document.getElementById('editSub-cat-breadcrumb');
 
         if (fId) fId.value = subId;
         if (fName) fName.value = name;
@@ -560,7 +605,6 @@
         if (fMin) fMin.value = minWeight;
         if (fStatus) fStatus.value = status;
         if (fBadge) fBadge.textContent = 'SUB-0' + subId;
-        if (fBreadcrumb) fBreadcrumb.textContent = 'Parent Category: ' + catName + ' · Set scrap purchase rate per kg';
 
         const modal = document.getElementById('modalEditSubCategory');
         if (modal) {
