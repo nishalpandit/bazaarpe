@@ -77,86 +77,153 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
-      
-    
-    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5">
-        <h1 class="text-[1.0625rem] font-bold text-slate-800 tracking-tight">KYC Review Queue</h1>
-        <span class="rounded-full bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 text-[0.6875rem] font-bold">{{ pending_kyc_count|default:pending_vendors|length }} pending</span>
+      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">KYC Review Queue</h1>
+          <p class="text-xs text-slate-500 mt-0.5">Statutory identity verification, Aadhaar, PAN, and GST compliance verification.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="rounded-full bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1 text-xs font-bold">
+            {{ under_review_count|default:"0" }} Pending Review
+          </span>
+          <a class="bm-btn-ghost bm-btn-sm" href="vendors.html">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg>
+            <span>All Vendors</span>
+          </a>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <a class="bm-btn-ghost bm-btn-sm" href="vendors.html"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg> All vendors</a>
-      </div>
-    </div>
 
-    <div class="flex items-start gap-2.5 rounded-lg border bg-sky-50 border-sky-200 text-sky-900 px-3.5 py-3 text-[0.8125rem]" role="status">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg></span>
-      <div class="min-w-0"><p class="font-semibold">Aadhaar verification results come from the backend</p><div>Where the backend has run Aadhaar verification, only the result (match / mismatch / pending) is displayed. The panel never calls a verification service and never shows full Aadhaar numbers.</div></div>
-    </div>
-
-    <div class="mt-3 bm-card overflow-hidden">
-      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-2.5 sm:px-5">
-        <p class="text-[0.8125rem] text-slate-600"><span class="font-semibold">{{ pending_kyc_count|default:pending_vendors|length }}</span> vendors pending review</p>
-        <div class="flex gap-2"><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">Oldest 3 days</span><span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20">SLA 48 h</span></div>
+      <!-- Quick Filter Pills -->
+      <div class="mb-4 flex flex-wrap items-center gap-2">
+        <a href="kyc.html?tab=under_review{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'under_review' or not current_tab %}bg-amber-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+          <span>⏳ Under Review</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'under_review' or not current_tab %}bg-white/20 text-white{% else %}bg-amber-100 text-amber-800{% endif %}">{{ under_review_count|default:"0" }}</span>
+        </a>
+        <a href="kyc.html?tab=approved{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'approved' %}bg-emerald-700 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+          <span>✓ Approved</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'approved' %}bg-white/20 text-white{% else %}bg-emerald-100 text-emerald-800{% endif %}">{{ approved_count|default:"0" }}</span>
+        </a>
+        <a href="kyc.html?tab=rejected{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'rejected' %}bg-rose-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+          <span>✕ Rejected</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'rejected' %}bg-white/20 text-white{% else %}bg-rose-100 text-rose-800{% endif %}">{{ rejected_count|default:"0" }}</span>
+        </a>
+        <a href="kyc.html?tab=all{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'all' %}bg-slate-900 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+          <span>All Records</span>
+          <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'all' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-600{% endif %}">{{ all_count|default:"0" }}</span>
+        </a>
       </div>
-      <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1120px]">
-      <thead><tr><th scope="col" class="">Vendor</th><th scope="col" class="">Owner / Contact</th><th scope="col" class="">Submitted</th><th scope="col" class="">Aadhaar Card</th><th scope="col" class="">PAN Card</th><th scope="col" class="">GST Registration</th><th scope="col" class="text-right">Status</th><th scope="col" class="">Actions</th></tr></thead><tbody>
-{% for vendor in pending_vendors %}
-<tr>
-  <td class="">
-    <a class="bm-link font-semibold" href="vendor-detail.html?id={{ vendor.id }}">{{ vendor.shop_name }}</a>
-    <div class="bm-mono text-[0.75rem] text-slate-500">{{ vendor.display_vendor_id }}</div>
-  </td>
-  <td class="">
-    <div class="font-medium text-slate-900">{{ vendor.owner_name }}</div>
-    <div class="text-[0.75rem] font-mono text-slate-500">{{ vendor.user.username }} · {{ vendor.city }}</div>
-  </td>
-  <td class="">{{ vendor.created_at|date:"Y-m-d H:i" }}</td>
-  <td class="">
-    <div class="bm-mono text-xs font-bold text-slate-800">{{ vendor.aadhaar_number|default:vendor.aadhaar_last4 }}</div>
-    {% if vendor.aadhaar_document %}
-      <a href="{{ vendor.aadhaar_document.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View Aadhaar</a>
-    {% else %}
-      <span class="text-[0.6875rem] text-slate-400">Doc Pending</span>
-    {% endif %}
-  </td>
-  <td class="">
-    <div class="bm-mono text-xs font-bold text-slate-800">{{ vendor.pan_number|default:vendor.pan_last4 }}</div>
-    {% if vendor.pan_document %}
-      <a href="{{ vendor.pan_document.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View PAN</a>
-    {% else %}
-      <span class="text-[0.6875rem] text-slate-400">Doc Pending</span>
-    {% endif %}
-  </td>
-  <td class="">
-    {% if vendor.gst_number %}
-      <div class="bm-mono text-xs font-bold text-emerald-800">{{ vendor.gst_number }}</div>
-      {% if vendor.gst_certificate %}
-        <a href="{{ vendor.gst_certificate.url }}" target="_blank" class="bm-link text-[0.75rem] inline-flex items-center gap-1 mt-0.5"><svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> View GST</a>
+
+      <!-- Search & City Filter -->
+      <form class="bm-card mb-4 p-4 shadow-sm" method="get" action="kyc.html">
+        {% if current_tab %}<input type="hidden" name="tab" value="{{ current_tab }}">{% endif %}
+        <div class="grid gap-3 sm:grid-cols-3">
+          <div class="sm:col-span-2">
+            <label class="bm-label" for="kyc-q">Search KYC Queue</label>
+            <div class="relative">
+              <input class="bm-input pl-9" id="kyc-q" name="q" type="text" value="{{ current_q|default:'' }}" placeholder="Shop name, owner, phone, or vendor ID...">
+              <svg class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            </div>
+          </div>
+          <div>
+            <label class="bm-label" for="kyc-city">City</label>
+            <select class="bm-select" id="kyc-city" name="city">
+              <option value="">All Cities</option>
+              {% for c in cities %}
+              <option value="{{ c }}" {% if current_city == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+          <div class="flex items-center gap-2">
+            <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply filters</button>
+            <a class="bm-btn-ghost bm-btn-sm" href="kyc.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg> Reset</a>
+          </div>
+        </div>
+      </form>
+
+      <!-- Clean Streamlined KYC Table -->
+      <div class="bm-card overflow-hidden shadow-sm border border-slate-200">
+        <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[980px]">
+        <thead><tr>
+          <th scope="col" style="width: 220px;">Vendor Business</th>
+          <th scope="col">Owner &amp; Contact</th>
+          <th scope="col">City &amp; Date</th>
+          <th scope="col">Verification Docs</th>
+          <th scope="col">KYC Status</th>
+          <th scope="col" class="text-right" style="width: 170px;">Decide</th>
+        </tr></thead><tbody>
+  {% for vendor in pending_vendors %}
+  <tr class="hover:bg-slate-50/80 transition">
+    <td>
+      <a class="bm-link font-bold text-slate-900 text-sm" href="vendor-detail.html?id={{ vendor.id }}">{{ vendor.shop_name }}</a>
+      <div class="bm-mono text-[0.75rem] text-slate-500 mt-0.5">{{ vendor.display_vendor_id }}</div>
+    </td>
+    <td>
+      <div class="font-bold text-slate-900 text-sm">{{ vendor.owner_name }}</div>
+      <div class="text-[0.75rem] font-mono text-slate-500 mt-0.5 flex items-center gap-1">
+        <svg class="h-3 w-3 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <span>{{ vendor.user.username }}</span>
+      </div>
+    </td>
+    <td>
+      <div class="font-bold text-slate-900 text-sm flex items-center gap-1">
+        <span>📍</span>
+        <span>{{ vendor.city }}</span>
+      </div>
+      <div class="text-[0.75rem] text-slate-500 mt-0.5">{{ vendor.created_at|date:"d M Y, H:i" }}</div>
+    </td>
+    <td>
+      <div class="flex flex-wrap items-center gap-2">
+        {% if vendor.aadhaar_document %}
+          <a href="{{ vendor.aadhaar_document.url }}" target="_blank" class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold flex items-center gap-1">
+            <span>🪪 Aadhaar</span>
+          </a>
+        {% else %}
+          <span class="text-[0.6875rem] text-slate-400">Aadhaar: —</span>
+        {% endif %}
+        {% if vendor.pan_document %}
+          <a href="{{ vendor.pan_document.url }}" target="_blank" class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center gap-1">
+            <span>📄 PAN</span>
+          </a>
+        {% endif %}
+        {% if vendor.gst_certificate %}
+          <a href="{{ vendor.gst_certificate.url }}" target="_blank" class="px-2 py-0.5 rounded bg-violet-50 text-violet-800 border border-violet-200 text-xs font-bold flex items-center gap-1">
+            <span>📑 GST</span>
+          </a>
+        {% endif %}
+      </div>
+    </td>
+    <td>
+      {% if vendor.kyc_status == 'APPROVED' %}
+        <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold"><span class="bm-dot"></span>Approved</span>
+      {% elif vendor.kyc_status == 'UNDER_REVIEW' %}
+        <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25 font-bold"><span class="bm-dot"></span>Under Review</span>
+      {% elif vendor.kyc_status == 'REJECTED' %}
+        <span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20 font-bold"><span class="bm-dot"></span>Rejected</span>
+      {% else %}
+        <span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20 font-bold"><span class="bm-dot"></span>{{ vendor.kyc_status }}</span>
       {% endif %}
-    {% else %}
-      <span class="text-xs text-slate-400">Not provided</span>
-    {% endif %}
-  </td>
-  <td class="text-right">
-    <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Under Review</span>
-  </td>
-  <td class="">
-    <div class="flex items-center gap-1.5">
-      <a class="bm-btn-ghost bm-btn-sm" href="vendor-detail.html?id={{ vendor.id }}">Review</a>
-      <form method="post" action="/admin/vendors/{{ vendor.id }}/kyc/approve" class="inline">{% csrf_token %}<button type="submit" class="bm-btn-primary bm-btn-sm">Approve</button></form>
-      <form method="post" action="/admin/vendors/{{ vendor.id }}/kyc/reject" class="inline">{% csrf_token %}<button type="submit" class="bm-btn-danger bm-btn-sm">Reject</button></form>
-    </div>
-  </td>
-</tr>
-{% empty %}
-<tr><td colspan="9" class="py-12 text-center text-slate-500">No vendors currently pending KYC review.</td></tr>
-{% endfor %}
-</tbody></table></div>
-      {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="vendors" %}
-    </div>
-
-    <div class="mt-3"><details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">POST /admin/vendors/{id}/kyc/approve | .../reject</code> Each row links to the vendor detail view where decisions are made. Bulk approval is intentionally not offered: KYC decisions must be individually attributable.</p></div></details></div>
+    </td>
+    <td class="text-right">
+      <div class="flex items-center justify-end gap-1.5">
+        <a class="bm-btn-primary bm-btn-sm font-bold" href="vendor-detail.html?id={{ vendor.id }}">Review</a>
+        {% if vendor.kyc_status != 'APPROVED' %}
+        <form method="post" action="/admin/vendors/{{ vendor.id }}/kyc/approve" class="inline">{% csrf_token %}<button type="submit" class="bm-btn-ghost bm-btn-sm text-emerald-700 font-bold hover:bg-emerald-50">Approve</button></form>
+        {% endif %}
+      </div>
+    </td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="6" class="py-12 text-center text-slate-500">
+    <p class="text-2xl mb-1">✓</p>
+    <p class="text-sm font-bold text-slate-700">No Vendors Found in this KYC Queue</p>
+    <p class="text-xs text-slate-400 mt-1">All vendor applications have been processed or match other filters.</p>
+  </td></tr>
+  {% endfor %}
+  </tbody></table></div>
+        {% include "includes/pagination.html" with page_obj=page_obj paginator=paginator item_label="vendors" %}
+      </div>
     </main>
     
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">

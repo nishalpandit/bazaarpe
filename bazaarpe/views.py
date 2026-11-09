@@ -839,16 +839,39 @@ def page_view(request, page_name):
     # 5. KYC REVIEW QUEUE
     if clean_name == 'kyc':
         q = request.GET.get('q', '').strip()
-        pending_vendors = VendorProfile.objects.filter(kyc_status=VendorProfile.KYCStatus.UNDER_REVIEW).select_related('user', 'user__profile').order_by('created_at')
+        city = request.GET.get('city', '').strip()
+        tab = request.GET.get('tab', 'under_review').strip().lower()
+
+        base_vendors = VendorProfile.objects.select_related('user', 'user__profile')
+        under_review_count = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.UNDER_REVIEW).count()
+        approved_count = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.APPROVED).count()
+        rejected_count = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.REJECTED).count()
+        all_count = base_vendors.count()
+
+        if tab == 'approved':
+            pending_vendors = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.APPROVED)
+        elif tab == 'rejected':
+            pending_vendors = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.REJECTED)
+        elif tab == 'all':
+            pending_vendors = base_vendors.all()
+        else:
+            pending_vendors = base_vendors.filter(kyc_status=VendorProfile.KYCStatus.UNDER_REVIEW)
+
         if q:
             pending_vendors = pending_vendors.filter(
                 Q(shop_name__icontains=q) | Q(owner_name__icontains=q) | Q(city__icontains=q) | Q(user__username__icontains=q)
             )
+        if city:
+            pending_vendors = pending_vendors.filter(city__iexact=city)
+
+        pending_vendors = pending_vendors.order_by('-updated_at')
 
         page_num = request.GET.get('page', 1)
         page_size = int(request.GET.get('page_size', 8))
         paginator = Paginator(pending_vendors, page_size)
         page_obj = paginator.get_page(page_num)
+
+        cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
 
         ctx = admin_context(
             request,
@@ -857,6 +880,13 @@ def page_view(request, page_name):
             page_obj=page_obj,
             paginator=paginator,
             pending_count=pending_vendors.count(),
+            under_review_count=under_review_count,
+            approved_count=approved_count,
+            rejected_count=rejected_count,
+            all_count=all_count,
+            current_tab=tab,
+            current_city=city,
+            cities=cities,
             current_q=q,
         )
         return render(request, 'kyc.html', ctx)
@@ -1389,22 +1419,51 @@ def page_view(request, page_name):
 
     # 17. PICKUP REQUESTS (NEGOTIATIONS)
     if clean_name == 'requests':
+        all_req_qs = PickupOrder.objects.filter(status__in=[
+            PickupOrder.Status.NEGOTIATION_PENDING,
+            PickupOrder.Status.ADMIN_NEGOTIATION,
+        ])
+        total_requests_count = all_req_qs.count()
+        agreed_count = all_req_qs.filter(final_agreed_price__isnull=False).count()
+        pending_count = all_req_qs.filter(final_agreed_price__isnull=True).count()
+
+        q = request.GET.get('q', '').strip()
+        category = request.GET.get('category', '').strip()
+        city = request.GET.get('city', '').strip()
+        from_date = request.GET.get('from', '').strip()
+        to_date = request.GET.get('to', '').strip()
+        tab = request.GET.get('tab', 'all').strip().lower()
+
         pickup_requests = (
-            PickupOrder.objects.filter(status__in=[
-                PickupOrder.Status.NEGOTIATION_PENDING,
-                PickupOrder.Status.ADMIN_NEGOTIATION,
-            ])
+            all_req_qs
             .select_related('user', 'user__profile', 'address', 'category', 'subcategory')
             .prefetch_related('images', 'negotiation_proposals')
             .order_by('-created_at')
         )
-        q = request.GET.get('q', '').strip()
         if q:
             pickup_requests = pickup_requests.filter(
                 Q(order_id__icontains=q) | Q(user__username__icontains=q) |
                 Q(user__profile__full_name__icontains=q) | Q(subcategory__name__icontains=q) |
-                Q(category__name__icontains=q)
+                Q(category__name__icontains=q) | Q(address__city__icontains=q)
             )
+        if category:
+            pickup_requests = pickup_requests.filter(category__name__iexact=category)
+        if city:
+            pickup_requests = pickup_requests.filter(Q(address__city__iexact=city) | Q(address__service_zone__name__icontains=city))
+        if from_date:
+            try:
+                pickup_requests = pickup_requests.filter(created_at__date__gte=from_date)
+            except Exception:
+                pass
+        if to_date:
+            try:
+                pickup_requests = pickup_requests.filter(created_at__date__lte=to_date)
+            except Exception:
+                pass
+        if tab == 'agreed':
+            pickup_requests = pickup_requests.filter(final_agreed_price__isnull=False)
+        elif tab == 'pending':
+            pickup_requests = pickup_requests.filter(final_agreed_price__isnull=True)
 
         if request.GET.get('export') == 'csv':
             response = HttpResponse(content_type='text/csv')
@@ -1430,6 +1489,9 @@ def page_view(request, page_name):
         for req_order in page_obj.object_list:
             req_order.cached_latest_proposal = req_order.negotiation_proposals.all().order_by('-created_at').first()
 
+        cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
+        categories = list(ScrapCategory.objects.filter(is_active=True).values_list('name', flat=True).distinct())
+
         return render(request, 'requests.html', admin_context(
             request,
             page_name=clean_name,
@@ -1437,7 +1499,17 @@ def page_view(request, page_name):
             page_obj=page_obj,
             paginator=paginator,
             request_count=pickup_requests.count(),
+            total_requests_count=total_requests_count,
+            agreed_count=agreed_count,
+            pending_count=pending_count,
+            current_tab=tab,
             current_q=q,
+            current_category=category,
+            current_city=city,
+            current_from=from_date,
+            current_to=to_date,
+            cities=cities,
+            categories=categories,
         ))
 
     # 18. REQUEST DETAIL
@@ -1456,11 +1528,29 @@ def page_view(request, page_name):
 
     # 19. ORDERS LIST
     if clean_name == 'orders':
+        all_orders_qs = PickupOrder.objects.all()
+        all_count = all_orders_qs.count()
+        searching_count = all_orders_qs.filter(status=PickupOrder.Status.SEARCHING_VENDOR).count()
+        active_count = all_orders_qs.filter(status__in=[
+            PickupOrder.Status.VENDOR_ASSIGNED,
+            PickupOrder.Status.VENDOR_ON_THE_WAY,
+            PickupOrder.Status.REACHED_LOCATION,
+            PickupOrder.Status.PICKUP_IN_PROGRESS,
+            PickupOrder.Status.INVOICE_GENERATED,
+        ]).count()
+        completed_count = all_orders_qs.filter(status__in=[
+            PickupOrder.Status.COMPLETED,
+            PickupOrder.Status.USER_REVIEW,
+            PickupOrder.Status.USER_PAYOUT,
+        ]).count()
+        cancelled_count = all_orders_qs.filter(status=PickupOrder.Status.CANCELLED).count()
+
         orders = PickupOrder.objects.select_related(
             'user', 'user__profile', 'address', 'category', 'subcategory', 'invoice'
         ).prefetch_related('images').order_by('-created_at')
 
         q = request.GET.get('q', '').strip()
+        tab = request.GET.get('tab', 'all').strip().lower()
         order_status = request.GET.get('order_status', '').strip().upper()
         payment_status = request.GET.get('payment_status', '').strip().upper()
         settlement_status = request.GET.get('settlement_status', '').strip().upper()
@@ -1475,8 +1565,27 @@ def page_view(request, page_name):
                 Q(user__profile__full_name__icontains=q) |
                 Q(assigned_vendor_name__icontains=q) | Q(assigned_vendor_phone__icontains=q)
             )
-        if order_status in dict(PickupOrder.Status.choices):
+        if tab == 'searching':
+            orders = orders.filter(status=PickupOrder.Status.SEARCHING_VENDOR)
+        elif tab == 'active':
+            orders = orders.filter(status__in=[
+                PickupOrder.Status.VENDOR_ASSIGNED,
+                PickupOrder.Status.VENDOR_ON_THE_WAY,
+                PickupOrder.Status.REACHED_LOCATION,
+                PickupOrder.Status.PICKUP_IN_PROGRESS,
+                PickupOrder.Status.INVOICE_GENERATED,
+            ])
+        elif tab == 'completed':
+            orders = orders.filter(status__in=[
+                PickupOrder.Status.COMPLETED,
+                PickupOrder.Status.USER_REVIEW,
+                PickupOrder.Status.USER_PAYOUT,
+            ])
+        elif tab == 'cancelled':
+            orders = orders.filter(status=PickupOrder.Status.CANCELLED)
+        elif order_status in dict(PickupOrder.Status.choices):
             orders = orders.filter(status=order_status)
+
         if payment_status:
             orders = orders.filter(invoice__payment_status=payment_status)
         if settlement_status:
@@ -1522,6 +1631,9 @@ def page_view(request, page_name):
         paginator = Paginator(orders, page_size)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
+        cities = list(ServiceCity.objects.filter(is_active=True).values_list('name', flat=True).distinct())
+        categories = list(ScrapCategory.objects.filter(is_active=True).values_list('name', flat=True).distinct())
+
         return render(request, 'orders.html', admin_context(
             request,
             page_name=clean_name,
@@ -1529,8 +1641,22 @@ def page_view(request, page_name):
             page_obj=page_obj,
             paginator=paginator,
             order_count=orders.count(),
+            all_count=all_count,
+            searching_count=searching_count,
+            active_count=active_count,
+            completed_count=completed_count,
+            cancelled_count=cancelled_count,
+            current_tab=tab,
             current_q=q,
             current_order_status=order_status,
+            current_payment_status=payment_status,
+            current_settlement_status=settlement_status,
+            current_city=city,
+            current_category=category,
+            current_from=from_date,
+            current_to=to_date,
+            cities=cities,
+            categories=categories,
         ))
 
     # 20. ORDER DETAIL

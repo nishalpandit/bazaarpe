@@ -66,7 +66,7 @@
           <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></span>
           <a href="invoices.html" class="text-[0.8125rem] font-medium text-slate-400 hover:text-slate-600">Invoices</a>
           <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></span>
-          <span class="text-[0.8125rem] font-semibold text-slate-700">Tax Invoice INV-7001</span>
+          <span class="text-[0.8125rem] font-semibold text-slate-700">Tax Invoice {{ invoice.invoice_number|default:"INV-7001" }}</span>
         </div>
 
         <div class="ml-auto flex items-center gap-2" style="margin-left: auto !important;">
@@ -101,16 +101,18 @@
     </header>
 
     <main class="px-3 pb-8 pt-2.5 sm:px-6 sm:pt-3" id="bmMain">
-    {% if live_invoice_enabled %}
-      {% if invoice %}
-      <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><div><a class="bm-link text-xs" href="order-detail.html?id={{ invoice.order.order_id }}">← Back to order</a><h1 class="bm-mono text-xl font-bold text-slate-800">{{ invoice.invoice_number }}</h1><p class="text-sm text-slate-500">GST invoice for {{ invoice.order.order_id }}</p></div><button class="bm-btn-primary" type="button" onclick="window.print()">Print / Save PDF</button></div>
-      <section class="bm-card mx-auto max-w-4xl p-6 sm:p-8">
-        <div class="flex flex-wrap justify-between gap-5 border-b pb-5"><div><h2 class="text-2xl font-bold text-slate-900">Bazaarpe</h2><p class="text-sm text-slate-500">Digital scrap pickup invoice</p></div><dl class="text-sm"><div><dt class="inline text-slate-500">Invoice: </dt><dd class="bm-mono inline font-semibold">{{ invoice.invoice_number }}</dd></div><div><dt class="inline text-slate-500">Paid at: </dt><dd class="inline">{{ invoice.paid_at|date:"Y-m-d H:i:s" }}</dd></div><div><dt class="inline text-slate-500">Status: </dt><dd class="inline font-semibold text-emerald-700">{{ invoice.get_payment_status_display }}</dd></div></dl></div>
-        <div class="grid gap-5 border-b py-5 sm:grid-cols-2"><div><p class="text-xs font-bold uppercase text-slate-500">Customer</p><p class="font-semibold">{{ invoice.order.user.profile.full_name|default:invoice.order.user.username }}</p><p class="text-sm text-slate-600">{{ invoice.order.address.formatted_address|default:"Address unavailable" }}</p></div><div><p class="text-xs font-bold uppercase text-slate-500">Pickup</p><p>{{ invoice.order.category.name }} / {{ invoice.order.subcategory.name }}</p><p class="text-sm text-slate-600">Final weight: {{ invoice.order.final_weight }} kg</p></div></div>
-        <table class="mt-5 w-full text-sm"><thead><tr class="border-b text-left text-slate-500"><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead><tbody><tr class="border-b"><td class="py-3">Scrap value before GST</td><td class="py-3 text-right">₹{{ invoice.subtotal }}</td></tr><tr class="border-b"><td class="py-3">GST ({{ invoice.order.subcategory.gst_percent }}%)</td><td class="py-3 text-right">₹{{ invoice.gst_amount }}</td></tr><tr class="border-b"><td class="py-3">Platform fee</td><td class="py-3 text-right">₹{{ invoice.platform_fee }}</td></tr><tr class="text-base font-bold"><td class="py-4">Total paid by vendor</td><td class="py-4 text-right">₹{{ invoice.total_paid_by_vendor }}</td></tr></tbody></table>
-        <div class="mt-5 rounded-lg bg-slate-50 p-4 text-sm"><span class="text-slate-500">Payment gateway reference:</span> <span class="bm-mono">{{ invoice.payment_gateway_ref }}</span></div>
+    {% if not invoice %}
+      <section class="bm-card p-12 text-center max-w-lg mx-auto my-12 shadow-sm">
+        <div class="h-16 w-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-200">
+          <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800">Invoice Record Not Found</h2>
+        <p class="mt-2 text-sm text-slate-500">The requested invoice ID does not exist or has not been generated for this order yet.</p>
+        <div class="mt-6 flex justify-center gap-3">
+          <a class="bm-btn-ghost bm-btn-sm" href="invoices.html">← Back to Invoices</a>
+          <a class="bm-btn-primary bm-btn-sm" href="orders.html">View Orders</a>
+        </div>
       </section>
-      {% else %}<section class="bm-card p-8 text-center"><h1 class="font-semibold text-slate-800">Invoice not found</h1><p class="mt-1 text-sm text-slate-500">Open an invoice from a live pickup order.</p><a class="bm-link mt-3 inline-block" href="orders.html">View orders</a></section>{% endif %}
     {% else %}
       <!-- Breadcrumb & Top Action Toolbar -->
       <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -119,13 +121,19 @@
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             Back to Invoices
           </a>
+          {% if invoice.order %}
+          <a class="bm-btn-ghost bm-btn-sm text-slate-600" href="order-detail.html?id={{ invoice.order.order_id }}">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z"/><path d="M3 8.5 12 14l9-5.5"/><path d="M12 14v7"/></svg>
+            View Order #{{ invoice.order.order_id }}
+          </a>
+          {% endif %}
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" class="bm-btn-primary bm-btn-sm" onclick="window.print()">
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             Print Tax Invoice
           </button>
-          <button type="button" class="bm-btn-ghost bm-btn-sm text-brand-800 border-brand-300 hover:bg-brand-50" onclick="alert('Generating and downloading cryptographically signed PDF for Tax Invoice #INV-7001...');">
+          <button type="button" class="bm-btn-ghost bm-btn-sm text-brand-800 border-brand-300 hover:bg-brand-50" onclick="alert('Generating cryptographically signed PDF for Tax Invoice {{ invoice.invoice_number }}...');">
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             Download PDF
           </button>
@@ -137,7 +145,7 @@
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             Reconcile Status
           </button>
-          <button type="button" class="bm-btn-danger bm-btn-sm" onclick="if(confirm('Void and cancel Invoice #INV-7001? A reverse Credit Note will be generated.')) { alert('Invoice #INV-7001 has been voided.'); window.location.reload(); }">
+          <button type="button" class="bm-btn-danger bm-btn-sm" onclick="if(confirm('Void and cancel Invoice #{{ invoice.invoice_number }}? A reverse Credit Note will be generated.')) { alert('Invoice #{{ invoice.invoice_number }} has been voided.'); window.location.reload(); }">
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
             Void Invoice
           </button>
@@ -154,17 +162,21 @@
               </div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Tax Invoice #INV-7001</h1>
+                  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Tax Invoice #{{ invoice.invoice_number }}</h1>
+                  {% if invoice.payment_status == 'PAID' %}
                   <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid &amp; Settled</span>
+                  {% else %}
+                  <span class="bm-badge bg-amber-50 text-amber-700 ring-amber-600/20"><span class="bm-dot"></span>Awaiting Payment</span>
+                  {% endif %}
                   <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">GST Reconciled</span>
-                  <span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">IRN: 49bf9810a42e</span>
+                  <span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">IRN Verified</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
-                  <span class="bm-mono font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Order Ref: ORD-2049</span>
+                  <span class="bm-mono font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Order Ref: {{ invoice.order.order_id }}</span>
                   <span>•</span>
-                  <span>Issued 24 Oct 2026, 12:15</span>
+                  <span>Issued {{ invoice.paid_at|date:"d M Y, H:i"|default:invoice.order.created_at|date:"d M Y, H:i" }}</span>
                   <span>•</span>
-                  <span>Billed to: <strong class="text-slate-800">GreenLoop Recycling</strong> (Mumbai)</span>
+                  <span>Billed to: <strong class="text-slate-800">{{ invoice.order.assigned_vendor.shop_name|default:"Assigned Collector" }}</strong> ({{ invoice.order.assigned_vendor.city|default:invoice.order.address.city|default:"Service Area" }})</span>
                 </div>
               </div>
             </div>
@@ -173,15 +185,15 @@
             <div class="flex flex-wrap items-center gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[110px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Total Invoiced</p>
-                <p class="text-lg font-extrabold text-emerald-700 mt-0.5">₹6,426.00</p>
+                <p class="text-lg font-extrabold text-emerald-700 mt-0.5">₹{{ invoice.total_paid_by_vendor }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Scrap Value</p>
-                <p class="text-lg font-extrabold text-slate-900 mt-0.5">₹6,300.00</p>
+                <p class="text-lg font-extrabold text-slate-900 mt-0.5">₹{{ invoice.subtotal }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Convenience Fee</p>
-                <p class="text-lg font-extrabold text-brand-700 mt-0.5">₹126.00</p>
+                <p class="text-lg font-extrabold text-brand-700 mt-0.5">₹{{ invoice.platform_fee }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
                 <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Payment Mode</p>
@@ -205,33 +217,33 @@
                 </span>
                 <h2 class="bm-card-title">Billed To (Vendor)</h2>
               </div>
-              <a class="bm-btn-ghost bm-btn-sm" href="vendor-detail.html">View Vendor</a>
+              <a class="bm-btn-ghost bm-btn-sm" {% if invoice.order.assigned_vendor %}href="vendor-detail.html?id={{ invoice.order.assigned_vendor.id }}"{% else %}href="vendors.html"{% endif %}>View Vendor</a>
             </div>
             <div class="bm-card-bd space-y-3">
               <div>
-                <p class="text-base font-bold text-slate-900 leading-tight">GreenLoop Recycling</p>
-                <p class="text-xs text-slate-500 mt-0.5">Proprietor: <span class="font-semibold text-slate-700">Anil Kulkarni</span> • VND-501</p>
+                <p class="text-base font-bold text-slate-900 leading-tight">{{ invoice.order.assigned_vendor.shop_name|default:"Registered Collector" }}</p>
+                <p class="text-xs text-slate-500 mt-0.5">Proprietor: <span class="font-semibold text-slate-700">{{ invoice.order.assigned_vendor.owner_name|default:"—" }}</span> • {{ invoice.order.assigned_vendor.display_vendor_id|default:"VND" }}</p>
               </div>
               <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
                 <div>
                   <span class="text-slate-400 block font-medium">GSTIN</span>
-                  <span class="bm-mono font-bold text-slate-800">27AABCG1234H1Z5</span>
+                  <span class="bm-mono font-bold text-slate-800">{{ invoice.order.assigned_vendor.gst_number|default:"27AABCG1234H1Z5" }}</span>
                 </div>
                 <div>
                   <span class="text-slate-400 block font-medium">PAN</span>
-                  <span class="bm-mono font-bold text-slate-800">AABCG1234H</span>
+                  <span class="bm-mono font-bold text-slate-800">{{ invoice.order.assigned_vendor.pan_number|default:"AABCG1234H" }}</span>
                 </div>
               </div>
               <div class="text-xs pt-2 border-t border-slate-100">
                 <span class="text-slate-400 block font-medium">Billing Address</span>
                 <p class="text-slate-700 mt-0.5 leading-relaxed font-medium">
-                  Plot 14, MIDC Industrial Area, Andheri East, Mumbai, Maharashtra – 400093
+                  {{ invoice.order.assigned_vendor.address|default:invoice.order.address.formatted_address|default:"Service Operations Base" }}
                 </p>
               </div>
               <div class="text-xs pt-2 border-t border-slate-100 flex items-center justify-between">
                 <div>
                   <span class="text-slate-400 block font-medium">Contact Phone</span>
-                  <span class="font-bold text-slate-800">+91 98765 41200</span>
+                  <span class="font-bold text-slate-800">{{ invoice.order.assigned_vendor.phone|default:"—" }}</span>
                 </div>
                 <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">KYC Verified</span>
               </div>
@@ -247,32 +259,32 @@
                 </span>
                 <h2 class="bm-card-title">Order Reference</h2>
               </div>
-              <a class="bm-btn-ghost bm-btn-sm" href="order-detail.html">View Order</a>
+              <a class="bm-btn-ghost bm-btn-sm" href="order-detail.html?id={{ invoice.order.order_id }}">View Order</a>
             </div>
             <div class="bm-card-bd space-y-3">
               <div class="flex items-center justify-between">
                 <div>
-                  <a class="bm-link bm-mono font-extrabold text-sm" href="order-detail.html">ORD-2049</a>
-                  <p class="text-xs text-slate-500 mt-0.5">Doorstep Scrap Collection</p>
+                  <a class="bm-link bm-mono font-extrabold text-sm" href="order-detail.html?id={{ invoice.order.order_id }}">{{ invoice.order.order_id }}</a>
+                  <p class="text-xs text-slate-500 mt-0.5">{{ invoice.order.category.name|default:"Scrap" }} Collection</p>
                 </div>
-                <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">Completed</span>
+                <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">{{ invoice.order.get_status_display }}</span>
               </div>
               <div class="text-xs pt-2 border-t border-slate-100 space-y-1.5">
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">Seller (User):</span>
-                  <a href="user-detail.html" class="font-bold text-slate-800 hover:text-brand-700">Fatima Sheikh (USR-1007)</a>
+                  <span class="font-bold text-slate-800">{{ invoice.order.user.profile.full_name|default:invoice.order.user.username }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                   <span class="text-slate-500">Pickup Location:</span>
-                  <span class="text-slate-700 font-medium">Bandra West, Mumbai</span>
+                  <span class="text-slate-700 font-medium">{{ invoice.order.address.city|default:"Service Area" }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Completed Date:</span>
-                  <span class="text-slate-700 font-medium">2026-10-24 12:10</span>
+                  <span class="text-slate-500">Date:</span>
+                  <span class="text-slate-700 font-medium">{{ invoice.paid_at|date:"d M Y, H:i"|default:invoice.order.created_at|date:"d M Y, H:i" }}</span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-slate-500">Scale Verification:</span>
-                  <span class="text-emerald-700 font-semibold">Calibrated Scale #DS-882</span>
+                  <span class="text-slate-500">Net Weight:</span>
+                  <span class="text-emerald-700 font-semibold">{{ invoice.order.final_weight|default:invoice.order.approx_weight|default:"0" }} kg</span>
                 </div>
               </div>
             </div>
@@ -291,28 +303,24 @@
             </div>
             <div class="bm-card-bd space-y-2.5 text-xs">
               <div class="flex items-center justify-between">
-                <span class="text-slate-500">Payment ID:</span>
-                <a href="payments.html" class="bm-mono font-bold text-brand-700 hover:underline">PAY-9001</a>
+                <span class="text-slate-500">Invoice Number:</span>
+                <span class="bm-mono font-bold text-brand-700">{{ invoice.invoice_number }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-500">Gateway Ref:</span>
-                <span class="bm-mono font-bold text-slate-800">pay_RT48KJ2091</span>
+                <span class="bm-mono font-bold text-slate-800">{{ invoice.payment_gateway_ref|default:"Razorpay Online Gateway" }}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span class="text-slate-500">Payment Mode:</span>
-                <span class="font-semibold text-slate-800">UPI (Razorpay Gateway)</span>
+                <span class="text-slate-500">Payment Status:</span>
+                <span class="font-semibold text-emerald-700">{{ invoice.get_payment_status_display }}</span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-slate-500">Timestamp:</span>
-                <span class="text-slate-700 font-medium">2026-10-24 12:10:44</span>
+                <span class="text-slate-700 font-medium">{{ invoice.paid_at|date:"Y-m-d H:i:s"|default:invoice.order.created_at|date:"Y-m-d H:i:s" }}</span>
               </div>
               <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                <span class="text-slate-500">Vendor Settlement:</span>
-                <a href="settlements.html" class="bm-mono font-bold text-slate-800 hover:text-brand-700">STL-6005 (Settled)</a>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-slate-500">Bank UTR Ref:</span>
-                <span class="bm-mono text-slate-600">IMPS/HDFC/5521190</span>
+                <span class="text-slate-500">Payment Channel:</span>
+                <span class="bm-mono font-bold text-slate-800">UPI / NetBanking</span>
               </div>
             </div>
           </div>
@@ -344,11 +352,11 @@
                   <span class="inline-block px-3 py-1 rounded bg-slate-900 text-white text-[0.7rem] font-extrabold uppercase tracking-widest">
                     Tax Invoice
                   </span>
-                  <p class="bm-mono text-lg font-extrabold text-slate-900 mt-2">INV-7001</p>
-                  <p class="text-xs text-slate-500 mt-0.5">Issued: <strong class="text-slate-700">24 Oct 2026, 12:15</strong></p>
+                  <p class="bm-mono text-lg font-extrabold text-slate-900 mt-2">{{ invoice.invoice_number }}</p>
+                  <p class="text-xs text-slate-500 mt-0.5">Issued: <strong class="text-slate-700">{{ invoice.paid_at|date:"d M Y, H:i"|default:invoice.order.created_at|date:"d M Y, H:i" }}</strong></p>
                   <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
                     <span class="h-2 w-2 rounded-full bg-emerald-600"></span>
-                    <span>Paid in Full</span>
+                    <span>{{ invoice.get_payment_status_display }}</span>
                   </div>
                 </div>
               </div>
@@ -357,7 +365,7 @@
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4 border-b border-slate-100 text-xs">
                 <div>
                   <span class="text-slate-400 block font-medium">Place of Supply</span>
-                  <span class="font-bold text-slate-800">27 - Maharashtra</span>
+                  <span class="font-bold text-slate-800">{{ invoice.order.address.state|default:"Maharashtra" }}</span>
                 </div>
                 <div>
                   <span class="text-slate-400 block font-medium">Reverse Charge</span>
@@ -365,11 +373,11 @@
                 </div>
                 <div>
                   <span class="text-slate-400 block font-medium">Invoice Type</span>
-                  <span class="font-bold text-slate-800">B2B Standard Scrap</span>
+                  <span class="font-bold text-slate-800">Scrap Pickup Settlement</span>
                 </div>
                 <div class="text-left sm:text-right">
                   <span class="text-slate-400 block font-medium">Payment Status</span>
-                  <span class="font-bold text-emerald-700">Reconciled via UPI</span>
+                  <span class="font-bold text-emerald-700">{{ invoice.get_payment_status_display }} via UPI</span>
                 </div>
               </div>
 
@@ -390,58 +398,48 @@
                     <tr>
                       <td class="p-3 text-slate-400">1</td>
                       <td class="p-3">
-                        <p class="font-bold text-slate-900">Scrap Pickup — Aluminium Extrusions &amp; Clean Cans</p>
-                        <p class="text-[0.6875rem] text-slate-500">Direct doorstep collection from user Fatima Sheikh · Calibrated digital weight</p>
+                        <p class="font-bold text-slate-900">Scrap Pickup — {{ invoice.order.category.name|default:"Scrap" }} ({{ invoice.order.subcategory.name|default:"Mixed" }})</p>
+                        <p class="text-[0.6875rem] text-slate-500">Doorstep collection from user {{ invoice.order.user.profile.full_name|default:invoice.order.user.username }} · Order #{{ invoice.order.order_id }}</p>
                       </td>
                       <td class="p-3 bm-mono text-slate-600">76020010</td>
-                      <td class="p-3 text-right bm-mono font-semibold">36.00 kg</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹175.00</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹6,300.00</td>
+                      <td class="p-3 text-right bm-mono font-semibold">{{ invoice.order.final_weight|default:invoice.order.approx_weight|default:"0" }} kg</td>
+                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.order.final_agreed_price|default:invoice.order.approx_price|default:"—" }}</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.subtotal }}</td>
                     </tr>
                     <tr>
                       <td class="p-3 text-slate-400">2</td>
                       <td class="p-3">
                         <p class="font-bold text-slate-900">Platform Facilitation &amp; Convenience Commission</p>
-                        <p class="text-[0.6875rem] text-slate-500">2.0% standard marketplace service fee applied on gross collection</p>
+                        <p class="text-[0.6875rem] text-slate-500">Standard marketplace platform fee applied on gross pickup</p>
                       </td>
                       <td class="p-3 bm-mono text-slate-600">998599</td>
                       <td class="p-3 text-right bm-mono font-semibold">1 unit</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹126.00</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹126.00</td>
+                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.platform_fee }}</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.platform_fee }}</td>
                     </tr>
                     <tr>
                       <td class="p-3 text-slate-400">3</td>
                       <td class="p-3">
-                        <p class="text-slate-700">Central Goods and Services Tax (CGST @ 9% on Platform Fee)</p>
+                        <p class="text-slate-700">Goods and Services Tax (GST @ {{ invoice.order.subcategory.gst_percent|default:"18" }}%)</p>
                       </td>
                       <td class="p-3 bm-mono text-slate-600">998599</td>
-                      <td class="p-3 text-right bm-mono font-semibold">9.0%</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹11.34</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹11.34</td>
-                    </tr>
-                    <tr>
-                      <td class="p-3 text-slate-400">4</td>
-                      <td class="p-3">
-                        <p class="text-slate-700">State Goods and Services Tax (SGST @ 9% on Platform Fee)</p>
-                      </td>
-                      <td class="p-3 bm-mono text-slate-600">998599</td>
-                      <td class="p-3 text-right bm-mono font-semibold">9.0%</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹11.34</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹11.34</td>
+                      <td class="p-3 text-right bm-mono font-semibold">{{ invoice.order.subcategory.gst_percent|default:"18" }}%</td>
+                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.gst_amount }}</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.gst_amount }}</td>
                     </tr>
                   </tbody>
                   <tfoot class="bg-slate-50/90 font-bold border-t border-slate-200">
                     <tr>
                       <td colspan="5" class="p-3 text-right text-slate-700">Gross Scrap Value (Disbursed to User):</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹6,300.00</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.subtotal }}</td>
                     </tr>
                     <tr>
-                      <td colspan="5" class="p-3 text-right text-slate-700">Platform Facilitation + Total Tax (18% GST):</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹148.68</td>
+                      <td colspan="5" class="p-3 text-right text-slate-700">Platform Facilitation + Total Tax (GST):</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.platform_fee }}</td>
                     </tr>
                     <tr class="text-sm bg-emerald-50 text-emerald-950 border-t-2 border-emerald-600">
                       <td colspan="5" class="p-3.5 text-right font-extrabold uppercase tracking-wide">Grand Total Paid by Vendor:</td>
-                      <td class="p-3.5 text-right bm-mono font-extrabold text-base text-emerald-800">₹6,426.00</td>
+                      <td class="p-3.5 text-right bm-mono font-extrabold text-base text-emerald-800">₹{{ invoice.total_paid_by_vendor }}</td>
                     </tr>
                   </tfoot>
                 </table>
