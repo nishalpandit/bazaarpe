@@ -1,576 +1,968 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Order #{{ pickup_order.order_id|default:"Details" }} · Bazaarpe Admin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order #{{ pickup_order.order_id|default:"Details" }} | Scrap Pickup Dashboard</title>
   <meta name="robots" content="noindex,nofollow">
   <link rel="icon" href="/static/images/logo.png" type="image/png">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons CDN -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
-  <link rel="stylesheet" href="/static/css/tailwind.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/components.css">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+            },
+            surface: {
+              card: '#ffffff',
+              bg: '#f8fafc',
+              border: '#e2e8f0',
+              subtle: '#f1f5f9',
+            }
+          },
+          boxShadow: {
+            'card': '0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05)',
+            'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+            'hover': '0 4px 12px 0 rgba(15, 23, 42, 0.07)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom compact scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .stepper-connector {
+      height: 2px;
+      position: absolute;
+      top: 13px;
+      left: calc(-50% + 14px);
+      right: calc(50% + 14px);
+      z-index: 1;
+    }
+  </style>
 </head>
-<body class="" data-active="orders">
+<body class="bg-[#f8fafc] text-slate-800 font-sans antialiased min-h-screen text-[13px] flex flex-col" data-active="orders">
   <a href="#bmMain" class="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-brand-700 focus:px-3 focus:py-2 focus:text-white">Skip to content</a>
   
   {% include 'includes/sidebar.html' %}
   
   <div class="fixed inset-0 z-30 hidden bg-ink-900/30 lg:hidden" id="bmSidebarOverlay" data-sidebar-close aria-hidden="true"></div>
 
-  <div class="bm-main">
-    <header class="bm-topbar">
-      <div class="flex items-center gap-2 px-3 py-2.5 sm:px-5">
-        <button type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="bmSidebar">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  <div class="bm-main flex flex-col min-h-screen">
+    <!-- Top App Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-7 py-2.5 flex items-center justify-between">
+      <!-- Left: Breadcrumbs -->
+      <div class="flex items-center gap-2 text-xs">
+        <button type="button" class="rounded-md p-1 text-slate-500 hover:bg-slate-100 lg:hidden" data-sidebar-toggle aria-label="Open navigation">
+          <i class="ph-bold ph-list text-lg"></i>
         </button>
-
-        <div class="hidden items-center gap-2 sm:flex">
-          <a class="text-[0.8125rem] font-medium text-slate-400 hover:text-brand-700" href="orders.html">Orders</a>
-          <span class="text-slate-300"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6"/></svg></span>
-          <span class="text-[0.8125rem] font-bold text-slate-800">Order #{{ pickup_order.order_id|default:"Details" }}</span>
+        <div class="flex items-center gap-1.5 font-medium text-slate-500">
+          <a href="orders.html" class="hover:text-emerald-600 flex items-center gap-1 transition-colors">
+            <i class="ph-bold ph-squares-four text-sm"></i>
+            <span>Operations</span>
+          </a>
+          <i class="ph-bold ph-caret-right text-[10px] text-slate-400"></i>
+          <a href="orders.html" class="hover:text-emerald-600 transition-colors">Orders</a>
+          <i class="ph-bold ph-caret-right text-[10px] text-slate-400"></i>
+          <span class="text-slate-900 font-semibold font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+            #{{ pickup_order.order_id|default:"Details" }}
+          </span>
         </div>
+        <span class="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="hidden sm:inline-block text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+          Real-time Synced
+        </span>
+      </div>
 
-        <div class="ml-auto flex items-center gap-2" style="margin-left: auto !important;">
-          <div class="relative" data-dropdown-root>
-            <button type="button" class="bm-user-pill" data-dropdown-toggle aria-haspopup="true" aria-expanded="false">
-              <span class="bm-user-avatar">AD</span>
-              <span class="hidden text-left sm:block">
-                <span class="block text-[0.8125rem] font-bold leading-tight text-slate-900">Administrator</span>
-                <span class="block text-[0.6875rem] leading-tight text-emerald-700 font-semibold">Super Admin (Full Access)</span>
-              </span>
-              <svg style="width: 14px; height: 14px; min-width: 14px; color: #94a3b8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-            <div class="bm-dropdown hidden" data-dropdown role="menu">
-              <div class="bm-dropdown-header">
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-[0.8125rem] font-bold text-slate-900 mb-0">Administrator</p>
-                  <span class="bm-perm-badge">Super Admin</span>
-                </div>
-                <p class="text-[0.6875rem] text-slate-500 font-medium mt-0.5 mb-1">admin@gmail.com</p>
-              </div>
-              <a class="bm-dropdown-item" role="menuitem" href="settings.html">Platform settings</a>
-              <a class="bm-dropdown-item bm-signout" role="menuitem" href="login.html">Sign out</a>
+      <!-- Right: Quick actions & Super Admin Profile -->
+      <div class="flex items-center gap-3">
+        {% if pickup_order.address %}
+        <div class="hidden md:flex items-center gap-1 text-slate-500 text-xs mr-2">
+          <span class="inline-flex items-center gap-1 bg-slate-100 px-2 py-1 rounded text-slate-600 border border-slate-200 font-mono text-[11px]">
+            <i class="ph-fill ph-map-pin text-rose-500"></i> Zone: {{ pickup_order.address.service_zone.name|default:pickup_order.address.city|default:"Area" }}
+          </span>
+        </div>
+        {% endif %}
+        
+        <!-- Operator / Super Admin dropdown -->
+        <div class="relative" data-dropdown-root>
+          <button type="button" class="flex items-center gap-2 pl-3 border-l border-slate-200 cursor-pointer text-left" data-dropdown-toggle aria-haspopup="true" aria-expanded="false">
+            <div class="w-7 h-7 rounded-md bg-emerald-800 text-white font-bold flex items-center justify-center text-xs shadow-sm">
+              AD
             </div>
+            <div class="hidden sm:block text-left leading-tight">
+              <p class="text-xs font-semibold text-slate-900 flex items-center gap-1 mb-0">
+                Administrator
+                <i class="ph-bold ph-caret-down text-[10px] text-slate-400"></i>
+              </p>
+              <p class="text-[10px] text-slate-500 font-medium mb-0">Super Admin (Full Access)</p>
+            </div>
+          </button>
+          <div class="bm-dropdown hidden" data-dropdown role="menu">
+            <div class="bm-dropdown-header">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-[0.8125rem] font-bold text-slate-900 mb-0">Administrator</p>
+                <span class="bm-perm-badge">Super Admin</span>
+              </div>
+              <p class="text-[0.6875rem] text-slate-500 font-medium mt-0.5 mb-1">admin@gmail.com</p>
+            </div>
+            <a class="bm-dropdown-item" role="menuitem" href="settings.html">Platform settings</a>
+            <a class="bm-dropdown-item bm-signout" role="menuitem" href="login.html">Sign out</a>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="px-3 pb-12 pt-3 sm:px-6" id="bmMain">
+    <!-- Main Content Wrap -->
+    <main class="flex-1 max-w-[1560px] w-full mx-auto p-3 sm:p-5 lg:p-6 space-y-4" id="bmMain">
     {% if pickup_order %}
-      <!-- Top Order Header Card -->
-      <div class="bm-card mb-4 overflow-hidden border border-slate-200 shadow-xs">
-        <div class="p-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
-          <div class="flex items-center gap-2">
-            <a class="bm-btn-ghost bm-btn-sm font-bold text-slate-700" href="orders.html">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Back to Orders
+      <!-- Top Action & Order Summary Bar -->
+      <section class="bg-white rounded-lg border border-slate-200 p-4 shadow-card">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <!-- Title and Metadata -->
+          <div class="flex flex-wrap items-center gap-2.5">
+            <a href="orders.html" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded border border-slate-200 transition-colors">
+              <i class="ph-bold ph-arrow-left"></i>
+              <span>Back to Orders</span>
             </a>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button type="button" onclick="window.print()" class="bm-btn-ghost bm-btn-sm font-bold text-slate-700">
-              <svg class="h-3.5 w-3.5 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-              Print
-            </button>
-            {% if pickup_order.invoice %}
-            <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="bm-btn-ghost bm-btn-sm text-emerald-800 border-emerald-300 hover:bg-emerald-50 font-bold">
-              <svg class="h-3.5 w-3.5 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Invoice
-            </a>
+            <h1 class="text-base sm:text-lg font-bold text-slate-900 font-mono flex items-center gap-2">
+              Order #{{ pickup_order.order_id }}
+            </h1>
+            
+            {% if pickup_order.status == 'COMPLETED' or pickup_order.status == 'USER_REVIEW' or pickup_order.status == 'USER_PAYOUT' %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-300">
+                <i class="ph-bold ph-check text-emerald-700"></i>
+                Completed
+              </span>
+            {% elif pickup_order.status == 'CANCELLED' %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-300">
+                <i class="ph-bold ph-x text-rose-700"></i>
+                Cancelled
+              </span>
+            {% elif pickup_order.status == 'SEARCHING_VENDOR' %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                Searching Vendor
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                {{ pickup_order.get_status_display }}
+              </span>
             {% endif %}
-            {% if pickup_order.status != 'COMPLETED' and pickup_order.status != 'CANCELLED' %}
-            <button type="button" class="bm-btn-danger bm-btn-sm font-bold" data-modal-open="modalCancelOrder">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m4.93 4.93 14.14 14.14"/></svg>
-              Cancel Order
-            </button>
-            {% endif %}
-          </div>
-        </div>
 
-        <div class="p-3.5 sm:p-4">
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl bg-emerald-700 text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm">
-                <svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z"/><path d="M3 8.5 12 14l9-5.5"/><path d="M12 14v7"/></svg>
-              </div>
-              <div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <h1 class="text-base font-extrabold text-slate-900 tracking-tight font-mono">Order #{{ pickup_order.order_id }}</h1>
-                  {% if pickup_order.status == 'COMPLETED' or pickup_order.status == 'USER_REVIEW' or pickup_order.status == 'USER_PAYOUT' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
-                      <svg class="w-3.5 h-3.5 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      Completed
-                    </span>
-                  {% elif pickup_order.status == 'CANCELLED' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-50 text-rose-800 border border-rose-300">
-                      <svg class="w-3.5 h-3.5 text-rose-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      Cancelled
-                    </span>
-                  {% elif pickup_order.status == 'SEARCHING_VENDOR' %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-300">
-                      <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                      Finding Scrap Collector
-                    </span>
-                  {% else %}
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-sky-50 text-sky-800 border border-sky-300">
-                      {% if pickup_order.is_otp_verified %}
-                        <svg class="w-3.5 h-3.5 text-sky-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      {% else %}
-                        <span class="w-2 h-2 rounded-full bg-sky-600 animate-pulse"></span>
-                      {% endif %}
-                      {{ pickup_order.get_status_display }}
-                    </span>
-                  {% endif %}
-                </div>
-                <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 mt-1">
-                  <span>Placed {{ pickup_order.created_at|date:"d M Y, h:i A" }}</span>
-                  <span>•</span>
-                  <span class="text-slate-800 font-semibold">{{ pickup_order.category.name|default:"Scrap" }} › {{ pickup_order.subcategory.name|default:"General" }}</span>
-                  {% if pickup_order.address %}
-                  <span>•</span>
-                  <span class="text-emerald-700 font-semibold">📍 {{ pickup_order.address.city|default:"Area" }}</span>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-
-            <!-- Clean, Aligned Metrics Strip -->
-            <div class="flex flex-wrap items-center gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-              <div class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[85px]">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Weight</span>
-                <span class="text-sm font-extrabold text-slate-900">{{ pickup_order.final_weight|default:pickup_order.approx_weight|default:"0" }} kg</span>
-              </div>
-              <div class="px-3.5 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center min-w-[95px]">
-                <span class="text-[0.625rem] font-bold text-emerald-800 uppercase tracking-wider block">Agreed Payout</span>
-                <span class="text-sm font-extrabold text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0" }}</span>
-              </div>
-              <div class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[85px]">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Pickup Slot</span>
-                <span class="text-sm font-extrabold text-slate-900">{{ pickup_order.pickup_date|date:"d M"|default:"Immediate" }}</span>
-              </div>
-              <div class="px-3.5 py-2 rounded-xl {% if pickup_order.is_otp_verified %}bg-emerald-50 border-emerald-300 text-emerald-950{% else %}bg-amber-50 border-amber-300 text-amber-950{% endif %} border text-center min-w-[120px]">
-                <span class="text-[0.625rem] font-bold uppercase tracking-wider block {% if pickup_order.is_otp_verified %}text-emerald-800{% else %}text-amber-800{% endif %}">🔐 Pickup OTP</span>
-                <span class="text-sm font-extrabold font-mono tracking-widest">{{ pickup_order.pickup_otp|default:"— — — —" }}</span>
-                <span class="text-[0.625rem] font-bold flex items-center justify-center gap-1 mt-0.5 {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %}">
-                  {% if pickup_order.is_otp_verified %}
-                    <svg class="w-3 h-3 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                    Verified
-                  {% else %}
-                    ⏳ Pending
-                  {% endif %}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sleek Horizontal Order Progress Tracker -->
-        <div class="p-4 sm:p-5 bg-slate-50/60 border-t border-slate-100">
-          <div class="flex items-center justify-between mb-3.5">
-            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-              <svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              <span>Order Tracking Journey</span>
-            </h2>
-            <span class="text-xs font-bold text-slate-500">
-              Current: <strong class="text-emerald-800">{{ pickup_order.get_status_display }}</strong>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <i class="ph-fill ph-recycle"></i> {{ pickup_order.category.name|default:"Scrap" }}
             </span>
           </div>
 
-          <div class="overflow-x-auto pb-1">
-            <div class="flex items-center justify-between min-w-[650px] relative">
-              {% for step in order_steps %}
-                <div class="flex-1 flex flex-col items-center text-center relative px-1">
-                  <!-- Stepper Circle -->
-                  <div class="z-10 mb-1.5">
-                    {% if step.is_done %}
-                      <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      </div>
-                    {% elif step.is_current %}
-                      <div class="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center ring-4 ring-emerald-500/25 shadow-xs">
-                        <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
-                      </div>
-                    {% else %}
-                      <div class="w-8 h-8 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-bold text-xs">
-                        {{ forloop.counter }}
-                      </div>
+          <!-- Control Buttons -->
+          <div class="flex items-center gap-2 self-end lg:self-auto">
+            <button type="button" onclick="refreshData()" class="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center gap-1.5 shadow-subtle transition-all active:scale-95">
+              <i class="ph-bold ph-arrows-clockwise text-slate-500" id="refresh-icon"></i>
+              <span>Refresh</span>
+            </button>
+            <button type="button" onclick="window.print()" class="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded flex items-center gap-1.5 shadow-subtle transition-all active:scale-95">
+              <i class="ph-bold ph-printer text-slate-500"></i>
+              <span>Print Challan</span>
+            </button>
+            {% if pickup_order.invoice %}
+            <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="px-2.5 py-1 text-xs font-medium text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded flex items-center gap-1.5 transition-colors">
+              <i class="ph-bold ph-file-text text-emerald-600"></i>
+              <span>Invoice</span>
+            </a>
+            {% endif %}
+            {% if pickup_order.status != 'COMPLETED' and pickup_order.status != 'CANCELLED' %}
+            <button type="button" onclick="openCancelModal()" class="px-2.5 py-1 text-xs font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded flex items-center gap-1.5 transition-colors">
+              <i class="ph-bold ph-x-circle text-rose-500"></i>
+              <span>Cancel Order</span>
+            </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Quick Subtext & Key Metric Strip -->
+        <div class="pt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+          <div class="col-span-2 sm:col-span-3 lg:col-span-2 flex flex-col justify-center text-slate-500">
+            <p class="text-[11px] text-slate-400 font-medium">Order Placed &amp; Origin</p>
+            <p class="font-medium text-slate-800 mt-0.5 flex items-center gap-1.5">
+              <i class="ph-bold ph-calendar-blank text-slate-400"></i>
+              {{ pickup_order.created_at|date:"d M Y, h:i A" }}
+            </p>
+            <p class="text-[11px] text-slate-500 truncate mt-0.5 flex items-center gap-1" title="{{ pickup_order.address.formatted_address|default:'Address on file' }}">
+              <i class="ph-fill ph-map-pin text-rose-500 text-[10px]"></i>
+              {{ pickup_order.address.formatted_address|default:"Pickup address on record" }}
+            </p>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 rounded p-2 flex flex-col justify-between">
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">
+              Weight {% if pickup_order.final_weight %}(Final){% else %}(Estimated){% endif %}
+            </span>
+            <div class="flex items-baseline justify-between mt-0.5">
+              <span class="font-mono text-sm font-bold text-slate-900">
+                {{ pickup_order.final_weight|default:pickup_order.approx_weight|default:"0.00" }} <span class="text-xs font-normal text-slate-500">kg</span>
+              </span>
+              {% if weight_diff is not None %}
+                <span class="text-[10px] font-semibold {% if weight_diff >= 0 %}text-emerald-700 bg-emerald-100/70{% else %}text-amber-700 bg-amber-100/70{% endif %} px-1 rounded">
+                  {% if weight_diff > 0 %}+{% endif %}{{ weight_diff|floatformat:1 }}kg
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="bg-emerald-50/70 border border-emerald-200/90 rounded p-2 flex flex-col justify-between">
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-emerald-700">Agreed Payout</span>
+            <div class="flex items-baseline justify-between mt-0.5">
+              <span class="font-mono text-sm font-bold text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</span>
+              {% if rate_per_kg %}
+                <span class="text-[10px] text-emerald-700 font-medium">₹{{ rate_per_kg }}/kg</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200/80 rounded p-2 flex flex-col justify-between">
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Pickup Slot</span>
+            <p class="font-semibold text-slate-800 text-xs mt-0.5 flex items-center gap-1">
+              <i class="ph-bold ph-clock text-slate-400"></i> {{ pickup_order.pickup_date|date:"d M"|default:"Immediate" }} ({{ pickup_order.time_slot|default:"Flexible" }})
+            </p>
+          </div>
+
+          <div class="{% if pickup_order.is_otp_verified %}bg-emerald-50/80 border-emerald-200{% else %}bg-amber-50/80 border-amber-200{% endif %} border rounded p-2 flex flex-col justify-between relative group cursor-pointer" onclick="copyOTP('{{ pickup_order.pickup_otp }}')">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase tracking-wider font-semibold {% if pickup_order.is_otp_verified %}text-emerald-800{% else %}text-amber-800{% endif %} flex items-center gap-1">
+                <i class="ph-fill ph-lock-key {% if pickup_order.is_otp_verified %}text-emerald-600{% else %}text-amber-600{% endif %}"></i> Pickup OTP
+              </span>
+              {% if pickup_order.is_otp_verified %}
+                <span class="text-[9px] font-bold uppercase tracking-wider bg-emerald-200/80 text-emerald-900 px-1 py-0.2 rounded">Verified</span>
+              {% else %}
+                <span class="text-[9px] font-bold uppercase tracking-wider bg-amber-200/80 text-amber-900 px-1 py-0.2 rounded">Pending</span>
+              {% endif %}
+            </div>
+            <div class="flex items-center justify-between mt-0.5">
+              <span class="font-mono text-sm font-bold tracking-widest text-slate-900" id="otp-display">{{ pickup_order.pickup_otp|default:"— — — —" }}</span>
+              <span class="text-[10px] {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %} font-semibold group-hover:underline flex items-center gap-0.5">
+                <i class="ph-bold ph-copy"></i> Copy
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Horizontal Order Progress Tracker (7 Steps) -->
+      <section class="bg-white rounded-lg border border-slate-200 p-3 sm:p-4 shadow-card">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+          <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="ph-bold ph-path text-emerald-600"></i>
+            Order Tracking Journey
+          </h2>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Current Phase:</span>
+            <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              Stage {{ current_stage_num }}/7: {{ pickup_order.get_status_display }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Stepper Track -->
+        <div class="overflow-x-auto py-1">
+          <div class="min-w-[680px] grid grid-cols-7 relative">
+            {% for step in order_steps %}
+              <div class="relative text-center group">
+                {% if not forloop.first %}
+                  <div class="stepper-connector {% if step.is_done or step.is_current %}bg-emerald-600{% else %}bg-slate-200{% endif %}"></div>
+                {% endif %}
+
+                {% if step.is_done %}
+                  <div class="w-7 h-7 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shadow-sm relative z-10 ring-4 ring-white">
+                    <i class="ph-bold ph-check"></i>
+                  </div>
+                  <div class="mt-1.5">
+                    <p class="text-[11px] font-semibold text-slate-800 leading-tight">{{ step.label }}</p>
+                    <span class="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded inline-block mt-0.5">Done</span>
+                  </div>
+                {% elif step.is_current %}
+                  <div class="w-7 h-7 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-sm relative z-10 ring-4 ring-emerald-100 animate-pulse">
+                    <i class="ph-bold ph-spinner-gap animate-spin"></i>
+                  </div>
+                  <div class="mt-1.5">
+                    <p class="text-[11px] font-bold text-emerald-800 leading-tight">{{ step.label }}</p>
+                    <span class="text-[10px] font-semibold text-white bg-emerald-600 px-1.5 py-0.2 rounded inline-block mt-0.5 shadow-xs">Active</span>
+                  </div>
+                {% else %}
+                  <div class="w-7 h-7 mx-auto rounded-full bg-slate-100 text-slate-400 border border-slate-300 flex items-center justify-center text-xs font-semibold relative z-10 ring-4 ring-white">
+                    {{ forloop.counter }}
+                  </div>
+                  <div class="mt-1.5">
+                    <p class="text-[11px] font-medium text-slate-600 leading-tight">{{ step.label }}</p>
+                    <span class="text-[10px] text-slate-400">Pending</span>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content Modular Grid: 2 Column (5 cols vs 7 cols) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+
+        <!-- LEFT COLUMN: Stakeholders (Customer & Scrap Vendor) -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- Card 1: Customer (Seller) Details -->
+          <div class="bg-white rounded-lg border border-slate-200 p-4 shadow-card hover:border-slate-300 transition-all">
+            <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm">
+                  <i class="ph-fill ph-user"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Customer (Seller)</h3>
+              </div>
+              <a href="user-detail.html?id={{ pickup_order.user.id }}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 group">
+                <span>Profile</span>
+                <i class="ph-bold ph-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+              </a>
+            </div>
+
+            <div class="space-y-3">
+              <!-- User Basic row -->
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    {{ pickup_order.user.profile.full_name|default:pickup_order.user.username }}
+                    <span class="text-[10px] font-semibold font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                      ID: {{ pickup_order.user.profile.display_user_id|default:pickup_order.user.username }}
+                    </span>
+                  </p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">
+                    {% if pickup_order.user.profile.kyc_status == 'Approved' %}KYC Verified Seller{% else %}Registered Seller{% endif %} • {{ pickup_order.user.email|default:"Active account" }}
+                  </p>
+                </div>
+                {% if pickup_order.user.profile.kyc_status == 'Approved' %}
+                  <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-semibold rounded border border-emerald-200 flex items-center gap-1">
+                    <i class="ph-fill ph-seal-check"></i> Verified
+                  </span>
+                {% else %}
+                  <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-semibold rounded border border-slate-200 flex items-center gap-1">
+                    <i class="ph-fill ph-user-circle"></i> Active
+                  </span>
+                {% endif %}
+              </div>
+
+              <!-- Contact Box -->
+              <div class="p-2.5 rounded bg-slate-50 border border-slate-200/90 flex items-center justify-between">
+                <div>
+                  <span class="text-[10px] uppercase font-semibold text-slate-400 block">Customer Phone</span>
+                  <span class="font-mono text-xs font-bold text-slate-800">{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="copyToClipboard('{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}', 'Customer phone copied')" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded text-xs transition-colors" title="Copy Number">
+                    <i class="ph-bold ph-copy"></i>
+                  </button>
+                  <a href="tel:{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}" class="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-200 rounded flex items-center gap-1 shadow-subtle transition-colors">
+                    <i class="ph-bold ph-phone-call"></i>
+                    <span>Call Customer</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Complete Pickup Address -->
+              <div class="text-xs bg-white rounded border border-slate-200 p-2.5">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-rose-600 flex items-center gap-1">
+                    <i class="ph-fill ph-map-pin"></i> Complete Pickup Address
+                  </span>
+                  {% if pickup_order.address.service_zone %}
+                    <span class="text-[10px] font-mono font-semibold text-slate-600 bg-slate-100 px-1 rounded">Zone: {{ pickup_order.address.service_zone.name }}</span>
+                  {% endif %}
+                </div>
+                <p class="text-slate-800 font-semibold leading-relaxed">
+                  {{ pickup_order.address.formatted_address|default:"Pickup address on record" }}
+                </p>
+                <p class="text-slate-500 text-[11px] mt-0.5">
+                  {{ pickup_order.address.city|default:"Area" }} • {{ pickup_order.address.state|default:"State" }} • PIN {{ pickup_order.address.pincode|default:"—" }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Scrap Vendor (Collector) Details -->
+          {% if pickup_order.assigned_vendor or pickup_order.assigned_vendor_name %}
+            <div class="bg-white rounded-lg border border-slate-200 p-4 shadow-card hover:border-slate-300 transition-all">
+              <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded bg-amber-50 text-amber-600 flex items-center justify-center text-sm">
+                    <i class="ph-fill ph-truck"></i>
+                  </div>
+                  <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Scrap Vendor (Collector)</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    Assigned
+                  </span>
+                  {% if pickup_order.assigned_vendor.vendor_profile %}
+                  <a href="vendor-detail.html?id={{ pickup_order.assigned_vendor.vendor_profile.id }}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1 group">
+                    <span>Profile</span>
+                    <i class="ph-bold ph-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <!-- Business name & owner -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Business / Shop Name</span>
+                    <p class="text-sm font-bold text-slate-900">
+                      {{ pickup_order.assigned_vendor.vendor_profile.shop_name|default:pickup_order.assigned_vendor_name|default:"Scrap Collector" }}
+                    </p>
+                    <p class="text-[11px] text-slate-500">
+                      Owner: {{ pickup_order.assigned_vendor.vendor_profile.owner_name|default:pickup_order.assigned_vendor_name|default:pickup_order.assigned_vendor.username }}
+                      <span class="font-mono text-slate-400">(ID: {{ pickup_order.assigned_vendor.vendor_profile.vendor_id|default:"VND-Assigned" }})</span>
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      <i class="ph-fill ph-star text-amber-500 text-xs"></i> {{ pickup_order.assigned_vendor.vendor_profile.rating|default:"4.8" }} ★
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Collector phone bar -->
+                <div class="p-2.5 rounded bg-slate-50 border border-slate-200/90 flex items-center justify-between">
+                  <div>
+                    <span class="text-[10px] uppercase font-semibold text-slate-400 block">Collector Phone</span>
+                    <span class="font-mono text-xs font-bold text-slate-800">
+                      {{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.profile.phone|default:pickup_order.assigned_vendor.username|default:"+91 —" }}
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    {% if pickup_order.assigned_vendor_phone or pickup_order.assigned_vendor.profile.phone %}
+                      <button type="button" onclick="copyToClipboard('{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.profile.phone }}', 'Vendor Phone copied')" class="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200 rounded text-xs transition-colors" title="Copy Number">
+                        <i class="ph-bold ph-copy"></i>
+                      </button>
+                      <a href="tel:{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.profile.phone }}" class="px-2.5 py-1 text-xs font-medium text-emerald-700 bg-white hover:bg-emerald-50 border border-slate-200 rounded flex items-center gap-1 shadow-subtle transition-colors">
+                        <i class="ph-bold ph-phone-call"></i>
+                        <span>Call Driver</span>
+                      </a>
                     {% endif %}
                   </div>
+                </div>
 
-                  <!-- Step Label -->
-                  <p class="text-xs font-bold leading-tight {% if step.is_done %}text-slate-900{% elif step.is_current %}text-emerald-900 font-extrabold{% else %}text-slate-400{% endif %}">
-                    {{ step.label }}
-                  </p>
+                <!-- Live GPS Location Telemetry Card -->
+                {% if pickup_order.vendor_tracking %}
+                  <div class="p-2.5 rounded border border-blue-200 bg-blue-50/40 text-xs">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                        <span class="relative flex h-2 w-2">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                        </span>
+                        Live Driver GPS Telemetry
+                      </span>
+                      <span class="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                        {{ pickup_order.vendor_tracking.updated_at|date:"h:i:s A" }}
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-600 bg-white/80 p-1.5 rounded border border-blue-100">
+                      <span>Lat: {{ pickup_order.vendor_tracking.latitude }}, Long: {{ pickup_order.vendor_tracking.longitude }}</span>
+                      <a href="https://maps.google.com/?q={{ pickup_order.vendor_tracking.latitude }},{{ pickup_order.vendor_tracking.longitude }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-sans font-semibold flex items-center gap-0.5">
+                        <span>View Map</span>
+                        <i class="ph-bold ph-arrow-square-out text-[10px]"></i>
+                      </a>
+                    </div>
+                  </div>
+                {% elif pickup_order.address and pickup_order.address.latitude %}
+                  <div class="p-2.5 rounded border border-slate-200 bg-slate-50/60 text-xs">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                        <i class="ph-fill ph-navigation-arrow text-emerald-600"></i>
+                        Destination Coordinates
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-600 bg-white p-1.5 rounded border border-slate-200">
+                      <span>Lat: {{ pickup_order.address.latitude }}, Long: {{ pickup_order.address.longitude }}</span>
+                      <a href="https://maps.google.com/?q={{ pickup_order.address.latitude }},{{ pickup_order.address.longitude }}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:underline font-sans font-semibold flex items-center gap-0.5">
+                        <span>View Map</span>
+                        <i class="ph-bold ph-arrow-square-out text-[10px]"></i>
+                      </a>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            <!-- Unassigned Vendor Card with Quick Assignment -->
+            <div class="bg-white rounded-lg border border-amber-200 p-4 shadow-card">
+              <div class="flex items-center justify-between pb-2.5 mb-2.5 border-b border-amber-100">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded bg-amber-100 text-amber-700 flex items-center justify-center text-sm">
+                    <i class="ph-fill ph-truck"></i>
+                  </div>
+                  <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Scrap Vendor Assignment</h3>
+                </div>
+                <span class="text-[10px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                  Pending Assignment
+                </span>
+              </div>
 
-                  <!-- Status Subtext -->
-                  <span class="text-[0.625rem] mt-0.5 flex items-center gap-0.5 {% if step.is_done %}text-emerald-700 font-bold{% elif step.is_current %}text-emerald-800 font-extrabold bg-emerald-100 px-1.5 py-0.2 rounded{% else %}text-slate-300 font-medium{% endif %}">
-                    {% if step.is_done %}
-                      <svg class="w-2.5 h-2.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      Done
-                    {% elif step.is_current %}
-                      In Progress
-                    {% else %}
-                      Pending
-                    {% endif %}
-                  </span>
+              <p class="text-xs text-slate-600 mb-3 leading-relaxed">
+                No scrap collector has been assigned yet. You can manually assign an approved vendor operating in this zone:
+              </p>
 
-                  <!-- Connecting Line -->
-                  {% if not forloop.last %}
-                    <div class="hidden sm:block absolute top-4 left-1/2 w-full h-0.5 -z-0 {% if step.is_done %}bg-emerald-500{% else %}bg-slate-200{% endif %}"></div>
+              <form method="post" action="/admin/orders/{{ pickup_order.order_id }}/assign-vendor" class="space-y-3">
+                {% csrf_token %}
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-700 mb-1">Select Available Vendor ({{ available_vendors|length }} in zone)</label>
+                  <select name="vendor_id" required class="w-full text-xs font-medium p-2 rounded border border-slate-300 focus:ring-1 focus:ring-emerald-500 bg-slate-50">
+                    <option value="">Choose a collector...</option>
+                    {% for v in available_vendors %}
+                      <option value="{{ v.id }}">{{ v.shop_name }} ({{ v.owner_name }}) • {{ v.display_vendor_id }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button type="submit" class="w-full py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded transition-colors flex items-center justify-center gap-1.5 shadow-subtle">
+                  <i class="ph-bold ph-user-check text-sm"></i>
+                  <span>Assign Vendor Now</span>
+                </button>
+              </form>
+            </div>
+          {% endif %}
+
+        </div>
+
+        <!-- RIGHT COLUMN: Scrap Material, Photos, Financials & Audit -->
+        <div class="lg:col-span-7 space-y-4">
+
+          <!-- Card 3: Scrap Material Details & Weight Breakdown -->
+          <div class="bg-white rounded-lg border border-slate-200 p-4 shadow-card">
+            <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+                  <i class="ph-fill ph-package"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Scrap Material Details</h3>
+              </div>
+              <span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">
+                {{ pickup_order.category.name|default:"Scrap" }} Category
+              </span>
+            </div>
+
+            <!-- 3-Col metric grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Subcategory / Grade</span>
+                <p class="text-xs font-bold text-slate-800 mt-1">{{ pickup_order.subcategory.name|default:"General Scrap" }}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ pickup_order.notes|default:"Standard Scrap Batch" }}</p>
+              </div>
+
+              <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block">Estimated Weight</span>
+                <p class="text-sm font-bold font-mono text-slate-800 mt-1">{{ pickup_order.approx_weight|default:"0.00" }} <span class="text-xs font-normal text-slate-500">kg</span></p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Declared by Customer</p>
+              </div>
+
+              <div class="p-3 bg-emerald-50/60 rounded border border-emerald-200">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] uppercase font-bold text-emerald-800 block">Final Weighed Weight</span>
+                  {% if weight_diff is not None %}
+                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1 rounded">
+                      {% if weight_diff >= 0 %}+{% endif %}{{ weight_diff|floatformat:1 }}kg
+                    </span>
                   {% endif %}
+                </div>
+                <p class="text-base font-bold font-mono text-emerald-950 mt-0.5">
+                  {% if pickup_order.final_weight %}
+                    {{ pickup_order.final_weight }} <span class="text-xs font-medium text-emerald-800">kg</span>
+                  {% else %}
+                    — <span class="text-xs font-normal text-slate-400">(Pending Scale)</span>
+                  {% endif %}
+                </p>
+                <p class="text-[10px] font-semibold text-emerald-700 mt-0.5 flex items-center gap-1">
+                  {% if pickup_order.final_weight %}
+                    <i class="ph-bold ph-scales"></i> On-site Digital Scale Verified
+                  {% else %}
+                    <i class="ph-bold ph-clock"></i> Measured upon collector arrival
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Uploaded Scrap Photos & Inspection -->
+          <div class="bg-white rounded-lg border border-slate-200 p-4 shadow-card">
+            <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded bg-slate-100 text-slate-600 flex items-center justify-center text-sm">
+                  <i class="ph-fill ph-camera"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Scrap Photos Uploaded</h3>
+              </div>
+              <span class="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
+                <i class="ph-bold ph-image"></i> {{ pickup_order.images.count }} Photos Available
+              </span>
+            </div>
+
+            <!-- Photo Gallery Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {% for img in pickup_order.images.all %}
+                <div class="group relative rounded-lg border border-slate-200 overflow-hidden bg-slate-100 hover:shadow-md transition-all">
+                  <div class="h-48 overflow-hidden bg-slate-900 flex items-center justify-center relative cursor-pointer" onclick="openLightbox('{{ img.image_url }}', 'Scrap Proof #{{ forloop.counter }}', '{{ img.uploaded_at|date:'d M Y, h:i A'|default:pickup_order.created_at|date:'d M Y, h:i A' }}')">
+                    <img src="{{ img.image_url }}" alt="Scrap Proof #{{ forloop.counter }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                    <div class="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors flex items-center justify-center">
+                      <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded shadow-md flex items-center gap-1.5">
+                        <i class="ph-bold ph-magnifying-glass-plus text-emerald-600"></i> Zoom Preview
+                      </span>
+                    </div>
+                  </div>
+                  <div class="p-2.5 bg-white flex items-center justify-between text-xs border-t border-slate-100">
+                    <div>
+                      <p class="font-bold text-slate-800">Scrap Item Proof #{{ forloop.counter }}</p>
+                      <p class="text-[11px] font-mono text-slate-400 mt-0.5">{{ img.uploaded_at|date:"d M, H:i"|default:pickup_order.created_at|date:"d M, H:i" }}</p>
+                    </div>
+                    <button type="button" onclick="openLightbox('{{ img.image_url }}', 'Scrap Proof #{{ forloop.counter }}', '{{ img.uploaded_at|date:'d M Y, h:i A'|default:pickup_order.created_at|date:'d M Y, h:i A' }}')" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
+                      <span>Zoom</span>
+                      <i class="ph-bold ph-arrow-up-right text-[10px]"></i>
+                    </button>
+                  </div>
+                </div>
+              {% empty %}
+                <div class="col-span-2 py-8 text-center text-slate-400 border border-dashed border-slate-200 rounded-lg">
+                  <i class="ph-bold ph-camera-slash text-2xl text-slate-300 mb-1"></i>
+                  <p class="text-xs font-semibold text-slate-500">No scrap photos uploaded</p>
+                  <p class="text-[11px] text-slate-400 mt-0.5">Customer did not attach visual proof for this order.</p>
                 </div>
               {% endfor %}
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Main Visual Grid: 2-Columns with Clear Human Cards -->
-      <div class="row g-4">
-        <!-- Left Column: Who (Customer) & Who (Vendor) -->
-        <div class="col-12 col-lg-5 col-xl-4 space-y-4">
-          <!-- Card 1: Customer Details -->
-          <div class="bm-card border border-slate-200 shadow-sm overflow-hidden">
-            <div class="bm-card-hd bg-slate-50/70 border-b border-slate-100 flex items-center justify-between py-3 px-4">
-              <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span class="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">👤</span>
-                <span>Customer (Seller)</span>
-              </h2>
-              {% if pickup_order.user.profile %}
-              <a class="text-xs font-bold text-brand-700 hover:underline" href="user-detail.html?id={{ pickup_order.user.id }}">Profile →</a>
-              {% endif %}
-            </div>
-            <div class="p-4 space-y-3.5">
-              <div class="flex items-center gap-3">
-                <div class="h-12 w-12 rounded-full bg-emerald-700 text-white font-extrabold flex items-center justify-center text-base shadow-sm shrink-0">
-                  {{ pickup_order.user.profile.initials|default:"CU" }}
-                </div>
-                <div class="min-w-0">
-                  <p class="text-base font-extrabold text-slate-900 leading-tight truncate">
-                    {{ pickup_order.user.profile.full_name|default:pickup_order.user.username }}
-                  </p>
-                  <p class="text-xs text-slate-500 font-mono mt-0.5">
-                    ID: {{ pickup_order.user.profile.display_user_id|default:pickup_order.user.username }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Phone & Direct Call Button -->
-              <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Customer Phone</p>
-                  <p class="text-sm font-extrabold text-slate-900 font-mono mt-0.5">{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}</p>
-                </div>
-                <a href="tel:{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs active:scale-95 transition">
-                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                  <span>Call Customer</span>
-                </a>
-              </div>
-
-              <!-- Complete Pickup Address -->
-              <div>
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                  <span>📍 Complete Pickup Address</span>
-                </p>
-                <div class="text-xs text-slate-800 leading-relaxed bg-white p-3 rounded-xl border border-slate-200">
-                  <p class="font-bold text-slate-900">{{ pickup_order.address.formatted_address|default:"Pickup address on user record" }}</p>
-                  <p class="text-slate-500 mt-1">
-                    {{ pickup_order.address.city|default:"City" }} • {{ pickup_order.address.state|default:"State" }} • PIN {{ pickup_order.address.pincode|default:"—" }}
-                  </p>
-                  {% if pickup_order.address.service_zone %}
-                  <div class="mt-2 pt-2 border-t border-slate-100 flex items-center gap-1 text-[0.6875rem] font-bold text-emerald-800">
-                    <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
-                    <span>Zone: {{ pickup_order.address.service_zone.name }}</span>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 2: Assigned Scrap Vendor / Collector -->
-          <div class="bm-card border border-slate-200 shadow-sm overflow-hidden">
-            <div class="bm-card-hd bg-slate-50/70 border-b border-slate-100 flex items-center justify-between py-3 px-4">
-              <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span class="h-7 w-7 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-sm">🚚</span>
-                <span>Scrap Vendor (Collector)</span>
-              </h2>
-              {% if pickup_order.assigned_vendor %}
+          <!-- Card 5: Financial Settlement & Billing -->
+          <div class="bg-white rounded-lg border border-slate-200 p-4 shadow-card">
+            <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-100">
               <div class="flex items-center gap-2">
-                <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold">Assigned</span>
-                {% if pickup_order.assigned_vendor.vendor_profile %}
-                <a class="text-xs font-bold text-brand-700 hover:underline" href="vendor-detail.html?id={{ pickup_order.assigned_vendor.vendor_profile.id }}">Profile →</a>
-                {% endif %}
+                <div class="w-6 h-6 rounded bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-bold">
+                  <i class="ph-fill ph-currency-inr"></i>
+                </div>
+                <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Financial Settlement &amp; Billing</h3>
               </div>
+              {% if pickup_order.payout_status == 'DISBURSED' %}
+                <span class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <i class="ph-bold ph-check-circle text-emerald-600"></i>
+                  Disbursed
+                </span>
               {% else %}
-              <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/20 font-bold">Awaiting</span>
+                <span class="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  Pending Settlement
+                </span>
               {% endif %}
             </div>
-            <div class="p-4 space-y-3.5">
-              {% if pickup_order.assigned_vendor_name or pickup_order.assigned_vendor %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Box 1: Customer Payout -->
+              <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-lg flex flex-col justify-between">
                 <div>
-                  <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Business / Shop Name</p>
-                  <p class="text-base font-extrabold text-slate-900 mt-0.5">
-                    {{ pickup_order.assigned_vendor_name|default:pickup_order.assigned_vendor.vendor_profile.shop_name|default:"Scrap Collector" }}
-                  </p>
-                  {% if pickup_order.assigned_vendor.vendor_profile.owner_name %}
-                    <p class="text-xs text-slate-500 mt-0.5">Owner: {{ pickup_order.assigned_vendor.vendor_profile.owner_name }}</p>
-                  {% endif %}
-                </div>
-
-                {% if pickup_order.assigned_vendor_phone or pickup_order.assigned_vendor.username %}
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3">
-                  <div>
-                    <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Collector Phone</p>
-                    <p class="text-sm font-extrabold text-slate-900 font-mono mt-0.5">{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.username }}</p>
+                  <span class="text-[10px] uppercase font-bold text-emerald-800 tracking-wider block">Customer Payout (Seller Receives)</span>
+                  <div class="flex items-baseline gap-2 mt-1">
+                    <span class="font-mono text-xl font-black text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</span>
+                    <span class="text-[11px] text-emerald-700 font-medium">(Net credited)</span>
                   </div>
-                  <a href="tel:{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.username }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs active:scale-95 transition">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                    <span>Call Driver</span>
-                  </a>
                 </div>
-                {% endif %}
-
-                {% if pickup_order.vendor_tracking %}
-                <div class="p-3 rounded-xl bg-sky-50/60 border border-sky-200 text-xs">
-                  <div class="flex items-center justify-between font-bold text-sky-900">
-                    <span class="flex items-center gap-1.5">
-                      <span class="h-2 w-2 rounded-full bg-sky-600 animate-ping"></span>
-                      <span>Live Driver GPS Location</span>
-                    </span>
-                    <span class="text-[0.6875rem] font-mono text-sky-700">{{ pickup_order.vendor_tracking.updated_at|date:"h:i:s A" }}</span>
-                  </div>
-                  <p class="font-mono text-slate-600 mt-1">Lat: {{ pickup_order.vendor_tracking.latitude }}, Long: {{ pickup_order.vendor_tracking.longitude }}</p>
-                </div>
-                {% endif %}
-
-              {% else %}
-                <div class="text-center py-4 bg-amber-50/50 border border-dashed border-amber-200 rounded-xl p-4">
-                  <p class="text-2xl mb-1">🚚</p>
-                  <p class="text-sm font-bold text-slate-800">No Vendor Assigned</p>
-                  <p class="text-xs text-slate-500 mt-1">Select an active vendor to assign to this pickup.</p>
-                </div>
-
-                {% if available_vendors %}
-                <form class="space-y-2.5 pt-2" method="post" action="/admin/orders/{{ pickup_order.order_id }}/assign-vendor">
-                  {% csrf_token %}
-                  <label class="bm-label" for="vendor-select">Select Operating Vendor</label>
-                  <select class="bm-select" id="vendor-select" name="vendor_id" required>
-                    <option value="">-- Choose Vendor from {{ pickup_order.address.service_zone.name|default:"Zone" }} --</option>
-                    {% for v in available_vendors %}
-                    <option value="{{ v.pk }}">{{ v.shop_name }} ({{ v.owner_name }}) - {{ v.user.profile.phone }}{% if not v.is_online %} [Offline]{% endif %}</option>
-                    {% endfor %}
-                  </select>
-                  <button type="submit" class="bm-btn-primary w-full justify-center font-bold">Assign This Vendor</button>
-                </form>
-                {% else %}
-                <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium">
-                  ⚠️ No active, approved vendors currently cover {{ pickup_order.address.service_zone.name|default:"this area" }}.
+                <p class="text-[11px] text-emerald-800/80 mt-2 pt-2 border-t border-emerald-200 flex items-center gap-1">
+                  <i class="ph-bold ph-check-circle text-emerald-600"></i>
+                  Final price calculated &amp; agreed for pickup.
                 </p>
-                {% endif %}
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Column: What (Scrap Details & Photos) & Financials -->
-        <div class="col-12 col-lg-7 col-xl-8 space-y-4">
-          <!-- Card 3: Scrap Item & Weight Card -->
-          <div class="bm-card border border-slate-200 shadow-sm overflow-hidden">
-            <div class="bm-card-hd bg-slate-50/70 border-b border-slate-100 flex items-center justify-between py-3 px-4">
-              <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span class="h-7 w-7 rounded-lg bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-sm">📦</span>
-                <span>Scrap Material Details</span>
-              </h2>
-              <span class="bm-badge bg-emerald-50 text-emerald-800 ring-1 ring-emerald-500/20 font-bold">
-                {{ pickup_order.category.name|default:"Scrap" }}
-              </span>
-            </div>
-            <div class="p-5">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                  <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Subcategory / Grade</p>
-                  <p class="text-sm font-extrabold text-slate-900 mt-1">{{ pickup_order.subcategory.name|default:"General Scrap" }}</p>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
-                  <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Estimated Weight</p>
-                  <p class="text-sm font-extrabold text-slate-900 mt-1">{{ pickup_order.approx_weight|default:"0" }} kg</p>
-                </div>
-                <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
-                  <p class="text-[0.6875rem] font-bold text-emerald-800 uppercase tracking-wider">Final Weighed Weight</p>
-                  <p class="text-sm font-extrabold text-emerald-700 mt-1">{% if pickup_order.final_weight %}{{ pickup_order.final_weight }} kg{% else %}— (Pending scale){% endif %}</p>
-                </div>
               </div>
 
-              {% if pickup_order.notes %}
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 mb-4">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Customer Special Instructions / Notes</p>
-                <p class="text-xs text-slate-800 mt-1 font-medium italic">"{{ pickup_order.notes }}"</p>
-              </div>
-              {% endif %}
-
-              <!-- Photo Proofs Gallery (Super visual, click-to-zoom) -->
-              <div class="border-t border-slate-100 pt-4 mt-2">
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>📷 Scrap Photos Uploaded</span>
-                  </h3>
-                  <span class="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                    {{ pickup_order.images.count }} Photo{{ pickup_order.images.count|pluralize }}
-                  </span>
-                </div>
-
-                {% if pickup_order.images.all %}
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {% for proof in pickup_order.images.all %}
-                  <div class="group relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-xs hover:shadow-md transition">
-                    <div class="block relative aspect-video bg-slate-100 overflow-hidden cursor-pointer" onclick="openOrderPhotosModal('{{ pickup_order.order_id }}', [{% for i in pickup_order.images.all %}'{{ i.image_url }}'{% if not forloop.last %},{% endif %}{% endfor %}], {{ forloop.counter0 }})">
-                      <img src="{{ proof.image_url }}" alt="Scrap photo" class="w-full h-28 object-cover group-hover:scale-105 transition duration-200" loading="lazy" onerror="this.onerror=null; this.src='/static/images/login_banner.png';">
-                      <span class="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition flex items-center justify-center opacity-0 group-hover:opacity-100 text-white font-semibold text-xs">
-                        <svg class="h-6 w-6 drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-                      </span>
-                    </div>
-                    <div class="p-2 bg-white flex items-center justify-between text-[0.6875rem]">
-                      <span class="text-slate-400 font-mono">{{ proof.uploaded_at|date:"d M, H:i" }}</span>
-                      <a href="{{ proof.image_url }}" target="_blank" rel="noopener" class="text-emerald-700 hover:text-emerald-900 font-bold">Zoom ↗</a>
-                    </div>
-                  </div>
-                  {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
-                  <p class="text-xl text-slate-300 mb-1">📷</p>
-                  <p class="text-xs text-slate-400 font-medium">No scrap photos attached to this order.</p>
-                </div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-
-          <!-- Card 4: Financial Settlement & Invoice Breakdown -->
-          <div class="bm-card border border-slate-200 shadow-sm overflow-hidden">
-            <div class="bm-card-hd bg-slate-50/70 border-b border-slate-100 flex items-center justify-between py-3 px-4">
-              <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span class="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">💵</span>
-                <span>Financial Settlement &amp; Billing</span>
-              </h2>
-              <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold">
-                {{ pickup_order.get_payout_status_display }}
-              </span>
-            </div>
-            <div class="p-5">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- User Payout Box -->
-                <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
-                  <p class="text-xs font-bold text-emerald-900 uppercase tracking-wider">Customer Payout (Seller Receives)</p>
-                  <p class="text-2xl font-extrabold text-emerald-700">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</p>
-                  <p class="text-[0.6875rem] text-emerald-800">Final price calculated and agreed for pickup.</p>
-                </div>
-
-                <!-- Invoice Details Box -->
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+              <!-- Box 2: Platform Tax Invoice -->
+              <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between">
+                <div>
                   <div class="flex items-center justify-between">
-                    <p class="text-xs font-bold text-slate-600 uppercase tracking-wider">Platform Tax Invoice</p>
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Platform Tax Invoice</span>
                     {% if pickup_order.invoice %}
-                    <span class="bm-badge bg-emerald-50 text-emerald-700 font-bold">Invoice Generated</span>
+                      <span class="text-[9px] font-semibold font-mono text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">#{{ pickup_order.invoice.invoice_number }}</span>
                     {% else %}
-                    <span class="bm-badge bg-slate-100 text-slate-600 font-medium">Pending Final Weighing</span>
+                      <span class="text-[9px] font-semibold font-mono text-slate-500 bg-slate-200/80 px-1.5 py-0.2 rounded">Pending Completion</span>
                     {% endif %}
                   </div>
+                  <p class="text-xs font-medium text-slate-600 mt-2 leading-relaxed">
+                    {% if pickup_order.invoice %}
+                      Total Paid by Vendor: <strong>₹{{ pickup_order.invoice.total_paid_by_vendor }}</strong> (Platform Fee: ₹{{ pickup_order.invoice.platform_fee }})
+                    {% else %}
+                      Invoice generates automatically upon pickup completion and weighment confirmation.
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+                  <span class="text-slate-400 text-[11px]">Tax Split: CGST (9%) + SGST (9%)</span>
                   {% if pickup_order.invoice %}
-                  <p class="text-base font-bold text-slate-900 font-mono">{{ pickup_order.invoice.invoice_number }}</p>
-                  <div class="text-xs text-slate-600 space-y-1 pt-1">
-                    <div class="flex justify-between"><span>Vendor Paid:</span> <strong class="text-slate-900">₹{{ pickup_order.invoice.total_paid_by_vendor }}</strong></div>
-                    <div class="flex justify-between"><span>Platform Fee:</span> <strong>₹{{ pickup_order.invoice.platform_fee }}</strong></div>
-                  </div>
-                  <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="text-xs text-brand-700 hover:underline font-bold inline-block pt-1">Open Full Invoice →</a>
+                    <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="font-sans font-semibold text-emerald-700 hover:underline flex items-center gap-0.5">
+                      <span>View Invoice</span>
+                      <i class="ph-bold ph-arrow-right text-[10px]"></i>
+                    </a>
                   {% else %}
-                  <p class="text-xs text-slate-500 mt-1">Invoice generates automatically upon pickup completion and weighment confirmation.</p>
+                    <span class="font-mono font-semibold text-slate-700">TBD</span>
                   {% endif %}
                 </div>
               </div>
+            </div>
+          </div>
 
-              {% if pickup_order.review %}
-              <!-- Customer Rating & Review -->
-              <div class="mt-4 pt-4 border-t border-slate-100">
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Customer Star Review &amp; Feedback</p>
-                <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200/70 flex items-start gap-3">
-                  <div class="text-amber-500 text-lg leading-none font-bold">
-                    ★ {{ pickup_order.review.rating }}/5
-                  </div>
-                  <div>
-                    <p class="text-xs font-medium text-slate-800">"{{ pickup_order.review.comments|default:"Good service." }}"</p>
-                    <p class="text-[0.6875rem] text-slate-500 mt-1">Moderation Status: {% if pickup_order.review.is_approved_by_admin %}<span class="text-emerald-700 font-bold">Approved</span>{% else %}<span class="text-amber-700 font-bold">Under review</span>{% endif %}</p>
-                  </div>
-                </div>
+          <!-- Card 6: Audit Log & Operator Notes (Compact collapsible) -->
+          <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-card">
+            <button type="button" onclick="toggleAuditLog()" class="w-full p-3 bg-slate-50/70 hover:bg-slate-100 flex items-center justify-between text-left transition-colors">
+              <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="ph-bold ph-clock-counter-clockwise text-slate-500"></i>
+                Activity Audit Trail &amp; System Logs
+              </span>
+              <i class="ph-bold ph-caret-down text-slate-400 transition-transform duration-200" id="audit-caret"></i>
+            </button>
+            
+            <div id="audit-content" class="p-3 space-y-2 text-xs border-t border-slate-200 bg-white">
+              <div class="flex items-start gap-2 text-slate-600 pb-2 border-b border-slate-100">
+                <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ pickup_order.created_at|date:"H:i:s" }}</span>
+                <p><strong class="text-slate-800">Order Placed:</strong> Customer {{ pickup_order.user.profile.full_name|default:pickup_order.user.username }} requested scrap pickup for {{ pickup_order.category.name|default:"Scrap" }}.</p>
+              </div>
+              {% if pickup_order.final_agreed_price %}
+              <div class="flex items-start gap-2 text-slate-600 pb-2 border-b border-slate-100">
+                <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ pickup_order.created_at|date:"H:i:s" }}</span>
+                <p><strong class="text-slate-800">Price Agreed:</strong> Final rate negotiated and locked at ₹{{ pickup_order.final_agreed_price }}.</p>
+              </div>
+              {% endif %}
+              {% if pickup_order.assigned_vendor or pickup_order.assigned_vendor_name %}
+              <div class="flex items-start gap-2 text-slate-600 pb-2 border-b border-slate-100">
+                <span class="font-mono text-[11px] text-slate-400 shrink-0">DISPATCH</span>
+                <p><strong class="text-slate-800">Collector Assigned:</strong> {{ pickup_order.assigned_vendor.vendor_profile.shop_name|default:pickup_order.assigned_vendor_name|default:"Collector" }} assigned to route.</p>
+              </div>
+              {% endif %}
+              {% if pickup_order.is_otp_verified %}
+              <div class="flex items-start gap-2 text-slate-600 pb-2 border-b border-slate-100">
+                <span class="font-mono text-[11px] text-slate-400 shrink-0">{{ pickup_order.pickup_otp_verified_at|date:"H:i:s"|default:"VERIFIED" }}</span>
+                <p><strong class="text-slate-800">OTP Verified:</strong> Secure handoff confirmed on-site using customer OTP {{ pickup_order.pickup_otp }}.</p>
+              </div>
+              {% endif %}
+              {% if pickup_order.final_weight %}
+              <div class="flex items-start gap-2 text-slate-600">
+                <span class="font-mono text-[11px] text-slate-400 shrink-0">WEIGHED</span>
+                <p><strong class="text-slate-800">Weighment Completed:</strong> Final verified weight recorded at {{ pickup_order.final_weight }} kg.</p>
               </div>
               {% endif %}
             </div>
           </div>
+
         </div>
       </div>
     {% else %}
-      <div class="bm-card p-12 text-center text-slate-500">
-        <p class="text-3xl mb-2">📋</p>
-        <p class="text-base font-bold text-slate-800">No Pickup Order Found</p>
-        <p class="text-xs text-slate-400 mt-1">Please select an order from the orders list to view its complete details.</p>
-        <a class="bm-btn-primary bm-btn-sm mt-4 inline-flex" href="orders.html">Go to Orders List</a>
+      <div class="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-card">
+        <i class="ph-bold ph-package text-4xl text-slate-300 mb-2"></i>
+        <h2 class="text-base font-bold text-slate-800">Order Not Found</h2>
+        <p class="text-xs text-slate-400 mt-1">The requested pickup order could not be located in the database.</p>
+        <a href="orders.html" class="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 text-white rounded text-xs font-bold hover:bg-emerald-800 transition">
+          <i class="ph-bold ph-arrow-left"></i> Back to Orders
+        </a>
       </div>
     {% endif %}
     </main>
-
-    <!-- Modal for Order Cancellation -->
-    {% if pickup_order %}
-    <div class="bm-modal-backdrop" id="modalCancelOrder" data-modal role="dialog" aria-modal="true" aria-hidden="true">
-      <div class="bm-modal" role="document">
-        <form method="post" action="/admin/orders/{{ pickup_order.order_id }}/cancel">
-          {% csrf_token %}
-          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
-            <h2 class="text-[0.9375rem] font-bold text-ink-900">Cancel Order #{{ pickup_order.order_id }}</h2>
-            <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog">
-              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <div class="bm-card-bd space-y-3">
-            <p class="text-xs text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium">
-              ⚠️ Cancelling will remove this order from active dispatch and notify both customer and assigned vendor.
-            </p>
-            <div>
-              <label class="bm-label" for="cancel-reason">Cancellation Reason</label>
-              <select class="bm-select" id="cancel-reason" name="reason" required>
-                <option value="Customer requested cancellation">Customer requested cancellation</option>
-                <option value="Vendor unavailable / could not reach">Vendor unavailable / could not reach</option>
-                <option value="Incorrect scrap material or fake request">Incorrect scrap material or fake request</option>
-                <option value="Administrative override">Administrative override</option>
-              </select>
-            </div>
-            <div>
-              <label class="bm-label" for="cancel-note">Additional Note (Optional)</label>
-              <textarea class="bm-textarea" id="cancel-note" name="note" rows="2" placeholder="Details about cancellation reason..."></textarea>
-            </div>
-          </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-            <button type="button" class="bm-btn-ghost" data-modal-close>Back</button>
-            <button type="submit" class="bm-btn bg-rose-600 hover:bg-rose-700 text-white font-bold border-rose-600">Confirm Cancellation</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    {% endif %}
-
-    <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
-      <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup & Vendor Marketplace</p>
-      </div>
-    </footer>
   </div>
 
-  <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
-  <script src="/static/vendor/bootstrap.bundle.min.js"></script>
+  <!-- Interactive Lightbox Modal for Proof Photos -->
+  <div id="lightbox-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150">
+      <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <h4 id="lightbox-title" class="font-bold text-sm text-slate-900">Photo Preview</h4>
+        <button type="button" onclick="closeLightbox()" class="text-slate-400 hover:text-slate-700 p-1 rounded-md hover:bg-slate-200 transition-colors">
+          <i class="ph-bold ph-x text-base"></i>
+        </button>
+      </div>
+      <div class="p-4 bg-slate-900 flex items-center justify-center min-h-[340px]" id="lightbox-body">
+        <img id="lightbox-img" src="" alt="Proof Preview" class="max-h-[70vh] max-w-full object-contain rounded shadow">
+      </div>
+      <div class="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+        <span id="lightbox-timestamp" class="font-mono">Timestamp: —</span>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="copyToClipboard(window.location.href, 'Order link copied')" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium hover:bg-slate-100 flex items-center gap-1">
+            <i class="ph-bold ph-share"></i> Share
+          </button>
+          <button type="button" onclick="closeLightbox()" class="px-3 py-1 bg-slate-900 text-white rounded font-medium hover:bg-slate-800">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast Box -->
+  <div id="toast" class="fixed bottom-4 right-4 z-50 bg-slate-900 text-white text-xs px-3.5 py-2.5 rounded-lg shadow-xl border border-slate-700 translate-y-12 opacity-0 transition-all duration-200 flex items-center gap-2">
+    <i class="ph-fill ph-check-circle text-emerald-400 text-sm"></i>
+    <span id="toast-message">Notification</span>
+  </div>
+
+  <!-- Cancellation Modal Dialog -->
+  <div id="action-modal" class="fixed inset-0 z-50 bg-slate-950/70 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-5 shadow-2xl border border-slate-200">
+      <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-3">
+        <i class="ph-bold ph-warning text-lg"></i>
+      </div>
+      <h3 class="text-sm font-bold text-slate-900">Cancel Order #{{ pickup_order.order_id }}?</h3>
+      <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+        Are you sure you want to abort this pickup? The assigned vendor and customer will be notified of cancellation.
+      </p>
+      <form method="post" action="/admin/orders/{{ pickup_order.order_id }}/cancel" class="mt-3">
+        {% csrf_token %}
+        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Cancellation Reason</label>
+        <input type="text" name="reason" value="Cancelled by admin" class="w-full text-xs p-2 rounded border border-slate-300 mb-4 focus:ring-1 focus:ring-rose-500 focus:outline-hidden" placeholder="Enter reason for cancelling...">
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" onclick="closeCancelModal()" class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded">
+            Nevermind
+          </button>
+          <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded shadow-xs">
+            Yes, Cancel Order
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Behavior & Interactions -->
   <script src="/static/js/app.js"></script>
-  {% include "includes/photo_viewer_modal.html" %}
+  <script>
+    // Toast Notification helper
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-message');
+      text.innerText = message;
+      toast.classList.remove('translate-y-12', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.add('translate-y-12', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2400);
+    }
+
+    // Reliable iframe-safe copy function
+    function copyToClipboard(value, successMsg) {
+      if (!value) return;
+      const tempInput = document.createElement('input');
+      tempInput.value = value;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg || 'Copied to clipboard');
+      } catch (err) {
+        showToast('Unable to copy');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    // Quick OTP copy
+    function copyOTP(otp) {
+      if (!otp) return;
+      copyToClipboard(otp, 'Pickup OTP ' + otp + ' copied!');
+    }
+
+    // Dynamic Lightbox modal toggle
+    function openLightbox(imgSrc, title, timestamp) {
+      const modal = document.getElementById('lightbox-modal');
+      const titleEl = document.getElementById('lightbox-title');
+      const imgEl = document.getElementById('lightbox-img');
+      const timestampEl = document.getElementById('lightbox-timestamp');
+
+      if (titleEl) titleEl.innerText = title || 'Scrap Photo Preview';
+      if (timestampEl) timestampEl.innerText = 'Uploaded: ' + (timestamp || 'N/A');
+      if (imgEl) imgEl.src = imgSrc;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Toggle collapsible audit log
+    function toggleAuditLog() {
+      const content = document.getElementById('audit-content');
+      const caret = document.getElementById('audit-caret');
+      if (!content) return;
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        if (caret) caret.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        if (caret) caret.classList.remove('rotate-180');
+      }
+    }
+
+    // Refresh animation simulation
+    function refreshData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+      setTimeout(() => {
+        window.location.reload();
+      }, 400);
+    }
+
+    // Safe cancellation dialog
+    function openCancelModal() {
+      const modal = document.getElementById('action-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCancelModal() {
+      const modal = document.getElementById('action-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Close modal on Escape
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeLightbox();
+        closeCancelModal();
+      }
+    });
+  </script>
 </body>
 </html>

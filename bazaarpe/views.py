@@ -1700,29 +1700,77 @@ def page_view(request, page_name):
         order = None
         if order_id:
             order = PickupOrder.objects.select_related(
-                'user', 'user__profile', 'address', 'category', 'subcategory', 'invoice', 'vendor_tracking', 'review'
+                'user', 'user__profile', 'address', 'address__service_zone',
+                'category', 'subcategory', 'invoice', 'vendor_tracking', 'review',
+                'assigned_vendor', 'assigned_vendor__vendor_profile'
             ).prefetch_related('images', 'negotiation_proposals').filter(order_id=order_id).first()
         if not order:
             order = PickupOrder.objects.select_related(
-                'user', 'user__profile', 'address', 'category', 'subcategory', 'invoice', 'vendor_tracking', 'review'
+                'user', 'user__profile', 'address', 'address__service_zone',
+                'category', 'subcategory', 'invoice', 'vendor_tracking', 'review',
+                'assigned_vendor', 'assigned_vendor__vendor_profile'
             ).prefetch_related('images', 'negotiation_proposals').first()
 
         step_values = [
             (PickupOrder.Status.SEARCHING_VENDOR, 'Searching Vendor'),
             (PickupOrder.Status.VENDOR_ASSIGNED, 'Vendor Assigned'),
             (PickupOrder.Status.VENDOR_ON_THE_WAY, 'On the Way'),
-            (PickupOrder.Status.REACHED_LOCATION, 'Reached'),
+            (PickupOrder.Status.REACHED_LOCATION, 'Reached Site'),
             (PickupOrder.Status.PICKUP_IN_PROGRESS, 'In Progress'),
-            (PickupOrder.Status.INVOICE_GENERATED, 'Invoice Generated'),
+            (PickupOrder.Status.INVOICE_GENERATED, 'Tax Invoice'),
             (PickupOrder.Status.COMPLETED, 'Completed'),
         ]
-        current_index = next((i for i, item in enumerate(step_values) if order and item[0] == order.status), -1)
-        if order and order.status in (PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT):
-            current_index = len(step_values) - 1
-        order_steps = [
-            {'value': value, 'label': label, 'is_done': i < current_index, 'is_current': i == current_index}
-            for i, (value, label) in enumerate(step_values)
-        ]
+        status_step_map = {
+            PickupOrder.Status.NEGOTIATION_PENDING: 0,
+            PickupOrder.Status.ADMIN_NEGOTIATION: 0,
+            PickupOrder.Status.SEARCHING_VENDOR: 0,
+            PickupOrder.Status.VENDOR_ASSIGNED: 1,
+            PickupOrder.Status.VENDOR_ON_THE_WAY: 2,
+            PickupOrder.Status.REACHED_LOCATION: 3,
+            PickupOrder.Status.PICKUP_IN_PROGRESS: 4,
+            PickupOrder.Status.OTP_VERIFIED: 4,
+            PickupOrder.Status.PAYMENT_COMPLETED: 5,
+            PickupOrder.Status.INVOICE_GENERATED: 5,
+            PickupOrder.Status.COMPLETED: 6,
+            PickupOrder.Status.USER_REVIEW: 6,
+            PickupOrder.Status.USER_PAYOUT: 6,
+        }
+        is_all_completed = bool(order and order.status in (
+            PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT
+        ))
+        is_cancelled = bool(order and order.status == PickupOrder.Status.CANCELLED)
+        current_index = -1 if is_cancelled else (status_step_map.get(order.status, 0) if order else 0)
+
+        order_steps = []
+        for i, (value, label) in enumerate(step_values):
+            if is_all_completed:
+                done = True
+                curr = False
+            elif is_cancelled:
+                done = False
+                curr = False
+            else:
+                done = (i < current_index)
+                curr = (i == current_index)
+            order_steps.append({
+                'value': value,
+                'label': label,
+                'is_done': done,
+                'is_current': curr,
+            })
+
+        rate_per_kg = None
+        weight_diff = None
+        if order:
+            if order.final_weight and order.final_agreed_price and order.final_weight > 0:
+                rate_per_kg = round(float(order.final_agreed_price) / float(order.final_weight), 2)
+            elif order.approx_weight and order.approx_price and order.approx_weight > 0:
+                rate_per_kg = round(float(order.approx_price) / float(order.approx_weight), 2)
+            elif order.subcategory and order.subcategory.rate_per_kg:
+                rate_per_kg = float(order.subcategory.rate_per_kg)
+
+            if order.final_weight and order.approx_weight:
+                weight_diff = order.final_weight - order.approx_weight
 
         available_vendors = assignment_vendors(order)
         return render(request, 'order-detail.html', admin_context(
@@ -1731,6 +1779,11 @@ def page_view(request, page_name):
             pickup_order=order,
             order=order,
             order_steps=order_steps,
+            rate_per_kg=rate_per_kg,
+            weight_diff=weight_diff,
+            is_all_completed=is_all_completed,
+            is_cancelled=is_cancelled,
+            current_stage_num=7 if is_all_completed else (current_index + 1 if current_index >= 0 else 1),
             available_vendors=available_vendors,
         ))
 
