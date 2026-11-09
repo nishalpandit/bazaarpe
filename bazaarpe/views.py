@@ -1545,7 +1545,8 @@ def page_view(request, page_name):
                 break
 
         has_pending_user_offer = bool(latest_user_proposal and latest_user_proposal.status == NegotiationProposal.Status.PENDING)
-        is_price_agreed = bool(req_order and req_order.final_agreed_price is not None)
+        has_pending_admin_offer = bool(latest_proposal and latest_proposal.proposer_role == NegotiationProposal.ProposerRole.ADMIN and latest_proposal.status == NegotiationProposal.Status.PENDING)
+        is_price_agreed = bool(req_order and req_order.final_agreed_price is not None and not has_pending_user_offer and not has_pending_admin_offer)
 
         return render(request, 'request-detail.html', admin_context(
             request,
@@ -1556,6 +1557,7 @@ def page_view(request, page_name):
             latest_proposal=latest_proposal,
             latest_user_proposal=latest_user_proposal,
             has_pending_user_offer=has_pending_user_offer,
+            has_pending_admin_offer=has_pending_admin_offer,
             is_price_agreed=is_price_agreed,
         ))
 

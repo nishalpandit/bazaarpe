@@ -61,7 +61,7 @@
 
     <main class="px-3 pb-12 pt-3 sm:px-6" id="bmMain">
     {% if pickup_order %}
-      <!-- Consolidated Clean Order Header Card -->
+      <!-- Top Order Header Card -->
       <div class="bm-card mb-4 overflow-hidden border border-slate-200 shadow-xs">
         <div class="p-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
           <div class="flex items-center gap-2">
@@ -91,28 +91,44 @@
         </div>
 
         <div class="p-3.5 sm:p-4">
-          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-xl bg-emerald-700 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-xs">
+              <div class="w-12 h-12 rounded-xl bg-emerald-700 text-white font-extrabold flex items-center justify-center shrink-0 shadow-sm">
                 <svg class="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z"/><path d="M3 8.5 12 14l9-5.5"/><path d="M12 14v7"/></svg>
               </div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="bm-mono text-base font-bold text-slate-900 tracking-tight">{{ pickup_order.order_id }}</span>
+                  <h1 class="text-base font-extrabold text-slate-900 tracking-tight font-mono">Order #{{ pickup_order.order_id }}</h1>
                   {% if pickup_order.status == 'COMPLETED' or pickup_order.status == 'USER_REVIEW' or pickup_order.status == 'USER_PAYOUT' %}
-                    <span class="bm-badge bg-emerald-50 text-emerald-800 font-bold ring-emerald-600/20"><span class="bm-dot"></span>Completed</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                      <svg class="w-3.5 h-3.5 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      Completed
+                    </span>
                   {% elif pickup_order.status == 'CANCELLED' %}
-                    <span class="bm-badge bg-rose-50 text-rose-800 font-bold ring-rose-600/20"><span class="bm-dot"></span>Cancelled</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-50 text-rose-800 border border-rose-300">
+                      <svg class="w-3.5 h-3.5 text-rose-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      Cancelled
+                    </span>
                   {% elif pickup_order.status == 'SEARCHING_VENDOR' %}
-                    <span class="bm-badge bg-amber-50 text-amber-800 font-bold ring-amber-600/25"><span class="bm-dot"></span>Finding Scrap Collector</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-300">
+                      <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                      Finding Scrap Collector
+                    </span>
                   {% else %}
-                    <span class="bm-badge bg-sky-50 text-sky-800 font-bold ring-sky-600/20"><span class="bm-dot"></span>{{ pickup_order.get_status_display }}</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-sky-50 text-sky-800 border border-sky-300">
+                      {% if pickup_order.is_otp_verified %}
+                        <svg class="w-3.5 h-3.5 text-sky-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      {% else %}
+                        <span class="w-2 h-2 rounded-full bg-sky-600 animate-pulse"></span>
+                      {% endif %}
+                      {{ pickup_order.get_status_display }}
+                    </span>
                   {% endif %}
                 </div>
                 <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 mt-1">
                   <span>Placed {{ pickup_order.created_at|date:"d M Y, h:i A" }}</span>
                   <span>•</span>
-                  <span class="text-slate-700 font-semibold">{{ pickup_order.category.name|default:"Scrap" }} › {{ pickup_order.subcategory.name|default:"General" }}</span>
+                  <span class="text-slate-800 font-semibold">{{ pickup_order.category.name|default:"Scrap" }} › {{ pickup_order.subcategory.name|default:"General" }}</span>
                   {% if pickup_order.address %}
                   <span>•</span>
                   <span class="text-emerald-700 font-semibold">📍 {{ pickup_order.address.city|default:"Area" }}</span>
@@ -121,56 +137,94 @@
               </div>
             </div>
 
-            <!-- Compact Inline Metrics Strip with OTP Box -->
-            <div class="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
-              <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+            <!-- Clean, Aligned Metrics Strip -->
+            <div class="flex flex-wrap items-center gap-2.5 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+              <div class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[85px]">
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Weight</span>
                 <span class="text-sm font-extrabold text-slate-900">{{ pickup_order.final_weight|default:pickup_order.approx_weight|default:"0" }} kg</span>
               </div>
-              <div class="px-3 py-1.5 rounded-lg bg-emerald-50/70 border border-emerald-200 text-center">
-                <span class="text-[0.625rem] font-bold text-emerald-800 uppercase tracking-wider block">Payout</span>
+              <div class="px-3.5 py-2 rounded-xl bg-emerald-50/70 border border-emerald-200 text-center min-w-[95px]">
+                <span class="text-[0.625rem] font-bold text-emerald-800 uppercase tracking-wider block">Agreed Payout</span>
                 <span class="text-sm font-extrabold text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0" }}</span>
               </div>
-              <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Slot</span>
+              <div class="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-center min-w-[85px]">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Pickup Slot</span>
                 <span class="text-sm font-extrabold text-slate-900">{{ pickup_order.pickup_date|date:"d M"|default:"Immediate" }}</span>
               </div>
-              <div class="px-3 py-1.5 rounded-lg bg-sky-50/70 border border-sky-200 text-center">
-                <span class="text-[0.625rem] font-bold text-sky-800 uppercase tracking-wider block">Status</span>
-                <span class="text-sm font-extrabold text-sky-950">{{ pickup_order.get_status_display }}</span>
-              </div>
-              <div class="px-3 py-1.5 rounded-lg {% if pickup_order.is_otp_verified %}bg-emerald-50 border-emerald-300 text-emerald-950{% else %}bg-amber-50 border-amber-300 text-amber-950{% endif %} border text-center">
+              <div class="px-3.5 py-2 rounded-xl {% if pickup_order.is_otp_verified %}bg-emerald-50 border-emerald-300 text-emerald-950{% else %}bg-amber-50 border-amber-300 text-amber-950{% endif %} border text-center min-w-[120px]">
                 <span class="text-[0.625rem] font-bold uppercase tracking-wider block {% if pickup_order.is_otp_verified %}text-emerald-800{% else %}text-amber-800{% endif %}">🔐 Pickup OTP</span>
                 <span class="text-sm font-extrabold font-mono tracking-widest">{{ pickup_order.pickup_otp|default:"— — — —" }}</span>
-                <span class="text-[0.5625rem] font-bold block {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %}">
-                  {% if pickup_order.is_otp_verified %}✓ Verified{% else %}Pending{% endif %}
+                <span class="text-[0.625rem] font-bold flex items-center justify-center gap-1 mt-0.5 {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %}">
+                  {% if pickup_order.is_otp_verified %}
+                    <svg class="w-3 h-3 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    Verified
+                  {% else %}
+                    ⏳ Pending
+                  {% endif %}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Visual Stepper Progress Bar (Step-by-Step for Everyone to Understand) -->
-        <div class="p-4 sm:p-5 bg-slate-50/50 border-t border-slate-100">
-          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>Live Order Progress Tracker</span>
-          </p>
-          <ol class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
-            {% for step in order_steps %}
-            <li class="rounded-xl border p-3 transition flex flex-col justify-between text-left {% if step.is_current %}border-emerald-500 bg-white ring-2 ring-emerald-500/20 shadow-sm text-emerald-950 font-bold{% elif step.is_done %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-slate-200 bg-white/70 text-slate-400{% endif %}">
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="h-6 w-6 rounded-full flex items-center justify-center text-xs font-black {% if step.is_done %}bg-emerald-600 text-white{% elif step.is_current %}bg-emerald-700 text-white animate-pulse{% else %}bg-slate-100 text-slate-400{% endif %}">
-                  {% if step.is_done %}✓{% else %}{{ forloop.counter }}{% endif %}
-                </span>
-                {% if step.is_current %}
-                  <span class="text-[0.625rem] uppercase font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Current</span>
-                {% endif %}
-              </div>
-              <p class="text-[0.8125rem] leading-tight font-semibold mt-1">{{ step.label }}</p>
-            </li>
-            {% endfor %}
-          </ol>
+        <!-- Sleek Horizontal Order Progress Tracker -->
+        <div class="p-4 sm:p-5 bg-slate-50/60 border-t border-slate-100">
+          <div class="flex items-center justify-between mb-3.5">
+            <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+              <svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Order Tracking Journey</span>
+            </h2>
+            <span class="text-xs font-bold text-slate-500">
+              Current: <strong class="text-emerald-800">{{ pickup_order.get_status_display }}</strong>
+            </span>
+          </div>
+
+          <div class="overflow-x-auto pb-1">
+            <div class="flex items-center justify-between min-w-[650px] relative">
+              {% for step in order_steps %}
+                <div class="flex-1 flex flex-col items-center text-center relative px-1">
+                  <!-- Stepper Circle -->
+                  <div class="z-10 mb-1.5">
+                    {% if step.is_done %}
+                      <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                        <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      </div>
+                    {% elif step.is_current %}
+                      <div class="w-8 h-8 rounded-full bg-emerald-700 text-white flex items-center justify-center ring-4 ring-emerald-500/25 shadow-xs">
+                        <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+                      </div>
+                    {% else %}
+                      <div class="w-8 h-8 rounded-full bg-white text-slate-400 border-2 border-slate-200 flex items-center justify-center font-bold text-xs">
+                        {{ forloop.counter }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <!-- Step Label -->
+                  <p class="text-xs font-bold leading-tight {% if step.is_done %}text-slate-900{% elif step.is_current %}text-emerald-900 font-extrabold{% else %}text-slate-400{% endif %}">
+                    {{ step.label }}
+                  </p>
+
+                  <!-- Status Subtext -->
+                  <span class="text-[0.625rem] mt-0.5 flex items-center gap-0.5 {% if step.is_done %}text-emerald-700 font-bold{% elif step.is_current %}text-emerald-800 font-extrabold bg-emerald-100 px-1.5 py-0.2 rounded{% else %}text-slate-300 font-medium{% endif %}">
+                    {% if step.is_done %}
+                      <svg class="w-2.5 h-2.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      Done
+                    {% elif step.is_current %}
+                      In Progress
+                    {% else %}
+                      Pending
+                    {% endif %}
+                  </span>
+
+                  <!-- Connecting Line -->
+                  {% if not forloop.last %}
+                    <div class="hidden sm:block absolute top-4 left-1/2 w-full h-0.5 -z-0 {% if step.is_done %}bg-emerald-500{% else %}bg-slate-200{% endif %}"></div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -212,7 +266,7 @@
                 </div>
                 <a href="tel:{{ pickup_order.user.profile.phone|default:pickup_order.user.username }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs active:scale-95 transition">
                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                  <span>Call Now</span>
+                  <span>Call Customer</span>
                 </a>
               </div>
 
@@ -336,18 +390,18 @@
               </span>
             </div>
             <div class="p-5">
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Subcategory / Grade</p>
-                  <p class="text-base font-extrabold text-slate-900 mt-1">{{ pickup_order.subcategory.name|default:"General Scrap" }}</p>
+                  <p class="text-sm font-extrabold text-slate-900 mt-1">{{ pickup_order.subcategory.name|default:"General Scrap" }}</p>
                 </div>
-                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80">
                   <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Estimated Weight</p>
-                  <p class="text-base font-extrabold text-slate-900 mt-1">{{ pickup_order.approx_weight|default:"0" }} kg</p>
+                  <p class="text-sm font-extrabold text-slate-900 mt-1">{{ pickup_order.approx_weight|default:"0" }} kg</p>
                 </div>
-                <div class="p-3.5 bg-emerald-50/70 rounded-xl border border-emerald-200">
+                <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200">
                   <p class="text-[0.6875rem] font-bold text-emerald-800 uppercase tracking-wider">Final Weighed Weight</p>
-                  <p class="text-base font-extrabold text-emerald-700 mt-1">{% if pickup_order.final_weight %}{{ pickup_order.final_weight }} kg{% else %}— (Pending scale){% endif %}</p>
+                  <p class="text-sm font-extrabold text-emerald-700 mt-1">{% if pickup_order.final_weight %}{{ pickup_order.final_weight }} kg{% else %}— (Pending scale){% endif %}</p>
                 </div>
               </div>
 
