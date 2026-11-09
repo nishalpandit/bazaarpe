@@ -24,7 +24,7 @@
     <header class="bm-topbar">
       <div class="flex items-center gap-2 px-3 py-2.5 sm:px-5">
         <button type="button" class="rounded-md p-2 text-slate-500 hover:bg-slate-100 lg:hidden" data-sidebar-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="bmSidebar">
-          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
 
         <div class="hidden items-center gap-2 sm:flex">
@@ -61,8 +61,7 @@
 
     <main class="px-3 pb-12 pt-3 sm:px-6" id="bmMain">
     {% if pickup_order %}
-      <!-- Top Action Bar -->
-      <!-- Consolidated Clean Order Header -->
+      <!-- Consolidated Clean Order Header Card -->
       <div class="bm-card mb-4 overflow-hidden border border-slate-200 shadow-xs">
         <div class="p-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
           <div class="flex items-center gap-2">
@@ -122,7 +121,7 @@
               </div>
             </div>
 
-            <!-- Compact Inline Metrics Strip -->
+            <!-- Compact Inline Metrics Strip with OTP Box -->
             <div class="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
               <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Weight</span>
@@ -136,30 +135,23 @@
                 <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Slot</span>
                 <span class="text-sm font-extrabold text-slate-900">{{ pickup_order.pickup_date|date:"d M"|default:"Immediate" }}</span>
               </div>
-              <div class="px-3 py-1.5 rounded-lg bg-amber-50/60 border border-amber-200 text-center">
-                <span class="text-[0.625rem] font-bold text-amber-800 uppercase tracking-wider block">Status</span>
-                <span class="text-sm font-extrabold text-amber-900">{{ pickup_order.get_status_display }}</span>
+              <div class="px-3 py-1.5 rounded-lg bg-sky-50/70 border border-sky-200 text-center">
+                <span class="text-[0.625rem] font-bold text-sky-800 uppercase tracking-wider block">Status</span>
+                <span class="text-sm font-extrabold text-sky-950">{{ pickup_order.get_status_display }}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-                <p class="text-[0.6875rem] font-bold text-amber-900 uppercase tracking-wider flex items-center justify-center gap-1">
-                  <span>🔐 Pickup OTP</span>
-                </p>
-                <p class="text-xl font-extrabold text-amber-900 mt-1 font-mono tracking-widest">
-                  {{ pickup_order.pickup_otp|default:"— — — —" }}
-                </p>
-                <p class="text-[0.6875rem] font-bold {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %}">
-                  {% if pickup_order.is_otp_verified %}✓ Verified by Vendor{% else %}⏳ Verification Pending{% endif %}
-                </p>
+              <div class="px-3 py-1.5 rounded-lg {% if pickup_order.is_otp_verified %}bg-emerald-50 border-emerald-300 text-emerald-950{% else %}bg-amber-50 border-amber-300 text-amber-950{% endif %} border text-center">
+                <span class="text-[0.625rem] font-bold uppercase tracking-wider block {% if pickup_order.is_otp_verified %}text-emerald-800{% else %}text-amber-800{% endif %}">🔐 Pickup OTP</span>
+                <span class="text-sm font-extrabold font-mono tracking-widest">{{ pickup_order.pickup_otp|default:"— — — —" }}</span>
+                <span class="text-[0.5625rem] font-bold block {% if pickup_order.is_otp_verified %}text-emerald-700{% else %}text-amber-700{% endif %}">
+                  {% if pickup_order.is_otp_verified %}✓ Verified{% else %}Pending{% endif %}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Visual Stepper Progress Bar (Step-by-Step for Everyone to Understand) -->
-        <div class="p-4 sm:p-5 bg-slate-50/50">
+        <div class="p-4 sm:p-5 bg-slate-50/50 border-t border-slate-100">
           <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             <span>Live Order Progress Tracker</span>
@@ -194,7 +186,7 @@
                 <span>Customer (Seller)</span>
               </h2>
               {% if pickup_order.user.profile %}
-              <a class="text-xs font-bold text-brand-700 hover:underline" href="user-detail.html?id={{ pickup_order.user.profile.id }}">Profile →</a>
+              <a class="text-xs font-bold text-brand-700 hover:underline" href="user-detail.html?id={{ pickup_order.user.id }}">Profile →</a>
               {% endif %}
             </div>
             <div class="p-4 space-y-3.5">
@@ -253,25 +245,35 @@
                 <span>Scrap Vendor (Collector)</span>
               </h2>
               {% if pickup_order.assigned_vendor %}
-              <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">Assigned</span>
+              <div class="flex items-center gap-2">
+                <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20 font-bold">Assigned</span>
+                {% if pickup_order.assigned_vendor.vendor_profile %}
+                <a class="text-xs font-bold text-brand-700 hover:underline" href="vendor-detail.html?id={{ pickup_order.assigned_vendor.vendor_profile.id }}">Profile →</a>
+                {% endif %}
+              </div>
               {% else %}
-              <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/20">Awaiting</span>
+              <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/20 font-bold">Awaiting</span>
               {% endif %}
             </div>
             <div class="p-4 space-y-3.5">
-              {% if pickup_order.assigned_vendor_name %}
+              {% if pickup_order.assigned_vendor_name or pickup_order.assigned_vendor %}
                 <div>
                   <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Business / Shop Name</p>
-                  <p class="text-base font-extrabold text-slate-900 mt-0.5">{{ pickup_order.assigned_vendor_name }}</p>
+                  <p class="text-base font-extrabold text-slate-900 mt-0.5">
+                    {{ pickup_order.assigned_vendor_name|default:pickup_order.assigned_vendor.vendor_profile.shop_name|default:"Scrap Collector" }}
+                  </p>
+                  {% if pickup_order.assigned_vendor.vendor_profile.owner_name %}
+                    <p class="text-xs text-slate-500 mt-0.5">Owner: {{ pickup_order.assigned_vendor.vendor_profile.owner_name }}</p>
+                  {% endif %}
                 </div>
 
-                {% if pickup_order.assigned_vendor_phone %}
+                {% if pickup_order.assigned_vendor_phone or pickup_order.assigned_vendor.username %}
                 <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3">
                   <div>
                     <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Collector Phone</p>
-                    <p class="text-sm font-extrabold text-slate-900 font-mono mt-0.5">{{ pickup_order.assigned_vendor_phone }}</p>
+                    <p class="text-sm font-extrabold text-slate-900 font-mono mt-0.5">{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.username }}</p>
                   </div>
-                  <a href="tel:{{ pickup_order.assigned_vendor_phone }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs active:scale-95 transition">
+                  <a href="tel:{{ pickup_order.assigned_vendor_phone|default:pickup_order.assigned_vendor.username }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-xs active:scale-95 transition">
                     <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     <span>Call Driver</span>
                   </a>
@@ -295,6 +297,7 @@
                 <div class="text-center py-4 bg-amber-50/50 border border-dashed border-amber-200 rounded-xl p-4">
                   <p class="text-2xl mb-1">🚚</p>
                   <p class="text-sm font-bold text-slate-800">No Vendor Assigned</p>
+                  <p class="text-xs text-slate-500 mt-1">Select an active vendor to assign to this pickup.</p>
                 </div>
 
                 {% if available_vendors %}
@@ -307,7 +310,7 @@
                     <option value="{{ v.pk }}">{{ v.shop_name }} ({{ v.owner_name }}) - {{ v.user.profile.phone }}{% if not v.is_online %} [Offline]{% endif %}</option>
                     {% endfor %}
                   </select>
-                  <button type="submit" class="bm-btn-primary w-full justify-center">Assign This Vendor</button>
+                  <button type="submit" class="bm-btn-primary w-full justify-center font-bold">Assign This Vendor</button>
                 </form>
                 {% else %}
                 <p class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium">
@@ -410,6 +413,7 @@
                 <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
                   <p class="text-xs font-bold text-emerald-900 uppercase tracking-wider">Customer Payout (Seller Receives)</p>
                   <p class="text-2xl font-extrabold text-emerald-700">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</p>
+                  <p class="text-[0.6875rem] text-emerald-800">Final price calculated and agreed for pickup.</p>
                 </div>
 
                 <!-- Invoice Details Box -->
@@ -430,7 +434,7 @@
                   </div>
                   <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="text-xs text-brand-700 hover:underline font-bold inline-block pt-1">Open Full Invoice →</a>
                   {% else %}
-                  <p class="text-xs text-slate-500 mt-1">Invoice generates upon pickup completion.</p>
+                  <p class="text-xs text-slate-500 mt-1">Invoice generates automatically upon pickup completion and weighment confirmation.</p>
                   {% endif %}
                 </div>
               </div>
@@ -465,15 +469,18 @@
     </main>
 
     <!-- Modal for Order Cancellation -->
-    <div class="bm-modal-overlay hidden" id="modalCancelOrder" role="dialog" aria-modal="true">
-      <div class="bm-modal max-w-md w-full">
-        <div class="bm-modal-hd flex items-center justify-between border-b p-4">
-          <h2 class="text-base font-bold text-slate-900">Cancel Order #{{ pickup_order.order_id }}</h2>
-          <button type="button" class="text-slate-400 hover:text-slate-600" data-modal-close aria-label="Close">✕</button>
-        </div>
+    {% if pickup_order %}
+    <div class="bm-modal-backdrop" id="modalCancelOrder" data-modal role="dialog" aria-modal="true" aria-hidden="true">
+      <div class="bm-modal" role="document">
         <form method="post" action="/admin/orders/{{ pickup_order.order_id }}/cancel">
           {% csrf_token %}
-          <div class="p-4 space-y-3">
+          <div class="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3.5">
+            <h2 class="text-[0.9375rem] font-bold text-ink-900">Cancel Order #{{ pickup_order.order_id }}</h2>
+            <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="bm-card-bd space-y-3">
             <p class="text-xs text-rose-700 bg-rose-50 p-2.5 rounded-lg border border-rose-200 font-medium">
               ⚠️ Cancelling will remove this order from active dispatch and notify both customer and assigned vendor.
             </p>
@@ -486,14 +493,19 @@
                 <option value="Administrative override">Administrative override</option>
               </select>
             </div>
+            <div>
+              <label class="bm-label" for="cancel-note">Additional Note (Optional)</label>
+              <textarea class="bm-textarea" id="cancel-note" name="note" rows="2" placeholder="Details about cancellation reason..."></textarea>
+            </div>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t p-3 bg-slate-50">
-            <button type="button" class="bm-btn-ghost bm-btn-sm" data-modal-close>Back</button>
-            <button type="submit" class="bm-btn-danger bm-btn-sm">Confirm Cancellation</button>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
+            <button type="button" class="bm-btn-ghost" data-modal-close>Back</button>
+            <button type="submit" class="bm-btn bg-rose-600 hover:bg-rose-700 text-white font-bold border-rose-600">Confirm Cancellation</button>
           </div>
         </form>
       </div>
     </div>
+    {% endif %}
 
     <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
       <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">

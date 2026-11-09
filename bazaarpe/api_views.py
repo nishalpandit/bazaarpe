@@ -2928,7 +2928,7 @@ def submit_pickup_details_view(request, order_id):
         return Response({'success': False, 'message': 'This order is not assigned to you.'}, status=status.HTTP_403_FORBIDDEN)
     if order.status not in (PickupOrder.Status.REACHED_LOCATION, PickupOrder.Status.PICKUP_IN_PROGRESS) or order.is_otp_verified:
         return Response({'success': False, 'message': 'Pickup details must be submitted after arrival and before OTP verification.'}, status=status.HTTP_409_CONFLICT)
-    if order.proof_submitted_at or order.images.exists():
+    if order.proof_submitted_at:
         return Response({'success': False, 'message': 'Pickup details were already submitted.'}, status=status.HTTP_409_CONFLICT)
     try:
         final_weight = decimal_value(request.data.get('final_weight'), 'final_weight', positive=True)
