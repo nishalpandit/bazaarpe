@@ -226,7 +226,7 @@ def login_view(request):
     """Admin sign-in view."""
     ensure_demo_user()
 
-    if request.GET.get('logout') == 'true':
+    if request.GET.get('logout') in ('true', '1') or request.GET.get('action') == 'logout':
         logout(request)
         return redirect('login')
 
@@ -518,7 +518,7 @@ def page_view(request, page_name):
     """Renders any admin page dynamically with live database models."""
     clean_name = page_name.replace('.html', '').strip('/')
 
-    if clean_name in ('login', 'sign-in'):
+    if clean_name in ('login', 'sign-in', 'logout', 'signout', 'sign-out'):
         if request.user.is_authenticated:
             logout(request)
         return redirect('login')

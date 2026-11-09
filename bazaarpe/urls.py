@@ -9,6 +9,11 @@ urlpatterns = [
     path('login.html', views.login_view, name='login_html'),
     path('admin/login', views.login_view, name='admin_login_redirect'),
     path('logout/', views.logout_view, name='logout'),
+    path('logout', views.logout_view, name='logout_direct'),
+    path('logout.html', views.logout_view, name='logout_html'),
+    path('signout/', views.logout_view, name='signout'),
+    path('signout', views.logout_view, name='signout_direct'),
+    path('signout.html', views.logout_view, name='signout_html'),
 
     # Admin Operations Dashboard & Direct Templates
     path('dashboard/', views.dashboard_view, name='dashboard'),
