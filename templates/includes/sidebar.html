@@ -1,0 +1,223 @@
+<aside class="bm-sidebar bm-no-scroll" id="bmSidebar" aria-label="Admin navigation">
+  <!-- Brand Logo & Header -->
+  <div class="flex items-center gap-3 px-4 py-3.5 border-b border-white/10">
+    <img src="/static/images/logo.png" alt="Bazaarpe" class="shrink-0" style="height: 48px; width: auto; object-fit: contain; border-radius: 0 !important;">
+    <div class="min-w-0">
+      <span class="text-[1.125rem] font-extrabold tracking-tight text-white leading-none block">Bazaarpe</span>
+      <p class="text-[0.6875rem] uppercase font-bold tracking-wider text-white/70 mt-1">Admin Panel</p>
+    </div>
+    <button type="button" class="ml-auto rounded-md p-1.5 text-white/70 hover:bg-white/10 lg:hidden" data-sidebar-close aria-label="Close navigation">
+      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+
+  <!-- Operational Flow Navigation -->
+  <nav class="flex-1 overflow-y-auto bm-scroll px-2.5 pb-4" aria-label="Operational Modules">
+    
+    <!-- 1. Catalog & Coverage (Foundation) -->
+    <p class="bm-nav-group-label">Catalog &amp; Coverage</p>
+    <a class="bm-nav-link {% if page_name == 'categories' or 'categories' in request.path %}is-active{% endif %}" href="categories.html" data-nav="categories">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M20 12.5 12.5 20 4 11.5V4h7.5z"/><circle cx="8.5" cy="8.5" r="1.4"/>
+        </svg>
+      </span>
+      <span class="truncate">Categories &amp; Rates</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'locations' or 'locations' in request.path %}is-active{% endif %}" href="locations.html" data-nav="locations">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/>
+        </svg>
+      </span>
+      <span class="truncate">Locations &amp; Zones</span>
+    </a>
+
+    <!-- 2. Marketplace Network (Partners & Users) -->
+    <p class="bm-nav-group-label">Marketplace Network</p>
+    <a class="bm-nav-link {% if page_name == 'vendors' or page_name == 'vendor-detail' or page_name == 'vendor-edit' or 'vendor' in request.path %}is-active{% endif %}" href="vendors.html" data-nav="vendors">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/>
+        </svg>
+      </span>
+      <span class="truncate">Vendors</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'kyc' or 'kyc' in request.path %}is-active{% endif %}" href="kyc.html" data-nav="kyc">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M12 3 5 5.5v6c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5v-6z"/><path d="m9 12 2 2 4-4"/>
+        </svg>
+      </span>
+      <span class="truncate">KYC Review Queue</span>
+      {% if sidebar_badges.kyc %}
+        <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.kyc }}</span>
+      {% endif %}
+    </a>
+    <a class="bm-nav-link {% if page_name == 'users' or page_name == 'user-detail' or 'user' in request.path %}is-active{% endif %}" href="users.html" data-nav="users">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.9"/><path d="M17.5 20a6.4 6.4 0 0 0-2-4.6"/>
+        </svg>
+      </span>
+      <span class="truncate">Users</span>
+    </a>
+
+    <!-- 3. Pickup Operations (Execution Flow) -->
+    <p class="bm-nav-group-label">Pickup Operations</p>
+    <a class="bm-nav-link {% if page_name == 'requests' or page_name == 'request-detail' or 'request' in request.path %}is-active{% endif %}" href="requests.html" data-nav="requests">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12a8 8 0 0 1-8 8H8l-4 3v-6.5A8 8 0 0 1 13 4a8 8 0 0 1 8 8Z"/>
+        </svg>
+      </span>
+      <span class="truncate">Pickup Requests</span>
+      {% if sidebar_badges.requests %}
+        <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.requests }}</span>
+      {% endif %}
+    </a>
+    <a class="bm-nav-link {% if page_name == 'orders' or page_name == 'order-detail' or 'order' in request.path %}is-active{% endif %}" href="orders.html" data-nav="orders">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 8.5 12 3 3 8.5v7L12 21l9-5.5v-7Z"/><path d="M3 8.5 12 14l9-5.5"/><path d="M12 14v7"/>
+        </svg>
+      </span>
+      <span class="truncate">Orders</span>
+      {% if sidebar_badges.orders %}
+        <span class="ml-auto rounded-full bg-emerald-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-emerald-800">{{ sidebar_badges.orders }}</span>
+      {% endif %}
+    </a>
+
+    <!-- 4. Money & Settlements (Financial Reconciliation) -->
+    <p class="bm-nav-group-label">Money &amp; Settlement</p>
+    <a class="bm-nav-link {% if page_name == 'payments' or 'payments' in request.path %}is-active{% endif %}" href="payments.html" data-nav="payments">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H18a3 3 0 0 1 3 3v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16z"/><path d="M16.5 12h2.8"/>
+        </svg>
+      </span>
+      <span class="truncate">Vendor Payments</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'invoices' or page_name == 'invoice-detail' or 'invoice' in request.path %}is-active{% endif %}" href="invoices.html" data-nav="invoices">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>
+        </svg>
+      </span>
+      <span class="truncate">Invoices</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'settlements' or 'settlements' in request.path %}is-active{% endif %}" href="settlements.html" data-nav="settlements">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M20 12H4"/><path d="m10 6-6 6 6 6"/>
+        </svg>
+      </span>
+      <span class="truncate">User Settlements</span>
+      {% if sidebar_badges.settlements %}
+        <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.settlements }}</span>
+      {% endif %}
+    </a>
+    <a class="bm-nav-link {% if page_name == 'ledgers' or 'ledgers' in request.path %}is-active{% endif %}" href="ledgers.html" data-nav="ledgers">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M8 7h8M8 11h8"/>
+        </svg>
+      </span>
+      <span class="truncate">Ledgers</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'refunds' or 'refunds' in request.path %}is-active{% endif %}" href="refunds.html" data-nav="refunds">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 10a9 9 0 1 1 3 6.7"/><path d="M3 4v6h6"/><path d="M12 8v4l3 2"/>
+        </svg>
+      </span>
+      <span class="truncate">Refunds</span>
+      {% if sidebar_badges.refunds %}
+        <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.refunds }}</span>
+      {% endif %}
+    </a>
+
+    <!-- 5. Trust & Quality (Feedback & FAQs) -->
+    <p class="bm-nav-group-label">Trust &amp; Content</p>
+    <a class="bm-nav-link {% if page_name == 'ratings' or 'ratings' in request.path %}is-active{% endif %}" href="ratings.html" data-nav="ratings">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="m12 3.5 2.7 5.6 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1L3.2 10l6.1-.9z"/>
+        </svg>
+      </span>
+      <span class="truncate">Ratings &amp; Reviews</span>
+      {% if sidebar_badges.ratings %}
+        <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.ratings }}</span>
+      {% endif %}
+    </a>
+    <a class="bm-nav-link {% if page_name == 'cms' or page_name == 'cms-edit' or 'cms' in request.path %}is-active{% endif %}" href="cms.html" data-nav="cms">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>
+        </svg>
+      </span>
+      <span class="truncate">CMS &amp; FAQs</span>
+    </a>
+
+    <!-- 6. Overview & System -->
+    <p class="bm-nav-group-label">Overview &amp; System</p>
+    <a class="bm-nav-link {% if page_name == 'index' or request.path == '/' or request.path == '/index.html' %}is-active{% endif %}" href="index.html" data-nav="dashboard">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>
+        </svg>
+      </span>
+      <span class="truncate">Dashboard</span>
+    </a>
+    <a class="bm-nav-link {% if page_name == 'settings' or 'settings' in request.path %}is-active{% endif %}" href="settings.html" data-nav="settings">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.4M12 18.6V21M4.2 7.5l2 1.2M17.8 15.3l2 1.2M4.2 16.5l2-1.2M17.8 8.7l2-1.2"/>
+        </svg>
+      </span>
+      <span class="truncate">Platform Settings</span>
+    </a>
+
+  </nav>
+</aside>
+<script>
+  (function() {
+    try {
+      var activeKey = document.body ? document.body.getAttribute('data-active') : '';
+      if (!activeKey) {
+        var p = window.location.pathname.toLowerCase();
+        if (p.indexOf('categorie') !== -1) activeKey = 'categories';
+        else if (p.indexOf('location') !== -1) activeKey = 'locations';
+        else if (p.indexOf('vendor') !== -1) activeKey = 'vendors';
+        else if (p.indexOf('kyc') !== -1) activeKey = 'kyc';
+        else if (p.indexOf('user') !== -1) activeKey = 'users';
+        else if (p.indexOf('request') !== -1) activeKey = 'requests';
+        else if (p.indexOf('order') !== -1) activeKey = 'orders';
+        else if (p.indexOf('payment') !== -1) activeKey = 'payments';
+        else if (p.indexOf('invoice') !== -1) activeKey = 'invoices';
+        else if (p.indexOf('settlement') !== -1) activeKey = 'settlements';
+        else if (p.indexOf('ledger') !== -1) activeKey = 'ledgers';
+        else if (p.indexOf('refund') !== -1) activeKey = 'refunds';
+        else if (p.indexOf('rating') !== -1) activeKey = 'ratings';
+        else if (p.indexOf('cms') !== -1) activeKey = 'cms';
+        else if (p.indexOf('setting') !== -1) activeKey = 'settings';
+        else if (p === '/' || p.indexOf('index') !== -1) activeKey = 'dashboard';
+      }
+      if (activeKey) {
+        var sidebar = document.getElementById('bmSidebar');
+        if (sidebar) {
+          var links = sidebar.querySelectorAll('.bm-nav-link');
+          links.forEach(function(link) {
+            var navType = link.getAttribute('data-nav') || '';
+            var href = link.getAttribute('href') || '';
+            if (navType === activeKey || href.indexOf(activeKey) !== -1) {
+              links.forEach(function(l) { l.classList.remove('is-active'); l.removeAttribute('aria-current'); });
+              link.classList.add('is-active');
+              link.setAttribute('aria-current', 'page');
+            }
+          });
+        }
+      }
+    } catch(e) {}
+  })();
+</script>
