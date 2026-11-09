@@ -66,78 +66,83 @@
 
     <main class="px-3 pb-8 pt-2.5 sm:px-6 sm:pt-3" id="bmMain">
 {% if vendor %}
-      <!-- Breadcrumb & Action Toolbar -->
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2">
-          <a class="bm-btn-ghost bm-btn-sm" href="vendors.html">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            Back to Vendors
-          </a>
+      <!-- Consolidated Clean Vendor Profile Header -->
+      <div class="bm-card mb-4 overflow-hidden border border-slate-200 shadow-xs">
+        <div class="p-3 bg-slate-50/80 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2">
+            <a class="bm-btn-ghost bm-btn-sm font-bold text-slate-700" href="vendors.html">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Back to Vendors
+            </a>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <a class="bm-btn-primary bm-btn-sm font-bold" href="vendor-edit.html?id={{ vendor.id }}">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Edit Profile
+            </a>
+            <button type="button" class="bm-btn-ghost bm-btn-sm text-emerald-800 border-emerald-300 hover:bg-emerald-50 font-bold" data-modal-open="modalApproveKyc">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 5 5.5v6c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5v-6z"/><path d="m9 12 2 2 4-4"/></svg>
+              KYC Decision
+            </button>
+            <button type="button" class="bm-btn-ghost bm-btn-sm text-amber-800 border-amber-300 hover:bg-amber-50 font-bold" data-modal-open="modalBlockVendor">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m4.93 4.93 14.14 14.14"/></svg>
+              Block
+            </button>
+            <button type="button" class="bm-btn-danger bm-btn-sm font-bold" data-action="delete-vendor-detail" data-vendor-id="{{ vendor.id }}" data-vendor-name="{{ vendor.shop_name }}">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
+              Delete
+            </button>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <a class="bm-btn-primary bm-btn-sm" href="vendor-edit.html?id={{ vendor.id }}">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-            Edit Vendor Profile
-          </a>
-          <button type="button" class="bm-btn-ghost bm-btn-sm text-brand-800 border-brand-300 hover:bg-brand-50" data-modal-open="modalApproveKyc">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 5 5.5v6c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5v-6z"/><path d="m9 12 2 2 4-4"/></svg>
-            KYC Decision
-          </button>
-          <button type="button" class="bm-btn-ghost bm-btn-sm text-amber-800 border-amber-300 hover:bg-amber-50" data-modal-open="modalBlockVendor">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m4.93 4.93 14.14 14.14"/></svg>
-            Block Vendor
-          </button>
-          <button type="button" class="bm-btn-danger bm-btn-sm" data-action="delete-vendor-detail" data-vendor-id="{{ vendor.id }}" data-vendor-name="{{ vendor.shop_name }}">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6"/></svg>
-            Delete Vendor
-          </button>
-        </div>
-      </div>
 
-      <!-- Modern Hero Vendor Profile Banner -->
-      <div class="bm-card mb-4 overflow-hidden shadow-sm" style="background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
-        <div class="p-4 sm:p-6 border-b border-slate-100">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <div class="h-16 w-16 rounded-2xl flex items-center justify-center font-extrabold text-2xl text-white shadow-md shrink-0" style="background: linear-gradient(135deg, #006D5B 0%, #0284c7 100%);">{{ vendor.shop_name|slice:":2"|upper|default:"VN" }}</div>
+        <div class="p-3.5 sm:p-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
+            <div class="flex items-center gap-3">
+              {% if vendor.profile_picture %}
+                <img src="{{ vendor.profile_picture.url }}" alt="{{ vendor.shop_name }}" class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs">
+              {% elif vendor.user.profile.profile_photo %}
+                <img src="{{ vendor.user.profile.profile_photo.url }}" alt="{{ vendor.shop_name }}" class="w-11 h-11 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs">
+              {% else %}
+                <div class="w-11 h-11 rounded-xl bg-emerald-700 text-white font-extrabold text-base flex items-center justify-center shrink-0 shadow-xs">
+                  {{ vendor.shop_name|slice:":2"|upper|default:"VN" }}
+                </div>
+              {% endif %}
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight" id="dispVendorName">{{ vendor.shop_name }}</h1>
+                  <h1 class="text-base font-bold text-slate-900" id="dispVendorName">{{ vendor.shop_name }}</h1>
                   <span class="bm-badge {% if vendor.kyc_status == "APPROVED" %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% elif vendor.kyc_status == "UNDER_REVIEW" %}bg-amber-50 text-amber-800 ring-amber-600/25{% else %}bg-rose-50 text-rose-700 ring-rose-600/20{% endif %}" id="dispVendorKyc"><span class="bm-dot"></span>KYC {{ vendor.get_kyc_status_display }}</span>
-                  <span class="bm-badge {% if vendor.kyc_status == "SUSPENDED" %}bg-rose-50 text-rose-700 ring-rose-600/20{% else %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% endif %}" id="dispVendorAccount"><span class="bm-dot"></span>{% if vendor.kyc_status == "SUSPENDED" %}Blocked Account{% else %}Active Account{% endif %}</span>
-                  <span class="bm-badge {% if vendor.is_online %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% else %}bg-slate-100 text-slate-600 ring-slate-500/20{% endif %}" id="dispVendorOnline"><span class="bm-dot"></span>{% if vendor.is_online %}Online Now{% else %}Offline{% endif %}</span>
+                  <span class="bm-badge {% if vendor.kyc_status == "SUSPENDED" %}bg-rose-50 text-rose-700 ring-rose-600/20{% else %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% endif %}" id="dispVendorAccount"><span class="bm-dot"></span>{% if vendor.kyc_status == "SUSPENDED" %}Blocked{% else %}Active{% endif %}</span>
+                  <span class="bm-badge {% if vendor.is_online %}bg-emerald-50 text-emerald-700 ring-emerald-600/20{% else %}bg-slate-100 text-slate-600 ring-slate-500/20{% endif %}" id="dispVendorOnline"><span class="bm-dot"></span>{% if vendor.is_online %}Online{% else %}Offline{% endif %}</span>
                 </div>
-                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
-                  <span class="bm-mono font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">{{ vendor.display_vendor_id }}</span>
+                <div class="flex flex-wrap items-center gap-2.5 text-xs text-slate-500 mt-1">
+                  <span class="bm-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{{ vendor.display_vendor_id }}</span>
                   <span>•</span>
                   <span>Owner: <strong class="text-slate-800" id="dispVendorOwner">{{ vendor.owner_name }}</strong></span>
                   <span>•</span>
                   <span>Joined {{ vendor.created_at|date:"d M Y" }}</span>
                   <span>•</span>
-                  <span class="flex items-center gap-1 text-slate-600"><svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg> <span id="dispVendorCity">{{ vendor.city }}</span>{% if vendor.state %}, {{ vendor.state }}{% endif %}</span>
+                  <span class="flex items-center gap-1 text-slate-600"><svg class="h-3 w-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></svg> <span id="dispVendorCity">{{ vendor.city }}</span>{% if vendor.state %}, {{ vendor.state }}{% endif %}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Header Quick Metric Ribbon -->
-            <div class="flex flex-wrap items-center gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Completed</p>
-                <p class="text-lg font-extrabold text-slate-900 mt-0.5">{{ completed_orders_count|default:assigned_orders|length }}</p>
+            <!-- Compact Inline Metrics Strip -->
+            <div class="flex flex-wrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+              <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Completed</span>
+                <span class="text-sm font-extrabold text-slate-900">{{ completed_orders_count|default:assigned_orders|length }}</span>
               </div>
-              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Scrap Traded</p>
-                <p class="text-lg font-extrabold text-brand-700 mt-0.5">{{ total_weight|default:"0" }} kg</p>
+              <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Traded</span>
+                <span class="text-sm font-extrabold text-emerald-800">{{ total_weight|default:"0" }} kg</span>
               </div>
-              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[110px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Total Volume</p>
-                <p class="text-lg font-extrabold text-emerald-700 mt-0.5">&#8377;{{ total_payouts|default:"0.00" }}</p>
+              <div class="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-center">
+                <span class="text-[0.625rem] font-bold text-slate-400 uppercase tracking-wider block">Volume</span>
+                <span class="text-sm font-extrabold text-slate-900">&#8377;{{ total_payouts|default:"0.00" }}</span>
               </div>
-              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Rating</p>
-                <p class="text-lg font-extrabold text-amber-600 mt-0.5 flex items-center justify-center gap-1">
-                  <span>★</span> {{ avg_rating|default:"5.0" }}
-                </p>
+              <div class="px-3 py-1.5 rounded-lg bg-amber-50/60 border border-amber-200 text-center">
+                <span class="text-[0.625rem] font-bold text-amber-700 uppercase tracking-wider block">Rating</span>
+                <span class="text-sm font-extrabold text-amber-800">★ {{ avg_rating|default:"4.8" }}</span>
               </div>
             </div>
           </div>
@@ -209,7 +214,7 @@
           <!-- Card: Categories Handled -->
           <div class="bm-card">
             <div class="bm-card-hd flex items-center justify-between">
-              <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <h2 class="bm-card-title flex items-center gap-2">
                 <svg class="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
                 Accepted Categories
               </h2>

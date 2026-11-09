@@ -55,6 +55,41 @@ body {
 
 p, h1, h2, h3, h4, h5, h6 { margin-bottom: 0; }
 h1, h2, h3, h4 { color: var(--bm-navy); font-weight: 700; letter-spacing: -0.025em; }
+
+/* Admin Heading Typography - Sane Resets to neutralize Bootstrap heading blowup */
+.bm-main h1, .bm-topbar h1 {
+  font-size: 1.0625rem !important; /* 17px */
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.015em !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+}
+
+.bm-main h2 {
+  font-size: 0.9375rem !important; /* 15px */
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.01em !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+}
+
+.bm-main h3 {
+  font-size: 0.875rem !important; /* 14px */
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  color: #1e293b !important;
+  margin: 0 !important;
+}
+
+.bm-card-title {
+  font-size: 0.875rem !important; /* 14px */
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 !important;
+}
 a, a:hover, a:focus, a:active, a:visited, .bm-link, .bm-link:hover { text-decoration: none !important; }
 a { color: var(--bm-teal); }
 a:hover { color: var(--bm-teal-hover); }
@@ -548,15 +583,28 @@ a.bm-card:hover {
 }
 
 .bm-btn-danger, .bm-btn-warn {
-  background: #ffffff;
-  border-color: #fecdd3;
-  color: #e11d48;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  min-height: 34px !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  border: 1px solid #fecdd3 !important;
+  background: #fff1f2 !important;
+  color: #e11d48 !important;
+  cursor: pointer !important;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .bm-btn-danger:hover, .bm-btn-warn:hover {
-  background: #e11d48;
-  border-color: #e11d48;
-  color: #ffffff;
+  background: #e11d48 !important;
+  border-color: #e11d48 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25) !important;
+  transform: translateY(-1px) !important;
 }
 
 .bm-btn-disabled, .bm-btn-disabled:hover, button:disabled {

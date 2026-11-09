@@ -157,8 +157,19 @@
       {% for u in users %}
       <tr class="hover:bg-slate-50/80 transition">
         <td>
-          <a class="bm-link font-bold text-slate-900 text-sm" href="user-detail.html?id={{ u.id }}">{{ u.full_name }}</a>
-          <div class="bm-mono text-[0.75rem] text-slate-500 mt-0.5">{{ u.display_user_id }} · joined {{ u.created_at|date:"Y-m-d" }}</div>
+          <div class="flex items-center gap-3">
+            {% if u.profile_photo %}
+              <img src="{{ u.profile_photo.url }}" alt="{{ u.full_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs">
+            {% else %}
+              <div class="w-9 h-9 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center shrink-0 border border-slate-200">
+                {{ u.full_name|slice:":2"|upper|default:"CU" }}
+              </div>
+            {% endif %}
+            <div>
+              <a class="bm-link font-bold text-slate-900 text-sm block hover:underline" href="user-detail.html?id={{ u.id }}">{{ u.full_name }}</a>
+              <div class="bm-mono text-[0.72rem] text-slate-500 mt-0.5">{{ u.display_user_id }} · joined {{ u.created_at|date:"d M Y" }}</div>
+            </div>
+          </div>
         </td>
         <td>
           <div class="font-bold text-slate-900 text-sm font-mono">{{ u.phone }}</div>

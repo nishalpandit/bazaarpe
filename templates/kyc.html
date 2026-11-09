@@ -63,14 +63,14 @@
       </div>
     </header>
     <main class="px-3 pb-8 pt-2.5 sm:px-5 sm:pt-3" id="bmMain">
-      <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">KYC Review Queue</h1>
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-[1.0625rem] font-bold text-slate-800 tracking-tight">KYC Review Queue</h1>
+          <span class="rounded-full bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 text-[0.6875rem] font-bold">
+            {{ under_review_count|default:"0" }} pending review
+          </span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="rounded-full bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1 text-xs font-bold">
-            {{ under_review_count|default:"0" }} Pending Review
-          </span>
           <a class="bm-btn-ghost bm-btn-sm" href="vendors.html">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2 7h11v9H2z"/><path d="M13 10h4l4 3.5V16h-8z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17.5" cy="18.5" r="1.8"/></svg>
             <span>All Vendors</span>
@@ -79,37 +79,37 @@
       </div>
 
       <!-- Quick Filter Pills -->
-      <div class="mb-4 flex flex-wrap items-center gap-2">
-        <a href="kyc.html?tab=under_review{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'under_review' or not current_tab %}bg-amber-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+      <div class="mb-3 flex flex-wrap items-center gap-1.5">
+        <a href="kyc.html?tab=under_review{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'under_review' or not current_tab %}bg-amber-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
           <span>⏳ Under Review</span>
           <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'under_review' or not current_tab %}bg-white/20 text-white{% else %}bg-amber-100 text-amber-800{% endif %}">{{ under_review_count|default:"0" }}</span>
         </a>
-        <a href="kyc.html?tab=approved{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'approved' %}bg-emerald-700 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+        <a href="kyc.html?tab=approved{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'approved' %}bg-emerald-700 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
           <span>✓ Approved</span>
           <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'approved' %}bg-white/20 text-white{% else %}bg-emerald-100 text-emerald-800{% endif %}">{{ approved_count|default:"0" }}</span>
         </a>
-        <a href="kyc.html?tab=rejected{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'rejected' %}bg-rose-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+        <a href="kyc.html?tab=rejected{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'rejected' %}bg-rose-600 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
           <span>✕ Rejected</span>
           <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'rejected' %}bg-white/20 text-white{% else %}bg-rose-100 text-rose-800{% endif %}">{{ rejected_count|default:"0" }}</span>
         </a>
-        <a href="kyc.html?tab=all{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'all' %}bg-slate-900 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
+        <a href="kyc.html?tab=all{% if current_q %}&q={{ current_q }}{% endif %}" class="px-3 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 {% if current_tab == 'all' %}bg-slate-900 text-white shadow-xs{% else %}bg-white text-slate-600 border border-slate-200 hover:bg-slate-50{% endif %}">
           <span>All Records</span>
           <span class="px-1.5 py-0.2 rounded-full text-[0.625rem] {% if current_tab == 'all' %}bg-white/20 text-white{% else %}bg-slate-100 text-slate-600{% endif %}">{{ all_count|default:"0" }}</span>
         </a>
       </div>
 
       <!-- Search & City Filter -->
-      <form class="bm-card mb-4 p-4 shadow-sm" method="get" action="kyc.html">
+      <form class="bm-card mb-3 p-3 shadow-sm" method="get" action="kyc.html">
         {% if current_tab %}<input type="hidden" name="tab" value="{{ current_tab }}">{% endif %}
-        <div class="grid gap-3 sm:grid-cols-3">
-          <div class="sm:col-span-2">
+        <div class="row g-2 items-end">
+          <div class="col-12 col-md-7">
             <label class="bm-label" for="kyc-q">Search KYC Queue</label>
             <div class="relative">
               <input class="bm-input pl-9" id="kyc-q" name="q" type="text" value="{{ current_q|default:'' }}" placeholder="Shop name, owner, phone, or vendor ID...">
               <svg class="h-4 w-4 text-slate-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             </div>
           </div>
-          <div>
+          <div class="col-12 col-md-3">
             <label class="bm-label" for="kyc-city">City</label>
             <select class="bm-select" id="kyc-city" name="city">
               <option value="">All Cities</option>
@@ -118,11 +118,9 @@
               {% endfor %}
             </select>
           </div>
-        </div>
-        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-          <div class="flex items-center gap-2">
-            <button type="submit" class="bm-btn-primary bm-btn-sm"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Apply filters</button>
-            <a class="bm-btn-ghost bm-btn-sm" href="kyc.html"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg> Reset</a>
+          <div class="col-12 col-md-2 flex items-center gap-1.5">
+            <button type="submit" class="bm-btn-primary bm-btn-sm w-full"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> Filter</button>
+            <a class="bm-btn-ghost bm-btn-sm" href="kyc.html" title="Reset filters"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 11a8 8 0 0 0-13.7-5.2L3 9"/><path d="M4 13a8 8 0 0 0 13.7 5.2L21 15"/><path d="M3 4v5h5"/><path d="M21 20v-5h-5"/></svg></a>
           </div>
         </div>
       </form>
@@ -131,32 +129,48 @@
       <div class="bm-card overflow-hidden shadow-sm border border-slate-200">
         <div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[980px]">
         <thead><tr>
-          <th scope="col" style="width: 220px;">Vendor Business</th>
+          <th scope="col" style="width: 240px;">Vendor Business</th>
+          <th scope="col" style="width: 130px;">Vendor ID</th>
           <th scope="col">Owner &amp; Contact</th>
           <th scope="col">City &amp; Date</th>
           <th scope="col">Verification Docs</th>
           <th scope="col">KYC Status</th>
-          <th scope="col" class="text-right" style="width: 170px;">Decide</th>
+          <th scope="col" class="text-right" style="width: 160px;">Decide</th>
         </tr></thead><tbody>
   {% for vendor in pending_vendors %}
   <tr class="hover:bg-slate-50/80 transition">
     <td>
-      <a class="bm-link font-bold text-slate-900 text-sm" href="vendor-detail.html?id={{ vendor.id }}">{{ vendor.shop_name }}</a>
-      <div class="bm-mono text-[0.75rem] text-slate-500 mt-0.5">{{ vendor.display_vendor_id }}</div>
+      <div class="flex items-center gap-3">
+        {% if vendor.profile_picture %}
+          <img src="{{ vendor.profile_picture.url }}" alt="{{ vendor.shop_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs">
+        {% elif vendor.user.profile.profile_photo %}
+          <img src="{{ vendor.user.profile.profile_photo.url }}" alt="{{ vendor.shop_name }}" class="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0 shadow-xs">
+        {% else %}
+          <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200">
+            {{ vendor.shop_name|slice:":2"|upper|default:"VN" }}
+          </div>
+        {% endif %}
+        <div>
+          <a class="bm-link font-bold text-slate-900 text-sm block hover:underline" href="vendor-detail.html?id={{ vendor.id }}">{{ vendor.shop_name }}</a>
+          <div class="text-xs text-slate-500 font-medium">{{ vendor.owner_name }}</div>
+        </div>
+      </div>
     </td>
     <td>
-      <div class="font-bold text-slate-900 text-sm">{{ vendor.owner_name }}</div>
-      <div class="text-xs text-slate-500 font-mono mt-0.5">{{ vendor.user.username }}</div>
+      <span class="bm-mono font-bold text-xs text-slate-800 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{{ vendor.display_vendor_id }}</span>
     </td>
     <td>
-      <div class="font-bold text-slate-900 text-sm flex items-center gap-1">
+      <div class="font-bold text-slate-900 text-sm font-mono">{{ vendor.user.username }}</div>
+    </td>
+    <td>
+      <div class="font-semibold text-slate-900 text-sm flex items-center gap-1">
         <span>📍</span>
         <span>{{ vendor.city }}</span>
       </div>
-      <div class="text-[0.75rem] text-slate-500 mt-0.5">{{ vendor.created_at|date:"d M Y, H:i" }}</div>
+      <div class="text-[0.72rem] text-slate-400 mt-0.5">{{ vendor.created_at|date:"d M Y, H:i" }}</div>
     </td>
     <td>
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-1.5">
         {% if vendor.aadhaar_document %}
           <a href="{{ vendor.aadhaar_document.url }}" target="_blank" class="px-2 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 text-xs font-bold flex items-center gap-1">
             <span>🪪 Aadhaar</span>
@@ -197,7 +211,7 @@
     </td>
   </tr>
   {% empty %}
-  <tr><td colspan="6" class="py-12 text-center text-slate-500">
+  <tr><td colspan="7" class="py-12 text-center text-slate-500">
     <p class="text-2xl mb-1">✓</p>
     <p class="text-sm font-bold text-slate-700">No Vendors Found in this KYC Queue</p>
     <p class="text-xs text-slate-400 mt-1">All vendor applications have been processed or match other filters.</p>

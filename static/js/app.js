@@ -407,12 +407,13 @@
   /* ---------------------------------------------------- Delete Row Operations */
   function initDeleteActions() {
     document.addEventListener("click", function (e) {
-      const btn = e.target.closest('[data-action="delete-row"], [data-action="delete-user"], [data-action="delete-user-detail"], [data-action="delete-vendor"], [data-action="delete-vendor-detail"], [data-action="delete-category"], [data-action="delete-location"]');
+      const btn = e.target.closest('[data-action="delete-row"], [data-action="delete-user"], [data-action="delete-user-detail"], [data-action="delete-vendor"], [data-action="delete-vendor-detail"], [data-action="delete-category"], [data-action="delete-subcategory"], [data-action="delete-location"]');
       if (!btn) return;
       e.preventDefault();
       const itemName = btn.getAttribute("data-item-name") || "this record";
       const userId = btn.getAttribute("data-user-id");
       const vendorId = btn.getAttribute("data-vendor-id");
+      const subId = btn.getAttribute("data-sub-id");
       const confirmed = window.confirm(
         "Are you sure you want to delete '" + itemName + "' as Administrator? This action will remove the record."
       );
@@ -422,10 +423,13 @@
       formData.append("item_name", itemName);
       if (userId) formData.append("user_id", userId);
       if (vendorId) formData.append("vendor_id", vendorId);
+      if (subId) formData.append("sub_id", subId);
 
       let deleteUrl = '/admin/users/delete';
       const actionType = btn.getAttribute("data-action") || "";
-      if (vendorId || actionType.includes("vendor") || window.location.pathname.includes("vendor")) {
+      if (actionType === 'delete-subcategory' || subId) {
+        deleteUrl = '/admin/categories/delete-sub';
+      } else if (vendorId || actionType.includes("vendor") || window.location.pathname.includes("vendor")) {
         deleteUrl = '/admin/vendors/delete';
       } else if (actionType.includes("category") || window.location.pathname.includes("categories")) {
         deleteUrl = '/admin/categories/delete';

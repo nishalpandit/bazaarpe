@@ -895,10 +895,16 @@ def page_view(request, page_name):
     if clean_name == 'categories':
         all_categories = list(ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name'))
         categories = ScrapCategory.objects.all().prefetch_related('subcategories').order_by('name')
-        page_num = request.GET.get('page', 1)
-        page_size = int(request.GET.get('page_size', 6))
-        cat_paginator = Paginator(categories, page_size)
-        cat_page_obj = cat_paginator.get_page(page_num)
+        cat_page_num = request.GET.get('cat_page', request.GET.get('page', 1))
+        cat_page_size = int(request.GET.get('cat_page_size', 8))
+        cat_paginator = Paginator(categories, cat_page_size)
+        cat_page_obj = cat_paginator.get_page(cat_page_num)
+
+        subcategories_qs = ScrapSubCategory.objects.select_related('category').order_by('category__name', 'name')
+        sub_page_num = request.GET.get('sub_page', 1)
+        sub_page_size = int(request.GET.get('sub_page_size', 12))
+        sub_paginator = Paginator(subcategories_qs, sub_page_size)
+        sub_page_obj = sub_paginator.get_page(sub_page_num)
 
         ctx = admin_context(
             request,
@@ -910,6 +916,11 @@ def page_view(request, page_name):
             cat_page_obj=cat_page_obj,
             cat_paginator=cat_paginator,
             total_categories=len(all_categories),
+            subcategories=sub_page_obj.object_list,
+            all_subcategories=list(subcategories_qs),
+            sub_page_obj=sub_page_obj,
+            sub_paginator=sub_paginator,
+            total_subcategories=subcategories_qs.count(),
         )
         return render(request, 'categories.html', ctx)
 
