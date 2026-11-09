@@ -1529,12 +1529,16 @@ def page_view(request, page_name):
         req_order = None
         if order_id:
             req_order = PickupOrder.objects.filter(order_id=order_id).select_related(
-                'user', 'user__profile', 'address', 'category', 'subcategory'
+                'user', 'user__profile', 'address', 'address__service_zone',
+                'category', 'subcategory', 'assigned_vendor', 'assigned_vendor__vendor_profile'
             ).prefetch_related('images', 'negotiation_proposals').first()
         if not req_order:
             req_order = PickupOrder.objects.filter(
                 status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]
-            ).select_related('user', 'user__profile', 'address', 'category', 'subcategory').prefetch_related('images', 'negotiation_proposals').first()
+            ).select_related(
+                'user', 'user__profile', 'address', 'address__service_zone',
+                'category', 'subcategory', 'assigned_vendor', 'assigned_vendor__vendor_profile'
+            ).prefetch_related('images', 'negotiation_proposals').first()
 
         proposals = list(req_order.negotiation_proposals.all().order_by('created_at')) if req_order else []
         latest_proposal = proposals[-1] if proposals else None
@@ -1548,6 +1552,26 @@ def page_view(request, page_name):
         has_pending_admin_offer = bool(latest_proposal and latest_proposal.proposer_role == NegotiationProposal.ProposerRole.ADMIN and latest_proposal.status == NegotiationProposal.Status.PENDING)
         is_price_agreed = bool(req_order and req_order.final_agreed_price is not None and not has_pending_user_offer and not has_pending_admin_offer)
 
+        available_vendors = assignment_vendors(req_order)
+        active_vendors_count = len(available_vendors)
+
+        rate_per_kg = None
+        if req_order:
+            if req_order.final_agreed_price and req_order.approx_weight and req_order.approx_weight > 0:
+                rate_per_kg = round(float(req_order.final_agreed_price) / float(req_order.approx_weight), 2)
+            elif req_order.approx_price and req_order.approx_weight and req_order.approx_weight > 0:
+                rate_per_kg = round(float(req_order.approx_price) / float(req_order.approx_weight), 2)
+            elif req_order.subcategory and req_order.subcategory.rate_per_kg:
+                rate_per_kg = float(req_order.subcategory.rate_per_kg)
+
+        request_steps = [
+            {'label': 'Request Placed', 'is_done': True, 'is_current': False},
+            {'label': 'Price Negotiation', 'is_done': is_price_agreed, 'is_current': not is_price_agreed and bool(req_order and req_order.status in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION))},
+            {'label': 'Price Agreed', 'is_done': is_price_agreed and bool(req_order and req_order.status != PickupOrder.Status.NEGOTIATION_PENDING), 'is_current': is_price_agreed and bool(req_order and req_order.status in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION))},
+            {'label': 'Vendor Broadcast', 'is_done': bool(req_order and req_order.status not in (PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION, PickupOrder.Status.CANCELLED)), 'is_current': bool(req_order and req_order.status == PickupOrder.Status.SEARCHING_VENDOR)},
+            {'label': 'Vendor Assigned', 'is_done': bool(req_order and req_order.assigned_vendor_id), 'is_current': bool(req_order and req_order.status == PickupOrder.Status.VENDOR_ASSIGNED)},
+        ]
+
         return render(request, 'request-detail.html', admin_context(
             request,
             page_name=clean_name,
@@ -1559,6 +1583,10 @@ def page_view(request, page_name):
             has_pending_user_offer=has_pending_user_offer,
             has_pending_admin_offer=has_pending_admin_offer,
             is_price_agreed=is_price_agreed,
+            available_vendors=available_vendors,
+            active_vendors_count=active_vendors_count,
+            rate_per_kg=rate_per_kg,
+            request_steps=request_steps,
         ))
 
     # 19. ORDERS LIST
