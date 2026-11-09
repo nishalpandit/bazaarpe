@@ -433,20 +433,17 @@
           <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="bm-card-bd space-y-3">
-          <div class="p-3 rounded-lg border bg-emerald-50 border-emerald-200 text-emerald-900 text-xs">
-            Aadhaar, PAN and GSTIN documents have been verified against NSDL and GST portal.
-          </div>
           <div>
             <label class="bm-label" for="kyc-decision">Decision</label>
             <select class="bm-select" id="kyc-decision" name="decision">
-              <option value="approve" selected>Approve KYC and Authorize Marketplace Acceptance</option>
-              <option value="reject">Reject KYC (Requires Document Re-upload)</option>
-              <option value="request_more">Request Additional Documentation</option>
+              <option value="approve" selected>Approve KYC</option>
+              <option value="reject">Reject KYC</option>
+              <option value="request_more">Request More Documents</option>
             </select>
           </div>
           <div>
             <label class="bm-label" for="kyc-note">Verification Note</label>
-            <textarea class="bm-textarea" id="kyc-note" name="note" rows="3" placeholder="Enter verification notes for the record...">All business and tax documents verified in order by Super Admin.</textarea>
+            <textarea class="bm-textarea" id="kyc-note" name="note" rows="3" placeholder="Enter verification notes for the record...">Verified by Admin.</textarea>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3">
@@ -466,9 +463,6 @@
           <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="bm-card-bd space-y-3">
-          <div class="p-3 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 text-xs">
-            Blocking prevents the vendor from seeing new requests or bidding on marketplace scrap batches.
-          </div>
           <div>
             <label class="bm-label" for="vblock-reason">Reason</label>
             <select class="bm-select" id="vblock-reason" name="reason" required>

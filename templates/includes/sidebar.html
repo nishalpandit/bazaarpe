@@ -13,6 +13,17 @@
 
   <!-- Operational Flow Navigation -->
   <nav class="flex-1 overflow-y-auto bm-scroll px-2.5 pb-4" aria-label="Operational Modules">
+
+    <!-- Overview -->
+    <p class="bm-nav-group-label">Overview</p>
+    <a class="bm-nav-link {% if page_name == 'index' or request.path == '/' or request.path == '/index.html' %}is-active{% endif %}" href="index.html" data-nav="dashboard">
+      <span class="text-slate-400">
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>
+        </svg>
+      </span>
+      <span class="truncate">Dashboard</span>
+    </a>
     
     <!-- 1. Catalog & Coverage (Foundation) -->
     <p class="bm-nav-group-label">Catalog &amp; Coverage</p>
@@ -159,16 +170,9 @@
       <span class="truncate">CMS &amp; FAQs</span>
     </a>
 
-    <!-- 6. Overview & System -->
-    <p class="bm-nav-group-label">Overview &amp; System</p>
-    <a class="bm-nav-link {% if page_name == 'index' or request.path == '/' or request.path == '/index.html' %}is-active{% endif %}" href="index.html" data-nav="dashboard">
-      <span class="text-slate-400">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>
-        </svg>
-      </span>
-      <span class="truncate">Dashboard</span>
-    </a>
+
+    <!-- System -->
+    <p class="bm-nav-group-label">System</p>
     <a class="bm-nav-link {% if page_name == 'settings' or 'settings' in request.path %}is-active{% endif %}" href="settings.html" data-nav="settings">
       <span class="text-slate-400">
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -221,3 +225,4 @@
     } catch(e) {}
   })();
 </script>
+

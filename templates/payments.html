@@ -76,16 +76,11 @@
     </div>
 
     <div class="row g-3 mb-3">
-      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Successful (range)</p><p class="bm-stat mt-1 text-emerald-700">₹{{ successful_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ successful_count|default:"0" }} transactions · gross received</p></div></div>
-      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Pending</p><p class="bm-stat mt-1 text-amber-700">₹{{ pending_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ pending_count|default:"0" }} awaiting gateway result</p></div></div>
-      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Failed</p><p class="bm-stat mt-1 text-rose-700">₹{{ failed_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ failed_count|default:"0" }} declined by gateway</p></div></div>
-      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Refunded</p><p class="bm-stat mt-1 text-sky-700">₹{{ refunded_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ refunded_count|default:"0" }} processed</p></div></div>
+      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Successful</p><p class="bm-stat mt-1 text-emerald-700">₹{{ successful_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ successful_count|default:"0" }} transactions</p></div></div>
+      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Pending</p><p class="bm-stat mt-1 text-amber-700">₹{{ pending_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ pending_count|default:"0" }} payments</p></div></div>
+      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Failed</p><p class="bm-stat mt-1 text-rose-700">₹{{ failed_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ failed_count|default:"0" }} failed</p></div></div>
+      <div class="col-6 col-xl-3"><div class="bm-card px-4 py-3"><p class="bm-stat-label">Refunded</p><p class="bm-stat mt-1 text-sky-700">₹{{ refunded_amount|default:"0.00" }}</p><p class="text-[0.75rem] text-slate-500">{{ refunded_count|default:"0" }} refunded</p></div></div>
     </div>
-
-    <div class="mb-3"><div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><p class="font-semibold">Commission basis is proposed</p><div>Rows show <em>item + 2% commission</em> because that is the current proposal. It is not confirmed whether commission is calculated on the GST-inclusive total or before/after final-weight adjustment, and the GST line is shown as “not itemised” rather than invented.</div></div>
-    </div></div>
 
     <form class="bm-card" method="get" action="payments.html" role="search">
       <div class="bm-card-bd">

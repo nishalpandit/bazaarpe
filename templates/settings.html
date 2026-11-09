@@ -72,34 +72,27 @@
           <form class="space-y-4" method="post" action="/admin/settings/commission" data-admin-form>
             <div>
       <label class="bm-label" for="f-commission_rate">Commission rate (%) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-commission_rate" name="commission_rate" type="number" value="{{ current_setting.commission_percent|default:"2.00" }}" placeholder="" required aria-describedby="f-commission_rate-help" inputmode="decimal" step="0.01" min="0" max="25">
-      <p class="bm-help" id="f-commission_rate-help">PROPOSED rate. Applied to the agreed item amount unless the basis below changes.</p>
+      <input class="bm-input" id="f-commission_rate" name="commission_rate" type="number" value="{{ current_setting.commission_percent|default:"2.00" }}" placeholder="" required inputmode="decimal" step="0.01" min="0" max="25">
     </div>
             <div>
       <label class="bm-label" for="f-commission_basis">Commission basis <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="f-commission_basis" name="commission_basis" required ><option value="proposed_item_total" selected>Item amount (proposed)</option><option value="final_weight_amount">Amount after final-weight adjustment (unconfirmed)</option><option value="gst_inclusive">GST-inclusive total (unconfirmed)</option><option value="gst_exclusive">GST-exclusive subtotal (unconfirmed)</option></select>
-      <p class="bm-help">Basis is an open decision: it is not confirmed whether commission includes/excludes GST or applies before/after final-weight adjustment.</p>
+      <select class="bm-select" id="f-commission_basis" name="commission_basis" required ><option value="proposed_item_total" selected>Item amount</option><option value="final_weight_amount">Final weight amount</option><option value="gst_inclusive">GST-inclusive total</option><option value="gst_exclusive">GST-exclusive subtotal</option></select>
     </div>
             <div>
       <label class="bm-label" for="f-commission_payer">Who pays commission</label>
-      <select class="bm-select" id="f-commission_payer" name="commission_payer" ><option value="vendor" selected>Vendor pays platform (per current flow)</option></select>
-      <p class="bm-help">Only the vendor→platform flow is specified. No user-side commission is configured.</p>
+      <select class="bm-select" id="f-commission_payer" name="commission_payer" ><option value="vendor" selected>Vendor pays platform</option></select>
     </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-      <label class="bm-label" for="f-gst_rate">GST rate (%) — where supplied</label>
-      <input class="bm-input" id="f-gst_rate" name="gst_rate" type="text" value="18.00" placeholder="" aria-describedby="f-gst_rate-help" >
-      <p class="bm-help" id="f-gst_rate-help">Not applied by this UI. Backend must confirm whether GST is charged on the item amount, the commission, or both.</p>
+      <label class="bm-label" for="f-gst_rate">GST rate (%)</label>
+      <input class="bm-input" id="f-gst_rate" name="gst_rate" type="text" value="18.00" placeholder="" >
     </div>
               <div>
       <label class="bm-label" for="f-min_payout">Minimum user payout (₹)</label>
-      <input class="bm-input" id="f-min_payout" name="min_payout" type="text" value="100" placeholder="" aria-describedby="f-min_payout-help" >
-      <p class="bm-help" id="f-min_payout-help">Display only until settlement rules are confirmed.</p>
+      <input class="bm-input" id="f-min_payout" name="min_payout" type="text" value="100" placeholder="" >
     </div>
             </div>
-            <div class="bm-provisional"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg> Provisional – decision pending</p><p class="mt-0.5">The 2% commission is described as a proposal. Changing this value must be validated server-side and recorded with actor + timestamp.</p></div>
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-      <div><p class="text-[0.75rem] text-slate-500">Validation of financial values happens server-side.</p></div>
+            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
       <div class="flex items-center gap-2"><button type="submit" class="bm-btn-primary"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Save settings</button></div>
       <input type="hidden" name="_token" value="">
     </div>
@@ -111,23 +104,19 @@
           <form class="space-y-4" method="post" action="/admin/settings/deadlines" data-admin-form>
             <div>
       <label class="bm-label" for="f-accept_deadline_hours">Vendor acceptance deadline (hours) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-accept_deadline_hours" name="accept_deadline_hours" type="number" value="{{ acceptance_hours }}" placeholder="" required aria-describedby="f-accept_deadline_hours-help" min="0.1" step="0.1">
-      <p class="bm-help" id="f-accept_deadline_hours-help">Measured from publish time. Highlight orders unaccepted after this window.</p>
+      <input class="bm-input" id="f-accept_deadline_hours" name="accept_deadline_hours" type="number" value="{{ acceptance_hours }}" placeholder="" required min="0.1" step="0.1">
     </div>
             <div>
       <label class="bm-label" for="f-arrival_deadline_hours">Vendor arrival deadline (hours) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-arrival_deadline_hours" name="arrival_deadline_hours" type="number" value="{{ arrival_hours }}" placeholder="" required aria-describedby="f-arrival_deadline_hours-help" min="0.1" step="0.1">
-      <p class="bm-help" id="f-arrival_deadline_hours-help">Measured from acceptance. Deadlines are only displayed on an order when a value is configured.</p>
+      <input class="bm-input" id="f-arrival_deadline_hours" name="arrival_deadline_hours" type="number" value="{{ arrival_hours }}" placeholder="" required min="0.1" step="0.1">
     </div>
             <div>
       <div class="flex items-start gap-2.5">
         <input class="bm-check mt-0.5" id="f-deadline_notify" name="deadline_notify" type="checkbox" value="1" checked>
         <label class="text-[0.875rem] text-slate-700" for="f-deadline_notify">Notify ops when a deadline is breached</label>
-      </div><p class="bm-help pl-6">Notification channel is owned by the backend.</p>
+      </div>
     </div>
-            <div class="bm-provisional"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg> Provisional – decision pending</p><p class="mt-0.5">Deadline definitions (which event starts each clock) are provisional. The UI displays deadlines only when configured.</p></div>
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-      <div><p class="text-[0.75rem] text-slate-500">Server-side validation required.</p></div>
+            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
       <div class="flex items-center gap-2"><button type="submit" class="bm-btn-primary"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Save deadlines</button></div>
       <input type="hidden" name="_token" value="">
     </div>
@@ -137,16 +126,13 @@
           <form class="space-y-4" method="post" action="/admin/settings/settlement" data-admin-form>
             <div>
       <label class="bm-label" for="f-settlement_window_days">User settlement window (days)</label>
-      <input class="bm-input" id="f-settlement_window_days" name="settlement_window_days" type="number" value="{{ platform_config.settlement_days }}" placeholder="" aria-describedby="f-settlement_window_days-help" min="1">
-      <p class="bm-help" id="f-settlement_window_days-help">Starts after the vendor's payment to the platform is confirmed. Timing rule unconfirmed.</p>
+      <input class="bm-input" id="f-settlement_window_days" name="settlement_window_days" type="number" value="{{ platform_config.settlement_days }}" placeholder="" min="1">
     </div>
             <div>
       <label class="bm-label" for="f-refund_window_hours">Refund window (hours)</label>
-      <input class="bm-input" id="f-refund_window_hours" name="refund_window_hours" type="number" value="{{ platform_config.refund_hours }}" placeholder="" aria-describedby="f-refund_window_hours-help" min="1">
-      <p class="bm-help" id="f-refund_window_hours-help">The stated 24-hour policy does not define its start event, eligibility or deductions.</p>
+      <input class="bm-input" id="f-refund_window_hours" name="refund_window_hours" type="number" value="{{ platform_config.refund_hours }}" placeholder="" min="1">
     </div>
-            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-      <div></div>
+            <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
       <div class="flex items-center gap-2"><button type="submit" class="bm-btn-primary"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Save windows</button></div>
       <input type="hidden" name="_token" value="">
     </div>
@@ -156,7 +142,7 @@
     </div>
 
     <div class="mt-3">
-      <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Other provisional switches</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
+      <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">System switches</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
         <div class="space-y-3">
           <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200/80 p-3">
             <div><p class="text-[0.875rem] font-semibold text-ink-900">Admin purchase workflow</p>

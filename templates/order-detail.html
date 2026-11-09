@@ -322,8 +322,7 @@
               {% else %}
                 <div class="text-center py-4 bg-amber-50/50 border border-dashed border-amber-200 rounded-xl p-4">
                   <p class="text-2xl mb-1">🚚</p>
-                  <p class="text-sm font-bold text-slate-800">No Scrap Vendor Assigned Yet</p>
-                  <p class="text-xs text-slate-500 mt-1">Assign an active vendor operating in {{ pickup_order.address.service_zone.name|default:"this zone" }} to collect this scrap.</p>
+                  <p class="text-sm font-bold text-slate-800">No Vendor Assigned</p>
                 </div>
 
                 {% if available_vendors %}
@@ -439,7 +438,6 @@
                 <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-200 space-y-2">
                   <p class="text-xs font-bold text-emerald-900 uppercase tracking-wider">Customer Payout (Seller Receives)</p>
                   <p class="text-2xl font-extrabold text-emerald-700">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</p>
-                  <p class="text-xs text-slate-600 font-medium">Calculated based on verified scrap weight and agreed rate per kg.</p>
                 </div>
 
                 <!-- Invoice Details Box -->
@@ -460,7 +458,7 @@
                   </div>
                   <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="text-xs text-brand-700 hover:underline font-bold inline-block pt-1">Open Full Invoice →</a>
                   {% else %}
-                  <p class="text-xs text-slate-500 italic mt-1">Invoice will generate automatically upon completion of pickup and digital tare weight confirmation.</p>
+                  <p class="text-xs text-slate-500 mt-1">Invoice generates upon pickup completion.</p>
                   {% endif %}
                 </div>
               </div>

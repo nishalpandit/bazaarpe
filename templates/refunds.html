@@ -75,11 +75,6 @@
       </div>
     </div>
 
-    <div class="mb-3"><div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><p class="font-semibold">The 24-hour refund policy is undefined</p><div>It is not confirmed what starts the 24-hour clock (request, payment, cancellation), which conditions make a refund eligible, or what deductions apply. Elapsed time is displayed for the reviewer; the panel makes no eligibility decision and shows no countdown guarantee.</div></div>
-    </div></div>
-
     <form class="bm-card" method="get" action="refunds.html" role="search">
       <div class="bm-card-bd">
         <div class="row g-2.5 items-end">
@@ -157,29 +152,18 @@
     </div>
 
     <div class="row g-3 mt-1">
-      <div class="col-12 col-xl-7">
+      <div class="col-12">
         <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Decision history</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
           <div class="space-y-4">
             <div>
               <p class="bm-mono text-[0.8125rem] font-semibold text-ink-900">RFD-4002 · ORD-2048</p>
               <ol class="bm-timeline mt-2">
                 <li class="bm-timeline-item is-done"><p class="text-[0.8125rem] font-semibold">Requested by vendor</p><p class="text-[0.75rem] text-slate-500">2026-10-24 15:40</p><p class="mt-1 text-[0.8125rem] text-slate-600">Vendor uploaded bank statement showing a single debit.</p></li>
-                <li class="bm-timeline-item is-current"><p class="text-[0.8125rem] font-semibold">Approved provisionally — Administrator</p><p class="text-[0.75rem] text-slate-500">2026-10-25 09:10</p><p class="mt-1 text-[0.8125rem] text-slate-600">Approval recorded. Money has <strong>not</strong> been returned; processing awaits the backend/gateway.</p></li>
+                <li class="bm-timeline-item is-current"><p class="text-[0.8125rem] font-semibold">Approved — Administrator</p><p class="text-[0.75rem] text-slate-500">2026-10-25 09:10</p><p class="mt-1 text-[0.8125rem] text-slate-600">Approval recorded. Awaiting payment gateway processing.</p></li>
                 <li class="bm-timeline-item is-blocked"><p class="text-[0.8125rem] font-semibold">Refund processing</p><p class="text-[0.75rem] text-slate-500">Awaiting backend refund confirmation</p></li>
               </ol>
             </div>
           </div></div></section>
-      </div>
-      <div class="col-12 col-xl-5">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">What this screen can and cannot do</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
-          <ul class="space-y-2 text-[0.8125rem] text-slate-700">
-            <li class="flex gap-2"><svg class="h-4 w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Record a review decision with a reason</li>
-            <li class="flex gap-2"><svg class="h-4 w-4 mt-0.5 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Attach the gateway/communication reference</li>
-            <li class="flex gap-2"><svg class="h-4 w-4 mt-0.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg> Trigger a refund through the gateway</li>
-            <li class="flex gap-2"><svg class="h-4 w-4 mt-0.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg> Show money as returned before the backend confirms it</li>
-            <li class="flex gap-2"><svg class="h-4 w-4 mt-0.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg> Auto-approve based on the 24-hour window</li>
-          </ul>
-          <details class="bm-integration"><summary>Integration notes</summary><div class="bm-integration-content"><p class="font-semibold"><svg class="inline h-3.5 w-3.5 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><path d="M12 7.6h.01"/></svg> Backend integration point</p><p class="mt-0.5"><code class="rounded bg-white/70 px-1 py-0.5 font-mono text-[0.75rem]">POST /admin/refunds/{id}/approve | .../reject</code> Approval and processing are separate endpoints and separate database states.</p></div></details></div></section>
       </div>
     </div>
 
@@ -193,13 +177,9 @@
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
       <div class="space-y-3">
         <dl class="bm-kv grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-2"><div><dt>Order</dt><dd>ORD-2048</dd></div><div><dt>Payment</dt><dd>PAY-9008 · failed</dd></div><div><dt>Vendor</dt><dd>Kumar Metal Works</dd></div><div><dt>Amount requested</dt><dd><strong>₹8,058</strong></dd></div><div><dt>Requested</dt><dd>2026-10-24 15:40</dd></div><div><dt>Elapsed</dt><dd>1 d 19 h</dd></div></dl>
-        <div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><p class="font-semibold">Outside the stated 24-hour window</p><div>The requirement mentions a 24-hour refund policy but its start event and eligibility conditions are unresolved. Elapsed time is provided so the reviewer can judge; no rule is enforced by this form.</div></div>
-    </div>
         <div>
       <label class="bm-label" for="modalRefundDecision-f-decision">Decision <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="modalRefundDecision-f-decision" name="decision" required ><option value="" selected>Select…</option><option value="approve">Approve (records approval only)</option><option value="reject">Reject</option><option value="request_info">Request more information</option></select>
+      <select class="bm-select" id="modalRefundDecision-f-decision" name="decision" required ><option value="" selected>Select…</option><option value="approve">Approve</option><option value="reject">Reject</option><option value="request_info">Request more information</option></select>
       
     </div>
         <div>

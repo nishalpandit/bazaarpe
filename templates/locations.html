@@ -68,18 +68,9 @@
     <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <h1 class="text-[1.0625rem] font-bold text-slate-800 tracking-tight">Locations & Zones</h1>
-        <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[0.6875rem] font-bold text-emerald-700">Service Coverage</span>
       </div>
       <div class="flex items-center gap-2">
         <button type="button" class="bm-btn-primary bm-btn-sm" data-modal-open="modalAddZone"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg> Add zone</button>
-      </div>
-    </div>
-
-    <div class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-[0.8125rem] text-emerald-900 mb-3">
-      <svg class="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-      <div>
-        <p class="font-semibold">Service Coverage & Zone Routing</p>
-        <p class="mt-0.5 text-emerald-800 text-[0.75rem]">Customer pickup addresses match active zones by postal pincode and geographic proximity. Each service zone maps to exactly 1 postal pincode for unambiguous vendor operating areas.</p>
       </div>
     </div>
 
@@ -174,7 +165,7 @@
 {% endfor %}
 </tbody></table></div>
 {% include "includes/pagination.html" with page_obj=zone_page_obj paginator=zone_paginator page_param='zone_page' query_string=zone_query_string item_label="zones" %}
-</div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">Deactivating a zone does not cancel existing orders in that zone; it only prevents new vendor area assignments.</p></div></section>
+</div></section>
     </div>
 
     <div class="mt-3">
@@ -193,7 +184,7 @@
       {% endfor %}
       </tbody></table></div>
       {% include "includes/pagination.html" with page_obj=vendor_area_page_obj paginator=vendor_area_paginator page_param='vendor_page' query_string=vendor_query_string item_label="vendors" %}
-      </div><div class="bm-card-ft"><p class="text-[0.75rem] text-slate-500">A vendor may operate in multiple zones; the relationship is many-to-many and is edited from the vendor record.</p></div></section>
+      </div></section>
     </div>
 
     <div class="bm-modal-backdrop" id="modalAddZone" data-modal role="dialog" aria-modal="true" aria-labelledby="modalAddZone-title" aria-hidden="true">
@@ -226,13 +217,12 @@
                 </div>
               </div>
               <div>
-                <label class="bm-label" for="modalAddZone-f-name">3. Zone Name <span class="text-rose-600" aria-hidden="true">*</span></label>
+                <label class="bm-label" for="modalAddZone-f-name">Zone Name <span class="text-rose-600" aria-hidden="true">*</span></label>
                 <input class="bm-input" id="modalAddZone-f-name" name="name" type="text" value="" placeholder="e.g. Zone 1 - Indiranagar" required>
               </div>
               <div>
                 <label class="bm-label" for="modalAddZone-f-pincode">Pincode <span class="text-rose-600" aria-hidden="true">*</span></label>
-                <input class="bm-input font-mono" id="modalAddZone-f-pincode" name="pincode" type="text" maxlength="6" pattern="[0-9]{6}" value="" placeholder="e.g. 411057" aria-describedby="modalAddZone-f-pincode-help" required>
-                <p class="bm-help" id="modalAddZone-f-pincode-help">Enter 6-digit postal pincode for this zone (1 pincode per zone).</p>
+                <input class="bm-input font-mono" id="modalAddZone-f-pincode" name="pincode" type="text" maxlength="6" pattern="[0-9]{6}" value="" placeholder="e.g. 411057" required>
               </div>
               <div>
                 <label class="bm-label" for="modalAddZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
@@ -288,8 +278,7 @@
               </div>
               <div>
                 <label class="bm-label" for="modalEditZone-f-pincode">Pincode <span class="text-rose-600" aria-hidden="true">*</span></label>
-                <input class="bm-input font-mono" id="modalEditZone-f-pincode" name="pincode" type="text" maxlength="6" pattern="[0-9]{6}" value="" placeholder="e.g. 411057" aria-describedby="modalEditZone-f-pincode-help" required>
-                <p class="bm-help" id="modalEditZone-f-pincode-help">6-digit postal pincode for this zone.</p>
+                <input class="bm-input font-mono" id="modalEditZone-f-pincode" name="pincode" type="text" maxlength="6" pattern="[0-9]{6}" value="" placeholder="e.g. 411057" required>
               </div>
               <div>
                 <label class="bm-label" for="modalEditZone-f-status">Status <span class="text-rose-600" aria-hidden="true">*</span></label>
@@ -317,11 +306,7 @@
             <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><div>Orders already assigned in this zone keep their current zone. New vendor area assignments to this zone will be blocked.</div></div>
-    </div>
-      <div class="mt-3"><div>
+      <div><div>
       <label class="bm-label" for="modalToggleZone-f-reason">Reason <span class="text-rose-600" aria-hidden="true">*</span></label>
       <textarea class="bm-textarea" id="modalToggleZone-f-reason" name="reason" rows="3" placeholder="" required ></textarea>
       
@@ -395,11 +380,7 @@
             <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><div>Deactivating a state hides it from new city creation. Existing cities and vendors are unaffected until individually changed.</div></div>
-    </div>
-      <div class="mt-3"><div>
+      <div><div>
       <label class="bm-label" for="modalToggleState-f-reason">Reason <span class="text-rose-600" aria-hidden="true">*</span></label>
       <textarea class="bm-textarea" id="modalToggleState-f-reason" name="reason" rows="3" placeholder="" required ></textarea>
       
@@ -496,11 +477,7 @@
             <button type="button" class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600" data-modal-close aria-label="Close dialog"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="bm-card-bd max-h-[65vh] overflow-y-auto bm-scroll">
-      <div class="flex items-start gap-2.5 rounded-lg border bg-amber-50 border-amber-200 text-amber-900 px-3.5 py-3 text-[0.8125rem]" role="alert">
-      <span class="mt-0.5 shrink-0"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4 2.8 20h18.4z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></span>
-      <div class="min-w-0"><div>Deactivating a city prevents new orders and vendor assignments there. Open orders must be handled individually.</div></div>
-    </div>
-      <div class="mt-3"><div>
+      <div><div>
       <label class="bm-label" for="modalToggleCity-f-reason">Reason <span class="text-rose-600" aria-hidden="true">*</span></label>
       <textarea class="bm-textarea" id="modalToggleCity-f-reason" name="reason" rows="3" placeholder="" required ></textarea>
       

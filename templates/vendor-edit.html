@@ -77,7 +77,7 @@
                 <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[0.7rem] font-bold text-slate-600">Offline</span>
                 {% endif %}
               </div>
-              <p class="text-xs text-slate-500 mt-1">Owner: <strong class="text-slate-800">{{ vendor.owner_name }}</strong> · Username: <strong class="text-slate-800 font-mono">{{ vendor.user.username }}</strong> · Super Admin Master Editor</p>
+              <p class="text-xs text-slate-500 mt-1">Owner: <strong class="text-slate-800">{{ vendor.owner_name }}</strong> · Username: <strong class="text-slate-800 font-mono">{{ vendor.user.username }}</strong></p>
             </div>
           </div>
           <div class="flex items-center gap-2.5">
@@ -103,10 +103,8 @@
                   </div>
                   <div>
                     <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Business & Contact Information</h2>
-                    <p class="text-[0.72rem] text-slate-400">Core operational identity visible across the marketplace</p>
                   </div>
                 </div>
-                <span class="text-[0.7rem] font-semibold text-slate-400">Required</span>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -121,7 +119,6 @@
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-phone">Phone Number / Username <span class="text-rose-600">*</span></label>
                   <input class="bm-input font-mono" id="input-vendor-phone" name="phone" type="text" value="{{ vendor.user.username }}" placeholder="e.g. 9876543210" required>
-                  <p class="text-[0.68rem] text-slate-400 mt-1">Used for mobile app OTP login</p>
                 </div>
                 <div class="md:col-span-2">
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-email">Email Address</label>
@@ -139,15 +136,8 @@
                   </div>
                   <div>
                     <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Assigned Scrap Categories</h2>
-                    <p class="text-[0.72rem] text-slate-400">Vendor receives and accepts all pickup orders under checked categories</p>
                   </div>
                 </div>
-                <span class="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[0.7rem] font-bold text-emerald-800">Auto-Subcategory Sync</span>
-              </div>
-
-              <div class="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3 text-amber-900 text-xs flex items-center gap-2">
-                <svg class="h-4 w-4 text-amber-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>Vendor is assigned at the <strong>Category level</strong>. Checking a category automatically authorizes the vendor for <strong>all its child subcategories</strong>.</span>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -185,7 +175,6 @@
                   </div>
                   <div>
                     <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Physical Address & GPS Location</h2>
-                    <p class="text-[0.72rem] text-slate-400">Scrap yard location used for proximity order broadcast and dispatching</p>
                   </div>
                 </div>
               </div>
@@ -209,7 +198,7 @@
                     <select class="bm-select" id="input-vendor-pincode" aria-label="Pincode" disabled><option value="">Select location first</option></select>
                   </div>
                 </div>
-                <div><label class="bm-label" for="input-vendor-location">Area / Service zone <span class="text-rose-600">*</span></label><select class="bm-select" id="input-vendor-location" name="location_zone_id" required><option value="">Select city first</option></select><p class="text-xs text-slate-400 mt-1" id="vendor-location-help">Select the yard location to fill its pincode and zone-center GPS coordinates. Operating service zones are selected separately below.</p></div>
+                <div><label class="bm-label" for="input-vendor-location">Area / Service zone <span class="text-rose-600">*</span></label><select class="bm-select" id="input-vendor-location" name="location_zone_id" required><option value="">Select city first</option></select><p class="text-xs text-slate-400 mt-1" id="vendor-location-help" style="display:none;"></p></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-vendor-lat">Zone-center GPS Latitude</label>
@@ -232,7 +221,6 @@
                   </div>
                   <div>
                     <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Operating Service Zones</h2>
-                    <p class="text-[0.72rem] text-slate-400">Customer pickup orders in checked zones are broadcasted to this vendor</p>
                   </div>
                 </div>
               </div>
@@ -261,7 +249,6 @@
                   </div>
                   <div>
                     <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Bank Account & Payout Details</h2>
-                    <p class="text-[0.72rem] text-slate-400">Direct settlement destination for vendor scrap payouts</p>
                   </div>
                 </div>
               </div>
@@ -306,9 +293,9 @@
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-kyc-status">KYC Verification Status</label>
                   <select class="bm-select text-xs font-bold" id="input-kyc-status" name="kyc_status">
-                    <option value="APPROVED" {% if vendor.kyc_status == "APPROVED" %}selected{% endif %}>Approved (Verified)</option>
+                    <option value="APPROVED" {% if vendor.kyc_status == "APPROVED" %}selected{% endif %}>Approved</option>
                     <option value="UNDER_REVIEW" {% if vendor.kyc_status == "UNDER_REVIEW" %}selected{% endif %}>Under Review</option>
-                    <option value="DRAFT" {% if vendor.kyc_status == "DRAFT" %}selected{% endif %}>Draft (Incomplete)</option>
+                    <option value="DRAFT" {% if vendor.kyc_status == "DRAFT" %}selected{% endif %}>Draft</option>
                     <option value="REJECTED" {% if vendor.kyc_status == "REJECTED" %}selected{% endif %}>Rejected</option>
                     <option value="SUSPENDED" {% if vendor.kyc_status == "SUSPENDED" %}selected{% endif %}>Suspended</option>
                   </select>
@@ -317,8 +304,8 @@
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-account-status">Account Authorization</label>
                   <select class="bm-select text-xs font-bold" id="input-account-status" name="account_status">
-                    <option value="Active" {% if vendor.user.is_active %}selected{% endif %}>Active (Authorized)</option>
-                    <option value="Blocked" {% if not vendor.user.is_active %}selected{% endif %}>Blocked (Login Revoked)</option>
+                    <option value="Active" {% if vendor.user.is_active %}selected{% endif %}>Active</option>
+                    <option value="Blocked" {% if not vendor.user.is_active %}selected{% endif %}>Blocked</option>
                     <option value="Suspended">Suspended</option>
                   </select>
                 </div>
@@ -326,14 +313,14 @@
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-online-status">Availability</label>
                   <select class="bm-select text-xs font-bold" id="input-online-status" name="online_status">
-                    <option value="Online" {% if vendor.is_online %}selected{% endif %}>Online (Accepting Orders)</option>
-                    <option value="Offline" {% if not vendor.is_online %}selected{% endif %}>Offline (Paused)</option>
+                    <option value="Online" {% if vendor.is_online %}selected{% endif %}>Online</option>
+                    <option value="Offline" {% if not vendor.is_online %}selected{% endif %}>Offline</option>
                   </select>
                 </div>
 
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-kyc-reason">KYC Notes / Rejection Reason</label>
-                  <textarea class="bm-input text-xs" id="input-kyc-reason" name="kyc_rejection_reason" rows="2" placeholder="Notes for admin audit or reason communicated to vendor if rejected">{{ vendor.kyc_rejection_reason|default:'' }}</textarea>
+                  <textarea class="bm-input text-xs" id="input-kyc-reason" name="kyc_rejection_reason" rows="2" placeholder="Notes or rejection reason">{{ vendor.kyc_rejection_reason|default:'' }}</textarea>
                 </div>
               </div>
             </div>
@@ -342,26 +329,22 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
               <div class="border-b border-slate-100 pb-3">
                 <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wide">Statutory Tax & KYC IDs</h2>
-                <p class="text-[0.72rem] text-slate-400">Legal verification credentials</p>
               </div>
 
               <div class="space-y-3.5">
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-aadhaar">Aadhaar Number</label>
                   <input class="bm-input font-mono text-xs" id="input-aadhaar" name="aadhaar_number" type="text" value="{% if vendor.aadhaar_number %}{{ vendor.aadhaar_number }}{% else %}{{ vendor.aadhaar_last4|default:'' }}{% endif %}" placeholder="12-digit Aadhaar">
-                  <p class="text-[0.68rem] text-slate-400 mt-1">Optional for onboarded vendors</p>
                 </div>
 
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-pan">PAN Number</label>
                   <input class="bm-input font-mono text-xs uppercase" id="input-pan" name="pan_number" type="text" maxlength="10" value="{% if vendor.pan_number %}{{ vendor.pan_number }}{% else %}{{ vendor.pan_last4|default:'' }}{% endif %}" placeholder="e.g. ABCDE1234F">
-                  <p class="text-[0.68rem] text-slate-400 mt-1">10-digit Income Tax PAN</p>
                 </div>
 
                 <div>
                   <label class="bm-label text-xs font-bold text-slate-700 mb-1.5" for="input-gst">GSTIN Number</label>
                   <input class="bm-input font-mono text-xs uppercase" id="input-gst" name="gst_number" type="text" maxlength="15" value="{{ vendor.gst_number|default:'' }}" placeholder="15-character GSTIN">
-                  <p class="text-[0.68rem] text-slate-400 mt-1">Required for GST invoices</p>
                 </div>
               </div>
             </div>
