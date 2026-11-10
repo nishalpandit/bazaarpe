@@ -1726,7 +1726,7 @@ def vendor_profile_view(request):
     consent = consent_required_response(request.user)
     if consent:
         return consent
-    data = request.data
+    data = request.data  
     try:
         selected_categories = vendor_category_selection(data)
         selected_zones = vendor_zone_selection(data)
