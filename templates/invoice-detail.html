@@ -128,14 +128,13 @@
               </div>
               <div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Tax Invoice #{{ invoice.invoice_number }}</h1>
+                  <h1 class="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">Settlement Invoice #{{ invoice.invoice_number }}</h1>
                   {% if invoice.payment_status == 'PAID' %}
                   <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid &amp; Settled</span>
                   {% else %}
                   <span class="bm-badge bg-amber-50 text-amber-700 ring-amber-600/20"><span class="bm-dot"></span>Awaiting Payment</span>
                   {% endif %}
-                  <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20">GST Reconciled</span>
-                  <span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">IRN Verified</span>
+                  <span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">Verified</span>
                 </div>
                 <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
                   <span class="bm-mono font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">Order Ref: {{ invoice.order.order_id }}</span>
@@ -150,20 +149,20 @@
             <!-- Header Quick Metric Ribbon -->
             <div class="flex flex-wrap items-center gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[110px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Total Invoiced</p>
+                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Vendor Paid</p>
                 <p class="text-lg font-extrabold text-emerald-700 mt-0.5">₹{{ invoice.total_paid_by_vendor }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Scrap Value</p>
+                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Product Value</p>
                 <p class="text-lg font-extrabold text-slate-900 mt-0.5">₹{{ invoice.subtotal }}</p>
               </div>
               <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[100px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Convenience Fee</p>
-                <p class="text-lg font-extrabold text-brand-700 mt-0.5">₹{{ invoice.platform_fee }}</p>
+                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Included GST</p>
+                <p class="text-lg font-extrabold text-slate-700 mt-0.5">₹{{ invoice.gst_amount }}</p>
               </div>
-              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[90px]">
-                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Payment Mode</p>
-                <p class="text-sm font-extrabold text-slate-800 mt-1">UPI Gateway</p>
+              <div class="px-3 py-2 rounded-xl bg-white border border-slate-200/80 shadow-xs text-center min-w-[110px]">
+                <p class="text-[0.6875rem] font-bold text-slate-400 uppercase tracking-wider">Admin Commission</p>
+                <p class="text-lg font-extrabold text-brand-700 mt-0.5">₹{{ invoice.platform_fee }}</p>
               </div>
             </div>
           </div>
@@ -371,28 +370,18 @@
                       <td class="p-3 text-slate-400">1</td>
                       <td class="p-3">
                         <p class="font-bold text-slate-900">Scrap Pickup — {{ invoice.order.category.name|default:"Scrap" }} ({{ invoice.order.subcategory.name|default:"Mixed" }})</p>
-                        <p class="text-[0.6875rem] text-slate-500">Doorstep collection from user {{ invoice.order.user.profile.full_name|default:invoice.order.user.username }} · Order #{{ invoice.order.order_id }}</p>
+                        <p class="text-[0.6875rem] text-slate-500">Product Value (Excl. GST) · Order #{{ invoice.order.order_id }}</p>
                       </td>
                       <td class="p-3 bm-mono text-slate-600">76020010</td>
                       <td class="p-3 text-right bm-mono font-semibold">{{ invoice.order.final_weight|default:invoice.order.approx_weight|default:"0" }} kg</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.order.final_agreed_price|default:invoice.order.approx_price|default:"—" }}</td>
+                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.order.subcategory.rate_per_kg|default:"—" }}/kg (incl. GST)</td>
                       <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.subtotal }}</td>
                     </tr>
                     <tr>
                       <td class="p-3 text-slate-400">2</td>
                       <td class="p-3">
-                        <p class="font-bold text-slate-900">Platform Facilitation &amp; Convenience Commission</p>
-                        <p class="text-[0.6875rem] text-slate-500">Standard marketplace platform fee applied on gross pickup</p>
-                      </td>
-                      <td class="p-3 bm-mono text-slate-600">998599</td>
-                      <td class="p-3 text-right bm-mono font-semibold">1 unit</td>
-                      <td class="p-3 text-right bm-mono font-semibold">₹{{ invoice.platform_fee }}</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.platform_fee }}</td>
-                    </tr>
-                    <tr>
-                      <td class="p-3 text-slate-400">3</td>
-                      <td class="p-3">
-                        <p class="text-slate-700">Goods and Services Tax (GST @ {{ invoice.order.subcategory.gst_percent|default:"18" }}%)</p>
+                        <p class="font-bold text-slate-900">Goods &amp; Services Tax (GST @ {{ invoice.order.subcategory.gst_percent|default:"18" }}%)</p>
+                        <p class="text-[0.6875rem] text-slate-500">Already included in subcategory rate per kg</p>
                       </td>
                       <td class="p-3 bm-mono text-slate-600">998599</td>
                       <td class="p-3 text-right bm-mono font-semibold">{{ invoice.order.subcategory.gst_percent|default:"18" }}%</td>
@@ -402,16 +391,24 @@
                   </tbody>
                   <tfoot class="bg-slate-50/90 font-bold border-t border-slate-200">
                     <tr>
-                      <td colspan="5" class="p-3 text-right text-slate-700">Gross Scrap Value (Disbursed to User):</td>
+                      <td colspan="5" class="p-3 text-right text-slate-700">Product Value (Excl. GST):</td>
                       <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.subtotal }}</td>
                     </tr>
                     <tr>
-                      <td colspan="5" class="p-3 text-right text-slate-700">Platform Facilitation + Total Tax (GST):</td>
-                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.platform_fee }}</td>
+                      <td colspan="5" class="p-3 text-right text-slate-700">Included GST ({{ invoice.order.subcategory.gst_percent|default:"18" }}%):</td>
+                      <td class="p-3 text-right bm-mono font-bold text-slate-900">₹{{ invoice.gst_amount }}</td>
                     </tr>
                     <tr class="text-sm bg-emerald-50 text-emerald-950 border-t-2 border-emerald-600">
-                      <td colspan="5" class="p-3.5 text-right font-extrabold uppercase tracking-wide">Grand Total Paid by Vendor:</td>
+                      <td colspan="5" class="p-3.5 text-right font-extrabold uppercase tracking-wide">Total Paid by Vendor (Incl. GST):</td>
                       <td class="p-3.5 text-right bm-mono font-extrabold text-base text-emerald-800">₹{{ invoice.total_paid_by_vendor }}</td>
+                    </tr>
+                    <tr>
+                      <td colspan="5" class="p-3 text-right text-slate-700">Less Admin Commission ({{ invoice.order.commission_percent|floatformat:2 }}% → Admin):</td>
+                      <td class="p-3 text-right bm-mono font-bold text-rose-700">-₹{{ invoice.platform_fee }}</td>
+                    </tr>
+                    <tr>
+                      <td colspan="5" class="p-3 text-right text-emerald-700">Net Customer Payout (→ User):</td>
+                      <td class="p-3 text-right bm-mono font-extrabold text-emerald-700">₹{{ invoice.user_payout_amount }}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -420,8 +417,8 @@
               <!-- Total in Words & Signatory Box -->
               <div class="mt-6 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="text-xs">
-                  <p class="text-slate-400 font-semibold uppercase tracking-wider text-[0.6875rem]">Amount Chargeable (in words):</p>
-                  <p class="font-bold text-slate-900 mt-1 italic">Indian Rupees Six Thousand Four Hundred Twenty-Six Only</p>
+                  <p class="text-slate-400 font-semibold uppercase tracking-wider text-[0.6875rem]">Settlement Split Summary:</p>
+                  <p class="font-bold text-slate-900 mt-1">Vendor Paid ₹{{ invoice.total_paid_by_vendor }} (Product ₹{{ invoice.subtotal }} + GST ₹{{ invoice.gst_amount }}) · User Payout ₹{{ invoice.user_payout_amount }} · Admin Commission ₹{{ invoice.platform_fee }}</p>
                 </div>
                 <div class="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0">
                   <div class="inline-block text-center">
@@ -437,9 +434,9 @@
               </div>
             </div>
 
-            <!-- Tax Invoice Footer Note -->
+            <!-- Settlement Invoice Footer Note -->
             <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 text-[0.6875rem] text-slate-500 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <p>This is a computer-generated tax invoice issued in accordance with GST Rules, 2017. No physical signature required.</p>
+              <p>This is a computer-generated settlement invoice. No physical signature required.</p>
               <p class="bm-mono text-slate-400">UUID: 89a2-9901-b2ff-4810</p>
             </div>
           </div>
@@ -480,14 +477,7 @@
     {% endif %}
     </main>
 
-    <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
-      <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup &amp; Vendor Marketplace</p>
-        <p class="flex items-center gap-3">
-          <a class="hover:text-brand-700" href="../docs/backend-integration.md">Backend integration</a>
-        </p>
-      </div>
-    </footer>
+    {% include 'includes/footer.html' %}
   </div>
 
   <!-- Modal: Edit Invoice Details -->

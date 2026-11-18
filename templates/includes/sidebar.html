@@ -161,14 +161,6 @@
         <span class="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[0.6875rem] font-semibold text-amber-800">{{ sidebar_badges.ratings }}</span>
       {% endif %}
     </a>
-    <a class="bm-nav-link {% if page_name == 'cms' or page_name == 'cms-edit' or 'cms' in request.path %}is-active{% endif %}" href="cms.html" data-nav="cms">
-      <span class="text-slate-400">
-        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>
-        </svg>
-      </span>
-      <span class="truncate">CMS &amp; FAQs</span>
-    </a>
 
 
     <!-- System -->
@@ -211,7 +203,6 @@
         else if (p.indexOf('ledger') !== -1) activeKey = 'ledgers';
         else if (p.indexOf('refund') !== -1) activeKey = 'refunds';
         else if (p.indexOf('rating') !== -1) activeKey = 'ratings';
-        else if (p.indexOf('cms') !== -1) activeKey = 'cms';
         else if (p.indexOf('setting') !== -1) activeKey = 'settings';
         else if (p === '/' || p.indexOf('index') !== -1) activeKey = 'dashboard';
       }

@@ -17,6 +17,32 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _load_dotenv(env_path: Path) -> None:
+    """Load key=value pairs from a .env file into os.environ without overwriting existing env vars."""
+    if not env_path.is_file():
+        return
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(env_path, override=False)
+        return
+    except ImportError:
+        pass
+    for raw_line in env_path.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+            value = value[1:-1]
+        if key:
+            os.environ.setdefault(key, value)
+
+
+_load_dotenv(BASE_DIR / '.env')
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
@@ -146,6 +172,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 PLATFORM_FEE = os.environ.get('PLATFORM_FEE', '50.00')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '')
 PAYMENT_SANDBOX_SECRET = os.environ.get('PAYMENT_SANDBOX_SECRET', 'local-sandbox-secret')
 PAYMENT_SANDBOX_WEBHOOK_SECRET = os.environ.get('PAYMENT_SANDBOX_WEBHOOK_SECRET', 'local-webhook-secret')
 SUPPORT_PHONE = os.environ.get('SUPPORT_PHONE', '+91 80000 00000')

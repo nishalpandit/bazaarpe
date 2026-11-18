@@ -377,16 +377,31 @@ class ScrapSubCategory(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
-    def price_breakdown(self, weight):
+    def price_breakdown(self, weight, commission_percent=None):
         weight = Decimal(str(weight))
-        base_price = money(weight * self.rate_per_kg)
-        gst_amount = money(base_price * self.gst_percent / Decimal('100'))
+        # rate_per_kg is GST-inclusive: gross_amount = product_value + gst_amount
+        gross_amount = money(weight * self.rate_per_kg)
+        gst_percent = Decimal(str(self.gst_percent or '0.00'))
+        gst_amount = money(gross_amount * gst_percent / Decimal('100'))
+        product_value = money(gross_amount - gst_amount)
+        if commission_percent is None:
+            billing_policy = VendorBillingSetting.current()
+            commission_percent = billing_policy.commission_percent if billing_policy else Decimal('0.00')
+        else:
+            commission_percent = Decimal(str(commission_percent))
+        commission_amount = money(gross_amount * commission_percent / Decimal('100'))
+        user_payout_amount = money(gross_amount - commission_amount)
         return {
             'rate_per_kg': money(self.rate_per_kg),
-            'base_price': base_price,
-            'gst_percent': money(self.gst_percent),
+            'base_price': product_value,
+            'product_value': product_value,
+            'gross_amount': gross_amount,
+            'gst_percent': money(gst_percent),
             'gst_amount': gst_amount,
-            'total_approx_price': money(base_price + gst_amount),
+            'commission_percent': money(commission_percent),
+            'commission_amount': commission_amount,
+            'user_payout_amount': user_payout_amount,
+            'total_approx_price': gross_amount,
         }
 
 
@@ -424,6 +439,8 @@ class PickupOrder(models.Model):
     final_agreed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     final_weight = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     final_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    commission_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    commission_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.NEGOTIATION_PENDING, db_index=True)
     pickup_otp = models.CharField(max_length=6)
     is_otp_verified = models.BooleanField(default=False)
@@ -472,8 +489,35 @@ class PickupOrder(models.Model):
         super().save(*args, **kwargs)
 
     @property
+    def gross_amount(self):
+        if hasattr(self, 'invoice') and self.invoice:
+            return money(self.invoice.total_paid_by_vendor)
+        if self.final_amount is not None:
+            return money(self.final_amount + (self.commission_amount or Decimal('0.00')))
+        return money(self.final_agreed_price or self.approx_price)
+
+    @property
+    def gst_amount(self):
+        if hasattr(self, 'invoice') and self.invoice:
+            return money(self.invoice.gst_amount)
+        if self.subcategory:
+            gst_pct = Decimal(str(self.subcategory.gst_percent or '0.00'))
+            return money(self.gross_amount * gst_pct / Decimal('100'))
+        return Decimal('0.00')
+
+    @property
+    def product_value(self):
+        return money(self.gross_amount - self.gst_amount)
+
+    @property
     def payout_amount(self):
-        return self.final_agreed_price or self.final_amount or self.approx_price
+        if self.final_amount is not None:
+            return money(self.final_amount)
+        base = Decimal(str(self.final_agreed_price or self.approx_price or '0.00'))
+        policy = VendorBillingSetting.current()
+        pct = self.commission_percent if self.commission_percent else (policy.commission_percent if policy else Decimal('0.00'))
+        comm = money(base * pct / Decimal('100'))
+        return money(base - comm)
 
 
 class PickupImage(models.Model):
@@ -516,12 +560,20 @@ class OrderInvoice(models.Model):
     invoice_number = models.CharField(max_length=50, unique=True, editable=False)
     order = models.OneToOneField(PickupOrder, on_delete=models.PROTECT, related_name='invoice')
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
-    gst_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=50.00)
+    gst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_paid_by_vendor = models.DecimalField(max_digits=10, decimal_places=2)
     payment_gateway_ref = models.CharField(max_length=100, blank=True)
     payment_status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     paid_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def gross_amount(self):
+        return money(self.subtotal + self.gst_amount)
+
+    @property
+    def user_payout_amount(self):
+        return money(self.total_paid_by_vendor - self.platform_fee)
 
     def __str__(self):
         return self.invoice_number
@@ -631,6 +683,9 @@ class PaymentTransaction(models.Model):
 
     order = models.ForeignKey(PickupOrder, on_delete=models.PROTECT, related_name='payment_transactions')
     payment_id = models.CharField(max_length=100, unique=True)
+    gateway = models.CharField(max_length=30, default='razorpay')
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, default='')
+    razorpay_order_id = models.CharField(max_length=100, blank=True, default='')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     item_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     gst_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -640,6 +695,7 @@ class PaymentTransaction(models.Model):
     fixed_platform_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED)
     gateway_signature = models.CharField(max_length=128, blank=True, default='')
+    gateway_response = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     verified_at = models.DateTimeField(null=True, blank=True)
 
@@ -731,8 +787,7 @@ class VendorOfferRejection(models.Model):
 
 class VendorBillingSetting(models.Model):
     class CommissionBasis(models.TextChoices):
-        ITEM_AMOUNT = 'ITEM_AMOUNT', 'Item Amount Before GST'
-        GST_INCLUSIVE = 'GST_INCLUSIVE', 'GST Inclusive Item Amount'
+        ITEM_AMOUNT = 'ITEM_AMOUNT', 'Gross Item Amount'
 
     commission_percent = models.DecimalField(max_digits=5, decimal_places=2)
     commission_tax_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -764,6 +819,7 @@ class PlatformConfiguration(models.Model):
     arrival_minutes = models.PositiveIntegerField(default=90)
     settlement_days = models.PositiveIntegerField(default=2)
     refund_hours = models.PositiveIntegerField(default=24)
+    min_payout_amount = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -212,7 +212,7 @@ class PickupOrderFlowTests(APITestCase):
             UserConsent.objects.get_or_create(user=self.user, document=doc)
             UserConsent.objects.get_or_create(user=self.vendor, document=doc)
         VendorBillingSetting.objects.create(
-            commission_percent='0.00', commission_tax_percent='0.00', fixed_platform_fee='50.00',
+            commission_percent='0.00', commission_tax_percent='0.00', fixed_platform_fee='0.00',
             is_approved=True, is_active=True, note='Explicit test policy',
         )
 
@@ -479,15 +479,125 @@ class PickupOrderFlowTests(APITestCase):
             self.assertEqual(order.status, state)
             self.assertEqual(order.assigned_vendor_id, self.vendor.pk)
 
-    def test_price_calculation_uses_rate_and_gst(self):
+    def test_price_calculation_with_included_gst(self):
         response = self.client.post('/api/pricing/calculate/', {
             'subcategory_id': self.subcategory.id,
             'approx_weight': 25.5,
         }, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['base_price'], 1020.0)
+        self.assertEqual(response.data['gross_amount'], 1020.0)
         self.assertEqual(response.data['gst_amount'], 183.6)
-        self.assertEqual(response.data['total_approx_price'], 1203.6)
+        self.assertEqual(response.data['base_price'], 836.4)
+        self.assertEqual(response.data['total_approx_price'], 1020.0)
+
+    def test_gross_deducted_commission_flow_example(self):
+        category, _ = ScrapCategory.objects.get_or_create(name='Plastic', defaults={'icon': 'recycle'})
+        plastic = ScrapSubCategory.objects.create(
+            category=category, name='Soft Plastic', rate_per_kg='20.00', gst_percent='18.00', min_weight_kg='1.00',
+        )
+        self.vendor_profile.categories.add(category)
+        self.vendor_profile.subcategories.add(plastic)
+        VendorBillingSetting.objects.update_or_create(
+            is_active=True,
+            defaults={
+                'commission_percent': '3.00',
+                'commission_tax_percent': '0.00',
+                'fixed_platform_fee': '0.00',
+                'is_approved': True,
+                'note': '3 percent commission policy',
+            },
+        )
+        calc = self.client.post('/api/pricing/calculate/', {
+            'subcategory_id': plastic.id,
+            'approx_weight': 10,
+        }, format='json')
+        self.assertEqual(calc.status_code, 200, calc.data)
+        self.assertEqual(calc.data['gross_amount'], 200.0)
+        self.assertEqual(calc.data['gst_percent'], 18.0)
+        self.assertEqual(calc.data['gst_amount'], 36.0)
+        self.assertEqual(calc.data['base_price'], 164.0)
+        self.assertEqual(calc.data['product_value'], 164.0)
+        self.assertEqual(calc.data['commission_percent'], 3.0)
+        self.assertEqual(calc.data['commission_amount'], 6.0)
+        self.assertEqual(calc.data['user_payout_amount'], 194.0)
+        self.assertEqual(calc.data['total_approx_price'], 200.0)
+
+        self.authenticate(self.user_token)
+        created = self.client.post('/api/user/orders/create/', {
+            'address_id': self.address.id,
+            'subcategory_id': plastic.id,
+            'approx_weight': 10,
+            'pickup_date': (timezone.localdate() + timedelta(days=1)).isoformat(),
+            'time_slot': '10:00 AM - 01:00 PM',
+        }, format='json')
+        self.assertEqual(created.status_code, 201, created.data)
+        order_id = created.data['order']['order_id']
+        order = PickupOrder.objects.get(order_id=order_id)
+        order.assigned_vendor = self.vendor
+        order.assigned_vendor_name = self.vendor_profile.shop_name
+        order.assigned_vendor_phone = self.vendor.profile.phone
+        order.is_otp_verified = True
+        order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.final_weight = '10.00'
+        order.proof_submitted_at = timezone.now()
+        order.save()
+        PickupImage.objects.create(order=order, image='plastic-proof.jpg')
+
+        self.authenticate(self.vendor_token)
+        billed = self.client.post(f'/api/vendor/orders/{order_id}/billing/', {'final_weight': '10.00'}, format='json')
+        self.assertEqual(billed.status_code, 201, billed.data)
+        self.assertEqual(billed.data['payment']['item_amount'], 164.0)
+        self.assertEqual(billed.data['payment']['gst_amount'], 36.0)
+        self.assertEqual(billed.data['payment']['gross_amount'], 200.0)
+        self.assertEqual(billed.data['payment']['commission_amount'], 6.0)
+        self.assertEqual(billed.data['payment']['amount'], 200.0)
+        self.assertEqual(billed.data['payment']['final_payable_amount'], 200.0)
+        self.assertEqual(billed.data['payment']['user_payout_amount'], 194.0)
+
+        payment_id = billed.data['payment']['payment_id']
+        signature = payment_signature(PaymentTransaction.objects.get(payment_id=payment_id))
+        verified = self.client.post(f'/api/vendor/orders/{order_id}/payment/verify/', {
+            'payment_id': payment_id,
+            'signature': signature,
+        }, format='json')
+        self.assertEqual(verified.status_code, 200, verified.data)
+        self.assertEqual(verified.data['invoice']['subtotal'], 164.0)
+        self.assertEqual(verified.data['invoice']['gst_amount'], 36.0)
+        self.assertEqual(verified.data['invoice']['gross_amount'], 200.0)
+        self.assertEqual(verified.data['invoice']['platform_fee'], 6.0)
+        self.assertEqual(verified.data['invoice']['commission_amount'], 6.0)
+        self.assertEqual(verified.data['invoice']['total_paid_by_vendor'], 200.0)
+        self.assertEqual(verified.data['invoice']['user_payout_amount'], 194.0)
+
+        order.refresh_from_db()
+        self.assertEqual(str(order.final_amount), '194.00')
+        self.assertEqual(str(order.payout_amount), '194.00')
+        self.assertEqual(str(order.commission_amount), '6.00')
+        self.assertEqual(str(order.gst_amount), '36.00')
+        self.assertEqual(str(order.product_value), '164.00')
+
+        complete = self.client.post(f'/api/vendor/orders/{order_id}/complete/', {
+            'final_weight': '10.00',
+        }, format='multipart')
+        self.assertEqual(complete.status_code, 200, complete.data)
+
+        self.client.credentials()
+        self.client.force_login(self.admin)
+        UserBankDetail.objects.get_or_create(
+            user=self.user,
+            defaults={
+                'account_holder_name': 'Flow User',
+                'account_number': '123456789012',
+                'ifsc_code': 'HDFC0001234',
+                'bank_name': 'HDFC Bank',
+            },
+        )
+        disburse = self.client.post(f'/admin/settlements/{order_id}/disburse', {
+            'amount': '194.00', 'method': 'NEFT', 'reference': 'UTR-COMM-194',
+        })
+        self.assertEqual(disburse.status_code, 302)
+        order.refresh_from_db()
+        self.assertEqual(order.payout_status, 'DISBURSED')
 
     def test_create_order_with_multiple_images_and_limit(self):
         self.authenticate(self.user_token)
@@ -600,7 +710,7 @@ class PickupOrderFlowTests(APITestCase):
         response = self.client.post(f'/admin/ratings/{review.id}/approve')
         self.assertEqual(response.status_code, 302)
         response = self.client.post(f'/admin/settlements/{order.order_id}/disburse', {
-            'amount': '1250.00', 'method': 'NEFT', 'reference': 'UTR-TEST-1001',
+            'amount': '1300.00', 'method': 'NEFT', 'reference': 'UTR-TEST-1001',
         })
         self.assertEqual(response.status_code, 302)
 
@@ -1038,11 +1148,86 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         config = PlatformConfiguration.current()
         self.assertEqual((config.acceptance_minutes, config.arrival_minutes), (120, 180))
-        response = self.client.post('/admin/cms/create', {
-            'title': 'Pickup FAQ', 'type': 'FAQ', 'version': 'flow-1',
-            'content': 'How pickup works.', 'status': 'published',
+
+        commission_resp = self.client.post('/admin/settings/commission', {
+            'commission_rate': '4.50',
+            'commission_basis': 'ITEM_AMOUNT',
+            'min_payout': '150.00',
         }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(commission_resp.status_code, 200)
+        self.assertEqual(str(VendorBillingSetting.current().commission_percent), '4.50')
+        self.assertEqual(str(PlatformConfiguration.current().min_payout_amount), '150.00')
+
+        settings_page = self.client.get('/settings.html')
+        self.assertEqual(settings_page.status_code, 200)
+        self.assertContains(settings_page, '4.50')
+        self.assertContains(settings_page, '150.00')
+        self.assertNotContains(settings_page, 'System switches')
+
+        dashboard_page = self.client.get('/index.html')
+        self.assertEqual(dashboard_page.status_code, 200)
+        self.assertNotContains(dashboard_page, 'Financial overview')
+        self.assertNotContains(dashboard_page, 'Money movement')
+        self.assertNotContains(dashboard_page, 'Recent orders')
+        self.assertNotContains(dashboard_page, 'Work queues')
+        self.assertNotContains(dashboard_page, 'Marketplace overview')
+        self.assertNotContains(dashboard_page, 'Activity and order health')
+        self.assertNotContains(dashboard_page, 'Daily customer demand, vendor fulfilment movement')
+        self.assertContains(dashboard_page, 'data-range="7d"')
+        self.assertContains(dashboard_page, 'data-range="1m"')
+        self.assertContains(dashboard_page, 'data-range="6m"')
+        self.assertContains(dashboard_page, 'data-range="1y"')
+
+        # Public Privacy Policy and Account Deletion verification
+        unauth_client = self.client_class()
+        login_resp = unauth_client.get('/login.html')
+        self.assertEqual(login_resp.status_code, 200)
+        self.assertNotContains(login_resp, 'Forgot password?')
+
+        privacy_resp = self.client.get('/privacy-policy/')
+        self.assertEqual(privacy_resp.status_code, 200)
+        self.assertContains(privacy_resp, 'Tabrez Aalam')
+        self.assertContains(privacy_resp, 'aalamhum2@gmail.com')
+        self.assertContains(privacy_resp, '+91 85499 99223')
+
+        deletion_get = self.client.get('/account-deletion/')
+        self.assertEqual(deletion_get.status_code, 200)
+        self.assertContains(deletion_get, 'Tabrez Aalam')
+        self.assertContains(deletion_get, 'aalamhum2@gmail.com')
+        self.assertContains(deletion_get, '+91 85499 99223')
+
+        deletion_post = self.client.post('/account-deletion/', {
+            'full_name': 'Test User',
+            'phone': '9876543210',
+            'email': 'user@example.com',
+            'account_type': 'Customer',
+            'reason': 'Privacy concerns',
+            'confirm_deletion': 'yes'
+        })
+        self.assertEqual(deletion_post.status_code, 200)
+        self.assertContains(deletion_post, 'Account Deletion Request Received')
+        self.assertContains(deletion_post, 'DEL-2026-')
+
+        calc = self.client.post('/api/pricing/calculate/', {
+            'subcategory_id': self.subcategory.id,
+            'approx_weight': 10,
+        }, format='json')
+        self.assertEqual(calc.status_code, 200)
+        self.assertEqual(calc.data['gross_amount'], 400.0)
+        self.assertEqual(calc.data['commission_percent'], 4.5)
+        self.assertEqual(calc.data['commission_amount'], 18.0)
+        self.assertEqual(calc.data['user_payout_amount'], 382.0)
+
+        self.assertEqual(self.client.get('/cms.html').status_code, 404)
+        self.assertEqual(self.client.get('/cms-edit.html').status_code, 404)
+
+        LegalDocument.objects.create(
+            title='Pickup FAQ',
+            document_type=LegalDocument.DocumentType.FAQ,
+            version='flow-1',
+            content='How pickup works.',
+            is_active=True,
+        )
         self.client.logout()
         content = self.client.get('/api/content/?type=FAQ')
         self.assertEqual(content.status_code, 200, content.data)
@@ -1075,6 +1260,48 @@ class PickupOrderFlowTests(APITestCase):
         self.assertEqual(retried.status_code, 201, retried.data)
         self.assertNotEqual(retried.data['payment']['payment_id'], payment_id)
         self.assertTrue(MarketplaceAuditLog.objects.filter(order=order, action='PAYMENT_FAILED').exists())
+
+    def test_razorpay_test_key_payment_saves_to_database(self):
+        order = self.create_order()
+        order.assigned_vendor = self.vendor
+        order.assigned_vendor_name = self.vendor_profile.shop_name
+        order.assigned_vendor_phone = self.vendor.profile.phone
+        order.is_otp_verified = True
+        order.status = PickupOrder.Status.PICKUP_IN_PROGRESS
+        order.final_weight = '10.00'
+        order.proof_submitted_at = timezone.now()
+        order.save()
+        PickupImage.objects.create(order=order, image='rzp-test-proof.jpg')
+        self.authenticate(self.vendor_token)
+        with self.settings(RAZORPAY_KEY_ID='rzp_test_samplekey12345', RAZORPAY_KEY_SECRET=''):
+            created = self.client.post(f'/api/vendor/orders/{order.order_id}/billing/', {'final_weight': '10.00'}, format='json')
+            self.assertEqual(created.status_code, 201, created.data)
+            self.assertEqual(created.data['payment']['razorpay_key_id'], 'rzp_test_samplekey12345')
+            self.assertEqual(created.data['payment']['gateway'], 'razorpay')
+            payment_id = created.data['payment']['payment_id']
+
+            verified = self.client.post(f'/api/vendor/orders/{order.order_id}/payment/verify/', {
+                'payment_id': payment_id,
+                'razorpay_payment_id': 'pay_RzpTestSave001',
+                'razorpay_order_id': 'order_RzpTestSave001',
+                'payment_method': 'upi',
+                'gateway_response': {'method': 'upi', 'vpa': 'success@razorpay'},
+            }, format='json')
+            self.assertEqual(verified.status_code, 200, verified.data)
+            self.assertEqual(verified.data['payment']['status'], 'VERIFIED')
+            self.assertEqual(verified.data['payment']['razorpay_payment_id'], 'pay_RzpTestSave001')
+            self.assertEqual(verified.data['invoice']['payment_gateway_ref'], 'pay_RzpTestSave001')
+
+            db_payment = PaymentTransaction.objects.get(payment_id=payment_id)
+            self.assertEqual(db_payment.gateway, 'razorpay')
+            self.assertEqual(db_payment.razorpay_payment_id, 'pay_RzpTestSave001')
+            self.assertEqual(db_payment.razorpay_order_id, 'order_RzpTestSave001')
+            self.assertEqual(db_payment.status, PaymentTransaction.Status.VERIFIED)
+            self.assertEqual(db_payment.gateway_response.get('payment_method'), 'upi')
+            self.assertEqual(db_payment.gateway_response.get('verified_via'), 'razorpay_test_mode')
+            db_invoice = OrderInvoice.objects.get(order=order)
+            self.assertEqual(db_invoice.payment_gateway_ref, 'pay_RzpTestSave001')
+            self.assertEqual(db_invoice.payment_status, OrderInvoice.PaymentStatus.PAID)
 
     def test_authenticated_vendor_and_admin_receive_full_kyc_values(self):
         self.vendor_profile.aadhaar_number = '543298761234'

@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy · Bazaarpe Scrap Marketplace</title>
+  <meta name="description" content="Official Privacy Policy, Data Governance and DPDP guidelines for Bazaarpe Scrap Pickup & Vendor Marketplace.">
+  <link rel="icon" href="/static/images/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/vendor/bootstrap.min.css">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Navbar */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid #e2e8f0;
+      padding: 12px 0;
+    }
+    .nav-container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo {
+      height: 38px;
+      width: auto;
+      border-radius: 8px;
+      background: #000;
+      padding: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .brand-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .nav-link-del {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #e11d48;
+      transition: color 0.15s;
+    }
+    .nav-link-del:hover {
+      color: #be123c;
+    }
+    .nav-btn-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #047857;
+      color: #ffffff !important;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(4, 120, 87, 0.25);
+      transition: background 0.15s, transform 0.1s;
+    }
+    .nav-btn-admin:hover {
+      background: #065f46;
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    .page-main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 36px 20px 60px 20px;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 55%, #047857 100%);
+      border-radius: 20px;
+      padding: 40px 36px;
+      color: #ffffff;
+      box-shadow: 0 10px 25px -5px rgba(6, 78, 59, 0.28), 0 8px 10px -6px rgba(6, 78, 59, 0.15);
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(16, 185, 129, 0) 70%);
+      pointer-events: none;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #ecfdf5;
+      margin-bottom: 14px;
+    }
+    .hero-pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 8px #34d399;
+    }
+    .hero-title {
+      font-size: 2.15rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0 0 10px 0;
+      color: #ffffff;
+    }
+    .hero-desc {
+      font-size: 1rem;
+      color: #d1fae5;
+      max-width: 660px;
+      margin: 0 0 18px 0;
+      line-height: 1.6;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: #a7f3d0;
+    }
+    .hero-meta-dot {
+      color: rgba(255,255,255,0.4);
+    }
+
+    /* Highlights 4-Grid */
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .hl-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+    .hl-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #ecfdf5;
+      color: #047857;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .hl-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .hl-text {
+      font-size: 0.78rem;
+      color: #64748b;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Content Card */
+    .policy-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 40px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Callout Box */
+    .callout-box {
+      background: #f0fdf4;
+      border: 1.5px solid #bbf7d0;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    .callout-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #064e3b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .callout-body {
+      font-size: 0.85rem;
+      color: #065f46;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    /* Section Headings */
+    .section-block {
+      margin-bottom: 34px;
+    }
+    .section-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 14px 0;
+      letter-spacing: -0.02em;
+    }
+    .section-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #047857;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section-body {
+      font-size: 0.92rem;
+      color: #334155;
+      line-height: 1.7;
+      margin: 0 0 14px 0;
+    }
+
+    /* Category List Cards */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .category-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .cat-badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #047857;
+      background: #ecfdf5;
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+    }
+    .cat-desc {
+      font-size: 0.8125rem;
+      color: #475569;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* Bullet list */
+    .policy-list {
+      margin: 12px 0 16px 0;
+      padding-left: 20px;
+      color: #334155;
+      font-size: 0.92rem;
+    }
+    .policy-list li {
+      margin-bottom: 8px;
+      line-height: 1.65;
+    }
+
+    /* Deletion Callout Card */
+    .deletion-highlight-card {
+      background: #fff1f2;
+      border: 1.5px solid #fecdd3;
+      border-radius: 14px;
+      padding: 22px 26px;
+      margin: 24px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .del-text-wrap {
+      flex: 1 1 300px;
+    }
+    .del-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #9f1239;
+      margin: 0 0 4px 0;
+    }
+    .del-desc {
+      font-size: 0.84rem;
+      color: #881337;
+      margin: 0;
+      line-height: 1.55;
+    }
+    .del-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #e11d48;
+      color: #ffffff !important;
+      font-size: 0.825rem;
+      font-weight: 700;
+      padding: 9px 18px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(225, 29, 72, 0.3);
+      transition: background 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .del-action-btn:hover {
+      background: #be123c;
+      transform: translateY(-1px);
+    }
+
+    /* Grievance Officer Card */
+    .officer-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+      border: 1.5px solid #a7f3d0;
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 18px;
+      box-shadow: 0 4px 10px rgba(4, 120, 87, 0.05);
+    }
+    .officer-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #d1fae5;
+    }
+    .officer-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #047857;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      box-shadow: 0 2px 6px rgba(4, 120, 87, 0.35);
+      flex-shrink: 0;
+    }
+    .officer-meta-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #047857;
+      margin-bottom: 2px;
+    }
+    .officer-name {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .officer-sub {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .officer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .officer-cell-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .officer-cell-value {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0;
+    }
+    .officer-cell-value a {
+      color: #047857;
+      transition: color 0.15s;
+    }
+    .officer-cell-value a:hover {
+      color: #064e3b;
+      text-decoration: underline;
+    }
+
+    .officer-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .btn-officer-call {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #047857;
+      color: #ffffff !important;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: background 0.15s;
+    }
+    .btn-officer-call:hover {
+      background: #065f46;
+    }
+    .btn-officer-mail {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #ffffff;
+      color: #047857 !important;
+      border: 1px solid #a7f3d0;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: background 0.15s;
+    }
+    .btn-officer-mail:hover {
+      background: #f0fdf4;
+    }
+
+    @media (max-width: 640px) {
+      .hero-banner {
+        padding: 28px 20px;
+      }
+      .hero-title {
+        font-size: 1.65rem;
+      }
+      .policy-card {
+        padding: 24px 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Navigation -->
+  <header class="top-nav">
+    <div class="nav-container">
+      <a href="/" class="brand-wrap">
+        <img src="/static/images/logo.png" alt="Bazaarpe Logo" class="brand-logo">
+        <span class="brand-name">Bazaarpe</span>
+      </a>
+      <div class="nav-actions">
+        <a href="/account-deletion/" class="nav-link-del">Delete Account</a>
+        <a href="/login.html" class="nav-btn-admin">
+          <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Admin Portal
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page Main Body -->
+  <main class="page-main">
+
+    <!-- Hero Card -->
+    <div class="hero-banner">
+      <div class="hero-pill">
+        <span class="hero-pill-dot"></span>
+        Official Legal &amp; Data Governance Notice
+      </div>
+      <h1 class="hero-title">Privacy Policy</h1>
+      <p class="hero-desc">
+        Comprehensive policy explaining how Bazaarpe collects, verifies, uses, and safeguards customer and vendor personal data across web and mobile platforms in India.
+      </p>
+      <div class="hero-meta">
+        <span>Effective Date: November 13, 2026</span>
+        <span class="hero-meta-dot">•</span>
+        <span>Version: 2.1.0</span>
+        <span class="hero-meta-dot">•</span>
+        <span>Jurisdiction: India (DPDP Act &amp; IT Rules)</span>
+      </div>
+    </div>
+
+    <!-- Highlights 4-Grid -->
+    <div class="highlights-grid">
+      <div class="hl-card">
+        <div class="hl-icon-wrap">
+          <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div class="hl-title">Data Protection</div>
+        <p class="hl-text">Compliant with the Digital Personal Data Protection Act (DPDP) 2023.</p>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon-wrap">
+          <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        </div>
+        <div class="hl-title">Verified Pickups</div>
+        <p class="hl-text">Location data is used solely to dispatch verified local scrap vendors to your door.</p>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon-wrap">
+          <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        </div>
+        <div class="hl-title">Direct Payouts</div>
+        <p class="hl-text">Bank and UPI details are securely tokenized strictly for instant scrap payouts.</p>
+      </div>
+      <div class="hl-card">
+        <div class="hl-icon-wrap">
+          <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <div class="hl-title">Full Deletion Rights</div>
+        <p class="hl-text">You can permanently erase your account and personal records at any time.</p>
+      </div>
+    </div>
+
+    <!-- Main Policy Card -->
+    <div class="policy-card">
+      
+      <!-- Callout Summary -->
+      <div class="callout-box">
+        <div class="callout-title">
+          <svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Executive Summary
+        </div>
+        <p class="callout-body">
+          Bazaarpe connects scrap sellers (residential and business customers) with verified recycling vendors. We collect only what is strictly necessary to arrange scrap collections, calculate accurate pricing, verify physical pickup via OTP, and disburse digital payouts. We never sell, lease, or monetize your personal information to third parties.
+        </p>
+      </div>
+
+      <!-- Section 1 -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">1</span>
+          About Bazaarpe
+        </h2>
+        <p class="section-body">
+          Bazaarpe ("Platform", "we", "us", or "our") is an on-demand doorstep scrap collection, recycling logistics, and marketplace platform operating in India. This Privacy Policy governs the manner in which Bazaarpe collects, uses, maintains, and discloses information collected from users across our customer app, vendor portal, and website.
+        </p>
+      </div>
+
+      <!-- Section 2 -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">2</span>
+          Information We Collect
+        </h2>
+        <p class="section-body">
+          To provide reliable doorstep scrap collection and real-time vendor matching, we process the following categories of information:
+        </p>
+
+        <div class="category-grid">
+          <div class="category-item">
+            <span class="cat-badge">Account &amp; Contact</span>
+            <p class="cat-desc">Full name, mobile phone number, and optional email address used for secure mobile OTP sign-in and service alerts.</p>
+          </div>
+          <div class="category-item">
+            <span class="cat-badge">Location &amp; Address</span>
+            <p class="cat-desc">Street address, landmark, pincode, city, and GPS coordinates provided to route assigned pickup vendors to your exact doorstep.</p>
+          </div>
+          <div class="category-item">
+            <span class="cat-badge">Scrap Order Details</span>
+            <p class="cat-desc">Scrap materials (metal, plastic, paper, e-waste), estimated weight, uploaded scrap images, and verified weighbridge slips.</p>
+          </div>
+          <div class="category-item">
+            <span class="cat-badge">Payout &amp; Banking</span>
+            <p class="cat-desc">Bank account number, IFSC code, account holder name, or UPI VPA provided by scrap sellers strictly to disburse scrap earnings.</p>
+          </div>
+          <div class="category-item">
+            <span class="cat-badge">Vendor KYC Data</span>
+            <p class="cat-desc">For vendors: Aadhaar/DigiLocker verification reference, shop trade name, operating zones, and GSTIN (if applicable).</p>
+          </div>
+          <div class="category-item">
+            <span class="cat-badge">Technical Telemetry</span>
+            <p class="cat-desc">Device model, operating system version, IP address, and application crash diagnostics for fraud defense and stability.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 3 -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">3</span>
+          How We Use Your Information
+        </h2>
+        <p class="section-body">We process your data exclusively for legitimate operational workflows:</p>
+        <ul class="policy-list">
+          <li><strong>Doorstep Scrap Collection:</strong> Dispatching verified local vendors and displaying pickup instructions.</li>
+          <li><strong>Handover Verification:</strong> Generating and authenticating one-time passwords (OTP) when the scrap is weighed and handed over.</li>
+          <li><strong>Transparent Pricing:</strong> Applying published rates per kilogram, transparently deducting platform commission, and generating digital tax invoices.</li>
+          <li><strong>Direct Earnings Payouts:</strong> Transferring payouts directly into your bank account or UPI ID upon pickup completion.</li>
+          <li><strong>Security &amp; Fraud Prevention:</strong> Detecting fraudulent orders, fictitious addresses, and preventing vendor double-claims.</li>
+          <li><strong>Statutory Compliance:</strong> Complying with GST guidelines, waste recycling tracking, and Indian accounting mandates.</li>
+        </ul>
+      </div>
+
+      <!-- Section 4 -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">4</span>
+          Information Sharing &amp; Third Parties
+        </h2>
+        <p class="section-body">
+          We strictly limit disclosure of your personal data:
+        </p>
+        <ul class="policy-list">
+          <li><strong>Assigned Vendors:</strong> Only the specific verified vendor assigned to your pickup order receives your name, address, and contact number.</li>
+          <li><strong>Payment Processors &amp; Banks:</strong> Payout coordinates (UPI/Bank) are passed over encrypted banking channels to Reserve Bank of India (RBI) authorized payment gateways.</li>
+          <li><strong>Law Enforcement &amp; Regulatory Bodies:</strong> Only when strictly required by applicable Indian law, court subpoena, or tax authorities.</li>
+        </ul>
+      </div>
+
+      <!-- Section 5 -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">5</span>
+          Data Security &amp; Encryption
+        </h2>
+        <p class="section-body">
+          We maintain rigorous industry safeguards:
+        </p>
+        <ul class="policy-list">
+          <li>All communication between your device and our servers is encrypted using modern TLS 1.3 / SSL protocols.</li>
+          <li>Financial payout details are tokenized and protected in firewalled, access-controlled databases.</li>
+          <li>Staff access to customer records is restricted, role-based, and logged in audit trails.</li>
+        </ul>
+      </div>
+
+      <!-- Section 6: Account Deletion -->
+      <div class="section-block">
+        <h2 class="section-heading">
+          <span class="section-num">6</span>
+          Account Deletion &amp; Data Purge Rights
+        </h2>
+        <p class="section-body">
+          In accordance with Google Play Store, Apple App Store, and the Indian Digital Personal Data Protection Act, every user has the absolute right to request complete deletion of their account and personal records.
+        </p>
+
+        <div class="deletion-highlight-card">
+          <div class="del-text-wrap">
+            <h4 class="del-title">Want to permanently delete your Bazaarpe account?</h4>
+            <p class="del-desc">
+              You can initiate an instant deletion request online. Your personal profile, saved addresses, active orders, and login credentials will be verified and purged within 7 business days.
+            </p>
+          </div>
+          <a href="/account-deletion/" class="del-action-btn">
+            <svg style="width:16px; height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Account Deletion Portal &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Section 7: Grievance Officer -->
+      <div class="section-block" style="margin-bottom: 0;">
+        <h2 class="section-heading">
+          <span class="section-num">7</span>
+          Grievance Redressal &amp; Official Contact Information
+        </h2>
+        <p class="section-body">
+          As required under the Information Technology Act, 2000 and the Digital Personal Data Protection Act, 2023, the designated Grievance Officer and Data Protection Officer for Bazaarpe is:
+        </p>
+
+        <!-- Officer Card -->
+        <div class="officer-card">
+          <div class="officer-header">
+            <div class="officer-avatar">TA</div>
+            <div>
+              <div class="officer-meta-title">Grievance &amp; Compliance Officer</div>
+              <h3 class="officer-name">{{ contact_name|default:"Tabrez Aalam" }}</h3>
+              <p class="officer-sub">Platform Operations &amp; Data Governance · Bazaarpe</p>
+            </div>
+          </div>
+
+          <div class="officer-grid">
+            <div>
+              <div class="officer-cell-label">Email Address</div>
+              <div class="officer-cell-value">
+                <a href="mailto:{{ contact_email|default:'aalamhum2@gmail.com' }}">{{ contact_email|default:"aalamhum2@gmail.com" }}</a>
+              </div>
+            </div>
+            <div>
+              <div class="officer-cell-label">Direct Helpline</div>
+              <div class="officer-cell-value">
+                <a href="tel:{{ contact_phone|default:'+918549999223' }}">{{ contact_phone|default:"+91 85499 99223" }}</a>
+              </div>
+            </div>
+            <div>
+              <div class="officer-cell-label">Resolution SLA</div>
+              <div class="officer-cell-value" style="color: #047857;">Within 7 Business Days</div>
+            </div>
+          </div>
+
+          <div class="officer-buttons">
+            <a href="tel:{{ contact_phone|default:'+918549999223' }}" class="btn-officer-call">
+              <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              Call {{ contact_phone|default:"+91 85499 99223" }}
+            </a>
+            <a href="mailto:{{ contact_email|default:'aalamhum2@gmail.com' }}" class="btn-officer-mail">
+              <svg style="width:14px; height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Email Grievance Officer
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer with Centered Brightcode Branding -->
+  {% include 'includes/footer.html' %}
+
+</body>
+</html>

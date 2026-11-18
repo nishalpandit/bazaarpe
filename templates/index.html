@@ -196,71 +196,58 @@
       </div>
     </div>
 
-    <div class="bm-section-heading" data-reveal>
-      <div>
-        <span class="bm-section-kicker">Marketplace overview</span>
-        <h2>Activity and order health</h2>
-        <p>Daily customer demand, vendor fulfilment movement, and the current active-order pipeline.</p>
-      </div>
-      <div class="bm-chart-legend flex items-center gap-3" aria-label="Chart legend">
-        <span class="inline-flex items-center gap-1.5"><i class="bm-legend-dot bm-legend-dot--teal"></i><span class="font-semibold text-emerald-800">Green Line:</span> Pickup Requests</span>
-        <span class="inline-flex items-center gap-1.5"><i class="bm-legend-dot bm-legend-dot--navy"></i><span class="font-semibold text-blue-800">Blue Line:</span> Completed Pickups</span>
-      </div>
-    </div>
-
-    <div class="bm-overview-grid" data-reveal>
-      <section class="bm-card bm-chart-card bm-chart-card--wide" aria-labelledby="activity-chart-title">
-        <div class="bm-chart-card__header flex-wrap gap-2 pb-2">
+    <div class="bm-overview-grid mt-6" data-reveal>
+      <section class="bm-card bm-chart-card bm-chart-card--wide flex flex-col justify-between" aria-labelledby="activity-chart-title">
+        <div class="bm-chart-card__header flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
-            <h3 id="activity-chart-title">Marketplace Activity & Order Trends</h3>
-            <p>Customer pickup requests received vs. vendor completed pickups over the past 7 days</p>
-          </div>
-          <span class="bm-trend-pill">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 11 3-3 2.3 2.3L13 5.5"/><path d="M9.5 5.5H13V9"/></svg>
-            7-Day Operational Trend
-          </span>
-        </div>
-
-        <!-- EXPLICIT GRAPH MARKINGS BAR (Unambiguous Visual Key) -->
-        <div class="mx-4 mb-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold shadow-xs">
-              <span class="flex items-center">
-                <span class="w-3.5 h-1 bg-emerald-500 rounded"></span>
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-600 ring-2 ring-emerald-200"></span>
-                <span class="w-3.5 h-1 bg-emerald-500 rounded"></span>
+            <div class="flex items-center gap-2">
+              <h3 id="activity-chart-title" class="text-base font-bold text-slate-900">Marketplace Activity &amp; Order Trends</h3>
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/70 px-2.5 py-0.5 text-[0.6875rem] font-semibold text-emerald-800">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Live Analytics
               </span>
-              <span>🟢 Green Line: Pickup Requests (Customer Demand)</span>
+            </div>
+            <p id="activityChartSubtitle" class="mt-0.5 text-xs text-slate-500">Customer pickup requests vs. vendor completed pickups (last 7 days)</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Time Range Segmented Control (7D / 1M / 6M / 1Y) -->
+            <div class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/90 p-0.5 text-[0.75rem] font-medium shadow-xs" role="tablist" aria-label="Chart time range">
+              <button type="button" class="chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-bold transition-all duration-150 bg-white text-emerald-800 shadow-xs border border-emerald-200/70" data-range="7d">7D</button>
+              <button type="button" class="chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-medium transition-all duration-150 text-slate-600 hover:text-slate-900" data-range="1m">1M</button>
+              <button type="button" class="chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-medium transition-all duration-150 text-slate-600 hover:text-slate-900" data-range="6m">6M</button>
+              <button type="button" class="chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-medium transition-all duration-150 text-slate-600 hover:text-slate-900" data-range="1y">1Y</button>
             </div>
 
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-900 border border-blue-300 font-bold shadow-xs">
-              <span class="flex items-center">
-                <span class="w-3.5 h-1 bg-blue-600 rounded"></span>
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 ring-2 ring-blue-200"></span>
-                <span class="w-3.5 h-1 bg-blue-600 rounded"></span>
-              </span>
-              <span>🔵 Blue Line: Completed Pickups (Vendor Fulfilments)</span>
+            <!-- Series Toggle Badges -->
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-toggle-series="0" class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 py-1 text-[0.75rem] font-semibold text-emerald-900 transition hover:bg-emerald-100 shadow-xs" title="Toggle Pickup Requests">
+                <span class="h-2 w-2 rounded-full bg-emerald-600 shadow-[0_0_6px_rgba(5,150,105,0.7)]"></span>
+                <span>Requests</span>
+                <span class="font-mono font-bold text-emerald-800" id="badgeReqTotal">{{ weekly_requests_total|default:"0" }}</span>
+              </button>
+              <button type="button" data-toggle-series="1" class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1 text-[0.75rem] font-semibold text-blue-900 transition hover:bg-blue-100 shadow-xs" title="Toggle Completed Pickups">
+                <span class="h-2 w-2 rounded-full bg-blue-600 shadow-[0_0_6px_rgba(37,99,235,0.7)]"></span>
+                <span>Completed</span>
+                <span class="font-mono font-bold text-blue-800" id="badgeCompTotal">{{ weekly_completed_total|default:"0" }}</span>
+              </button>
             </div>
-          </div>
-          <div class="text-[0.75rem] font-semibold text-slate-500 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Dynamic Database Data
           </div>
         </div>
 
-        <div class="bm-line-chart" style="position: relative; height: 260px; width: 100%; padding: 4px 16px 10px;">
-          <canvas id="marketplaceActivityChart" height="255"></canvas>
+        <div class="bm-line-chart relative w-full px-4 pt-4 pb-2" style="height: 285px;">
+          <canvas id="marketplaceActivityChart"></canvas>
         </div>
 
         <div class="bm-chart-summary">
           <div>
-            <span>7-Day Demand</span>
-            <strong>{{ weekly_requests_total|default:"0" }} requests</strong>
-            <small>Peak: {{ peak_day_requests|default:"0" }} on {{ peak_day_label|default:"Today" }}</small>
+            <span id="statDemandLabel">7-Day Demand</span>
+            <strong id="statDemandTotal">{{ weekly_requests_total|default:"0" }} requests</strong>
+            <small id="statDemandPeak">Peak: {{ peak_day_requests|default:"0" }} on {{ peak_day_label|default:"Today" }}</small>
           </div>
           <div>
-            <span>Completion Rate</span>
-            <strong>{{ completion_rate_pct|default:"0.0" }}%</strong>
-            <small>{{ weekly_completed_total|default:"0" }} pickups completed</small>
+            <span>Fulfilment Rate</span>
+            <strong id="statFulfilmentRate">{{ completion_rate_pct|default:"0.0" }}%</strong>
+            <small id="statFulfilmentCompleted">{{ weekly_completed_total|default:"0" }} pickups completed</small>
           </div>
           <div>
             <span>Active Pipeline</span>
@@ -270,224 +257,59 @@
         </div>
       </section>
 
-      <section class="bm-card bm-chart-card bm-pipeline-card" aria-labelledby="pipeline-title">
-        <div class="bm-chart-card__header">
+      <section class="bm-card bm-chart-card flex flex-col justify-between" aria-labelledby="pipeline-title">
+        <div class="bm-chart-card__header border-b border-slate-100 pb-3">
           <div>
             <h3 id="pipeline-title">Active-order pipeline</h3>
             <p>{{ active_orders_count|default:"0" }} orders currently in progress</p>
           </div>
           <a class="bm-chart-link" href="orders.html">View all <span aria-hidden="true">&rarr;</span></a>
         </div>
-        <div class="bm-donut-wrap">
-          <svg class="bm-donut" viewBox="0 0 180 180" role="img" aria-label="Order pipeline: {{ assigned_orders_count }} assigned, {{ in_pickup_orders_count }} in pickup, {{ published_orders_count }} published, and {{ negotiation_orders_count }} in negotiation">
-            <circle class="bm-donut-track" cx="90" cy="90" r="62"/>
-            <circle class="bm-donut-segment bm-donut-segment--assigned" pathLength="100" stroke-dasharray="21 79" stroke-dashoffset="0" cx="90" cy="90" r="62"/>
-            <circle class="bm-donut-segment bm-donut-segment--pickup" pathLength="100" stroke-dasharray="16 84" stroke-dashoffset="-21" cx="90" cy="90" r="62"/>
-            <circle class="bm-donut-segment bm-donut-segment--published" pathLength="100" stroke-dasharray="30 70" stroke-dashoffset="-37" cx="90" cy="90" r="62"/>
-            <circle class="bm-donut-segment bm-donut-segment--negotiation" pathLength="100" stroke-dasharray="33 67" stroke-dashoffset="-67" cx="90" cy="90" r="62"/>
-          </svg>
-          <div class="bm-donut-center"><strong>{{ active_orders_count|default:"0" }}</strong><span>active</span></div>
-        </div>
-        <div class="bm-pipeline-legend">
-          <a href="orders.html?status=assigned"><i class="is-assigned"></i><span>Assigned</span><strong>{{ assigned_orders_count|default:"0" }}</strong></a>
-          <a href="orders.html?status=pickup"><i class="is-pickup"></i><span>In pickup</span><strong>{{ in_pickup_orders_count|default:"0" }}</strong></a>
-          <a href="orders.html?status=published"><i class="is-published"></i><span>Published</span><strong>{{ published_orders_count|default:"0" }}</strong></a>
-          <a href="requests.html?stage=negotiation"><i class="is-negotiation"></i><span>Negotiation</span><strong>{{ negotiation_orders_count|default:"0" }}</strong></a>
-        </div>
-      </section>
-    </div>
 
-    <div class="bm-section-heading bm-section-heading--money" data-reveal>
-      <div>
-        <span class="bm-section-kicker">Financial overview</span>
-        <h2>Money movement</h2>
-        <p>Selected period: {{ selected_period_label }}. Amounts are shown independently.</p>
-      </div>
-      <span class="bm-period-chip">INR · ₹</span>
-    </div>
-
-    <div class="bm-money-grid" data-reveal>
-      <section class="bm-card bm-money-chart" aria-labelledby="money-chart-title">
-        <div class="bm-chart-card__header">
-          <div>
-            <h3 id="money-chart-title">Cash-flow comparison</h3>
-            <p>Gross collections, recorded payouts, revenue, and commission</p>
+        <div class="flex flex-1 flex-col items-center justify-center px-5 py-4">
+          <div class="relative flex items-center justify-center" style="width: 184px; height: 184px;">
+            <canvas id="pipelineOrderChart" width="184" height="184" role="img" aria-label="Order pipeline: {{ assigned_orders_count }} assigned, {{ in_pickup_orders_count }} in pickup, {{ published_orders_count }} published, {{ negotiation_orders_count }} negotiation, {{ billing_orders_count }} billing"></canvas>
+            <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+              <strong class="text-[2rem] font-extrabold leading-none tracking-tight text-slate-900">{{ active_orders_count|default:"0" }}</strong>
+              <span class="mt-1 text-[0.625rem] font-extrabold uppercase tracking-[0.12em] text-slate-500">Active</span>
+            </div>
           </div>
-          <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Gateway synced</span>
         </div>
-        <div class="bm-bar-chart">
-          <div class="bm-bar-row">
-            <div class="bm-bar-meta"><span>Vendor collections</span><strong>₹{{ vendor_collections|default:"0.00" }}</strong></div>
-            <div class="bm-bar-track"><i class="bm-bar bm-bar--collections" style="--bar-size:100%"></i></div>
-            <small>Gross received by platform</small>
-          </div>
-          <div class="bm-bar-row">
-            <div class="bm-bar-meta"><span>User payouts recorded</span><strong>₹{{ payouts_recorded|default:"0.00" }}</strong></div>
-            <div class="bm-bar-track"><i class="bm-bar bm-bar--payouts" style="--bar-size:90.7%"></i></div>
-            <small>Manual bank settlements</small>
-          </div>
-          <div class="bm-bar-row">
-            <div class="bm-bar-meta"><span>Platform revenue</span><strong>₹{{ platform_revenue|default:"0.00" }}</strong></div>
-            <div class="bm-bar-track"><i class="bm-bar bm-bar--revenue" style="--bar-size:7.3%"></i></div>
-            <small>Platform share</small>
-          </div>
-          <div class="bm-bar-row">
-            <div class="bm-bar-meta"><span>Commission earned</span><strong>₹{{ commission_earned|default:"0.00" }}</strong></div>
-            <div class="bm-bar-track"><i class="bm-bar bm-bar--commission" style="--bar-size:2%"></i></div>
-            <small>At configured {{ current_commission.commission_percent|default:"0.00" }}% rate</small>
-          </div>
+
+        <div class="bm-pipeline-legend pt-0">
+          <a href="orders.html?status=assigned">
+            <i class="is-assigned"></i>
+            <span>Assigned</span>
+            <strong class="ml-auto font-mono">{{ assigned_orders_count|default:"0" }} <span class="text-[0.625rem] font-medium text-slate-400" data-pct-for="assigned"></span></strong>
+          </a>
+          <a href="orders.html?status=pickup">
+            <i class="is-pickup"></i>
+            <span>In pickup</span>
+            <strong class="ml-auto font-mono">{{ in_pickup_orders_count|default:"0" }} <span class="text-[0.625rem] font-medium text-slate-400" data-pct-for="pickup"></span></strong>
+          </a>
+          <a href="orders.html?status=published">
+            <i class="is-published"></i>
+            <span>Published</span>
+            <strong class="ml-auto font-mono">{{ published_orders_count|default:"0" }} <span class="text-[0.625rem] font-medium text-slate-400" data-pct-for="published"></span></strong>
+          </a>
+          <a href="requests.html?stage=negotiation">
+            <i class="is-negotiation"></i>
+            <span>Negotiation</span>
+            <strong class="ml-auto font-mono">{{ negotiation_orders_count|default:"0" }} <span class="text-[0.625rem] font-medium text-slate-400" data-pct-for="negotiation"></span></strong>
+          </a>
+          {% if billing_orders_count %}
+          <a href="orders.html?status=billing" class="col-span-full">
+            <i style="background:#64748b;"></i>
+            <span>Billing &amp; Invoice Stage</span>
+            <strong class="ml-auto font-mono">{{ billing_orders_count }} <span class="text-[0.625rem] font-medium text-slate-400" data-pct-for="billing"></span></strong>
+          </a>
+          {% endif %}
         </div>
       </section>
-
-      <aside class="bm-card bm-finance-insights" aria-label="Financial highlights">
-        <div class="bm-chart-card__header">
-          <div><h3>Period highlights</h3><p>Movement since last period</p></div>
-          <a class="bm-chart-link" href="payments.html">Details <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="bm-insight-list">
-          <div class="bm-insight">
-            <span class="bm-insight-icon bm-insight-icon--positive"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17 9 12l3 3 7-8"/><path d="M14 7h5v5"/></svg></span>
-            <div><span>Collections growth</span><strong>+18.6%</strong><small>₹1.35L above previous period</small></div>
-          </div>
-          <div class="bm-insight">
-            <span class="bm-insight-icon bm-insight-icon--neutral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"/><path d="m14 6 6 6-6 6"/></svg></span>
-            <div><span>Pending settlements</span><strong>₹{{ pending_settlements_amount|default:"0.00" }}</strong><small>{{ pending_payouts_count }} users require finance action</small></div>
-          </div>
-          <div class="bm-insight">
-            <span class="bm-insight-icon bm-insight-icon--warn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18Z"/><path d="M12 10v4M12 17h.01"/></svg></span>
-            <div><span>Failed payments</span><strong>6 orders</strong><small>₹8,058 awaiting resolution</small></div>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <div class="row g-3 mt-1">
-      <div class="col-12 col-xl-8">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Recent orders</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-btn-ghost bm-btn-sm" href="orders.html?order_status=active">Active only</a></div></div><div class="bm-card-bd px-0 py-0 sm:px-0"><div class="bm-table-wrap bm-scroll"><table class="bm-table min-w-[1040px]">
-      <thead><tr><th scope="col" class="">Order</th><th scope="col" class="">User</th><th scope="col" class="">Vendor</th><th scope="col" class="">Items / weight</th><th scope="col" class="text-right">Agreed</th><th scope="col" class="">Order status</th><th scope="col" class="">Vendor payment</th><th scope="col" class="">User settlement</th></tr></thead><tbody>
-{% for order in recent_orders %}
-<tr>
-  <td><a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a><div class="mt-0.5 text-[0.75rem] text-slate-500">{{ order.address.city|default:"Service Area" }}</div></td>
-  <td><a class="bm-link" href="user-detail.html?id={{ order.user.profile.id }}">{{ order.user.profile.full_name|default:order.user.username }}</a></td>
-  <td>{% if order.assigned_vendor_name %}<a class="bm-link" href="vendor-detail.html?q={{ order.assigned_vendor_name }}">{{ order.assigned_vendor_name }}</a>{% else %}<span class="text-slate-400">Unassigned</span>{% endif %}</td>
-  <td><span class="text-[0.8125rem]">{% if order.subcategory %}{{ order.subcategory.name }}{% elif order.category %}{{ order.category.name }}{% else %}General{% endif %}</span><div class="text-[0.75rem] text-slate-500">{{ order.approx_weight }} kg est.</div></td>
-  <td class="text-right"><span class="font-semibold tabular-nums">₹{{ order.final_agreed_price|default:order.approx_price }}</span></td>
-  <td><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20"><span class="bm-dot"></span>{{ order.get_status_display }}</span></td>
-  <td>{% if order.invoice.payment_status == 'PAID' %}<span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid</span>{% else %}<span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Pending</span>{% endif %}</td>
-  <td>{% if order.payout_status == 'DISBURSED' %}<span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Paid</span>{% elif order.payout_status == 'PENDING' %}<span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Pending</span>{% else %}<span class="bm-badge bg-slate-100 text-slate-600 ring-slate-500/20"><span class="bm-dot"></span>Not due</span>{% endif %}</td>
-</tr>
-{% empty %}
-<tr><td colspan="8" class="text-center py-6 text-slate-400">No orders placed on platform yet.</td></tr>
-{% endfor %}
-</tbody></table></div>
-</div><div class="bm-card-ft flex justify-end"><a class="bm-link text-[0.8125rem] font-semibold" href="orders.html">View all orders →</a></div></section>
-      </div>
-      <div class="col-12 col-xl-4">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Unaccepted orders requiring action</h2></div><div class="flex flex-wrap items-center gap-2"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20"><span class="bm-dot"></span>{{ unaccepted_count }} unaccepted</span></div></div><div class="bm-card-bd px-0 py-0 sm:px-0"><ul>
-{% for order in unaccepted_orders %}
-<li class="flex flex-col gap-1.5 border-b border-slate-100 px-4 py-3 last:border-0 sm:px-5">
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    <a class="bm-mono bm-link" href="order-detail.html?id={{ order.order_id }}">{{ order.order_id }}</a>
-    <span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25"><span class="bm-dot"></span>Searching vendor</span>
-  </div>
-  <p class="text-[0.8125rem] text-slate-600">{{ order.address.city|default:"City" }} · {% if order.subcategory %}{{ order.subcategory.name }}{% elif order.category %}{{ order.category.name }}{% else %}Scrap{% endif %} · {{ order.approx_weight }} kg</p>
-  <p class="text-[0.75rem] text-slate-500">Published {{ order.published_at|date:"Y-m-d H:i"|default:order.created_at|date:"Y-m-d H:i" }}</p>
-  <div class="mt-1 flex flex-wrap gap-2">
-    <a class="bm-btn-ghost bm-btn-sm" href="order-detail.html?id={{ order.order_id }}">Review</a>
-  </div>
-</li>
-{% empty %}
-<li class="px-4 py-6 text-center text-slate-400 text-xs">No unaccepted orders currently pending.</li>
-{% endfor %}
-</ul>
-</div><div class="bm-card-ft flex justify-end"><a class="bm-link text-[0.8125rem] font-semibold" href="orders.html?status=SEARCHING_VENDOR">View all →</a></div></section>
-      </div>
-    </div>
-
-    <div class="row g-3 mt-1">
-      <div class="col-12 col-lg-6">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Vendor → platform payments (today)</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="payments.html">All payments →</a></div></div><div class="bm-card-bd ">
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Successful</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-emerald-700">₹{{ successful_payments_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ successful_payments_count|default:"0" }} transactions</p></div>
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Pending</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-amber-700">₹{{ pending_payments_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ pending_payments_count|default:"0" }} awaiting gateway</p></div>
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Failed</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-rose-700">₹{{ failed_payments_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ failed_payments_count|default:"0" }} declined</p></div>
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Refunded</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-sky-700">₹{{ refunded_payments_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ refunded_payments_count|default:"0" }} processed</p></div>
-          </div>
-        </div></section>
-      </div>
-      <div class="col-12 col-lg-6">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">User settlements</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="settlements.html">Settlement queue →</a></div></div><div class="bm-card-bd ">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Pending recording</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-amber-700">₹{{ pending_settlements_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ pending_payouts_count|default:"0" }} payouts</p></div>
-            <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 px-3 py-2.5">
-      <p class="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500">Recorded as paid</p>
-      <p class="mt-0.5 text-[1.0625rem] font-semibold tabular-nums text-emerald-700">₹{{ recorded_payouts_amount|default:"0.00" }}</p>
-      <p class="text-[0.6875rem] text-slate-500">{{ recorded_payouts_count|default:"0" }} payouts</p></div>
-          </div>
-        </div></section>
-      </div>
-    </div>
-
-    <div class="row g-3 mt-1">
-      <div class="col-12 col-xl-7">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Work queues</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
-          <div class="divide-y divide-slate-100">
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="requests.html">Pickup requests awaiting review / negotiation</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">14</span><a class="bm-btn-ghost bm-btn-sm" href="requests.html">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="requests.html?stage=agreement">Requests with agreement recorded, awaiting publish</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-sky-50 text-sky-700 ring-sky-600/20">5</span><a class="bm-btn-ghost bm-btn-sm" href="requests.html?stage=agreement">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="kyc.html">Vendors pending KYC review</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-violet-50 text-violet-700 ring-violet-600/20">9</span><a class="bm-btn-ghost bm-btn-sm" href="kyc.html">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="payments.html?status=failed">Completed orders with vendor payment not successful</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20">6</span><a class="bm-btn-ghost bm-btn-sm" href="payments.html?status=failed">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="settlements.html?status=pending">User settlements due</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">11</span><a class="bm-btn-ghost bm-btn-sm" href="settlements.html?status=pending">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="ratings.html?state=pending">Ratings awaiting moderation</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-rose-50 text-rose-700 ring-rose-600/20">21</span><a class="bm-btn-ghost bm-btn-sm" href="ratings.html?state=pending">Open</a></div>
-    </div>
-            <div class="flex items-center justify-between gap-3 py-2.5">
-      <a class="text-[0.875rem] text-slate-700 hover:text-brand-700" href="refunds.html?decision=pending">Vendor refund requests awaiting decision</a>
-      <div class="flex items-center gap-3"><span class="bm-badge bg-amber-50 text-amber-800 ring-amber-600/25">2</span><a class="bm-btn-ghost bm-btn-sm" href="refunds.html?decision=pending">Open</a></div>
-    </div>
-          </div></div></section>
-      </div>
-      <div class="col-12 col-xl-5">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Configuration in effect</h2></div><div class="flex flex-wrap items-center gap-2"><a class="bm-link text-[0.8125rem]" href="settings.html">Edit →</a></div></div><div class="bm-card-bd "><dl class="bm-kv grid grid-cols-1 gap-x-6 gap-y-3.5 sm:grid-cols-1"><div><dt>Commission rate</dt><dd>{{ current_commission.commission_percent|default:"Not configured" }}{% if current_commission %}%{% endif %}</dd></div><div><dt>Commission basis</dt><dd>{{ current_commission.get_commission_basis_display|default:"Not configured" }}</dd></div><div><dt>Acceptance deadline</dt><dd>{{ platform_config.acceptance_minutes }} minutes after publish</dd></div><div><dt>Arrival deadline</dt><dd>{{ platform_config.arrival_minutes }} minutes after acceptance</dd></div><div><dt>Settlement window</dt><dd>{{ platform_config.settlement_days }} days after confirmed vendor payment</dd></div><div><dt>Refund window</dt><dd>{{ platform_config.refund_hours }} hours</dd></div></dl></div></section>
-      </div>
     </div>
     </main>
     
-    <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
-      <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup & Vendor Marketplace</p>
-      </div>
-    </footer>
+    {% include 'includes/footer.html' %}
   </div>
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>
@@ -495,171 +317,114 @@
   <script src="/static/vendor/chart.umd.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Chart === 'undefined') return;
+
+      // 1. Marketplace Activity & Order Trends Chart
       const canvasEl = document.getElementById('marketplaceActivityChart');
-      if (!canvasEl) return;
+      if (canvasEl) {
+        const ranges = {{ activity_ranges_json|default:"{}"|safe }};
+        const initialRangeKey = '{{ active_chart_range|default:"7d" }}';
+        const defaultRangeData = ranges[initialRangeKey] || ranges['7d'] || {
+          labels: {{ activity_labels_json|default:"[]"|safe }},
+          requests: {{ activity_requests_json|default:"[]"|safe }},
+          completed: {{ activity_completed_json|default:"[]"|safe }},
+          total_requests: {{ weekly_requests_total|default:"0" }},
+          total_completed: {{ weekly_completed_total|default:"0" }},
+          completion_rate: {{ completion_rate_pct|default:"0.0" }},
+          peak_label: '{{ peak_day_label|default:"Today" }}',
+          peak_requests: {{ peak_day_requests|default:"0" }},
+          subtitle: 'Customer pickup requests vs. vendor completed pickups (last 7 days)',
+          demand_badge_label: '7-Day Demand'
+        };
 
-      const labels = {{ activity_labels_json|default:"[]"|safe }};
-      const reqData = {{ activity_requests_json|default:"[]"|safe }};
-      const compData = {{ activity_completed_json|default:"[]"|safe }};
+        const ctx = canvasEl.getContext('2d');
+        const reqGradient = ctx.createLinearGradient(0, 0, 0, 260);
+        reqGradient.addColorStop(0, 'rgba(5, 150, 105, 0.28)');
+        reqGradient.addColorStop(0.65, 'rgba(5, 150, 105, 0.08)');
+        reqGradient.addColorStop(1, 'rgba(5, 150, 105, 0.00)');
 
-      const finalLabels = (labels && labels.length) ? labels : ['24 Oct', '25 Oct', '26 Oct', '27 Oct', '28 Oct', '29 Oct', '30 Oct'];
-      const finalReqs = (reqData && reqData.length) ? reqData : [0, 0, 0, 1, 5, 0, 1];
-      const finalComp = (compData && compData.length) ? compData : [0, 0, 0, 1, 3, 0, 0];
+        const compGradient = ctx.createLinearGradient(0, 0, 0, 260);
+        compGradient.addColorStop(0, 'rgba(37, 99, 235, 0.24)');
+        compGradient.addColorStop(0.65, 'rgba(37, 99, 235, 0.06)');
+        compGradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
 
-      // Custom plugin to draw clear badges at the rightmost ends of the lines
-      const lineMarkersPlugin = {
-        id: 'lineMarkersPlugin',
-        afterDatasetsDraw(chart) {
-          const { ctx, chartArea } = chart;
-          chart.data.datasets.forEach((dataset, i) => {
-            const meta = chart.getDatasetMeta(i);
-            if (!meta || !meta.data || meta.data.length === 0) return;
-            const lastPoint = meta.data[meta.data.length - 1];
-            if (!lastPoint) return;
-
-            const val = dataset.data[dataset.data.length - 1];
-            const isGreen = (i === 0);
-            const text = isGreen ? ('▲ Requests: ' + val) : ('● Completed: ' + val);
-            const bgColor = isGreen ? '#059669' : '#2563eb';
-
-            ctx.save();
-            ctx.font = 'bold 11px Inter, system-ui, -apple-system, sans-serif';
-            const textMetrics = ctx.measureText(text);
-            const padX = 8;
-            const badgeW = textMetrics.width + padX * 2;
-            const badgeH = 22;
-            
-            let badgeX = lastPoint.x - badgeW - 6;
-            if (badgeX < chartArea.left + 4) badgeX = lastPoint.x + 8;
-            let badgeY = lastPoint.y - badgeH / 2;
-            
-            // Adjust to avoid direct overlap if both endpoints are close
-            if (i === 1) {
-              const otherMeta = chart.getDatasetMeta(0);
-              if (otherMeta && otherMeta.data && otherMeta.data.length) {
-                const otherLast = otherMeta.data[otherMeta.data.length - 1];
-                if (otherLast && Math.abs(lastPoint.y - otherLast.y) < 22) {
-                  badgeY += 15;
-                }
-              }
-            }
-
-            // Draw pill background
-            ctx.fillStyle = bgColor;
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.12)';
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetY = 1;
-            if (ctx.roundRect) {
-              ctx.beginPath();
-              ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 6);
-              ctx.fill();
-            } else {
-              ctx.fillRect(badgeX, badgeY, badgeW, badgeH);
-            }
-
-            // Draw text
-            ctx.shadowColor = 'transparent';
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, badgeX + padX, badgeY + badgeH / 2);
-            ctx.restore();
-          });
-        }
-      };
-
-      if (typeof Chart !== 'undefined') {
-        new Chart(canvasEl, {
+        const activityChart = new Chart(canvasEl, {
           type: 'line',
           data: {
-            labels: finalLabels,
+            labels: defaultRangeData.labels || ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Today'],
             datasets: [
               {
-                label: '🟢 Green Line: Pickup Requests (Customer Demand)',
-                data: finalReqs,
+                label: 'Pickup Requests',
+                data: defaultRangeData.requests || [0, 0, 0, 0, 0, 0, 0],
                 borderColor: '#059669',
-                backgroundColor: 'rgba(16, 185, 129, 0.12)',
-                borderWidth: 3,
-                tension: 0.35,
+                backgroundColor: reqGradient,
+                borderWidth: 2.75,
+                tension: 0.38,
+                cubicInterpolationMode: 'monotone',
                 fill: true,
                 pointBackgroundColor: '#ffffff',
                 pointBorderColor: '#059669',
-                pointBorderWidth: 2.5,
-                pointRadius: 5,
-                pointHoverRadius: 8,
+                pointBorderWidth: 2.25,
+                pointRadius: 4.5,
+                pointHoverRadius: 7.5,
                 pointHoverBackgroundColor: '#059669',
                 pointHoverBorderColor: '#ffffff',
-                pointHoverBorderWidth: 2,
+                pointHoverBorderWidth: 2.5,
               },
               {
-                label: '🔵 Blue Line: Completed Pickups (Vendor Fulfilments)',
-                data: finalComp,
+                label: 'Completed Pickups',
+                data: defaultRangeData.completed || [0, 0, 0, 0, 0, 0, 0],
                 borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.08)',
-                borderWidth: 3,
-                tension: 0.35,
+                backgroundColor: compGradient,
+                borderWidth: 2.75,
+                tension: 0.38,
+                cubicInterpolationMode: 'monotone',
                 fill: true,
                 pointBackgroundColor: '#ffffff',
                 pointBorderColor: '#2563eb',
-                pointBorderWidth: 2.5,
-                pointRadius: 5,
-                pointHoverRadius: 8,
+                pointBorderWidth: 2.25,
+                pointRadius: 4.5,
+                pointHoverRadius: 7.5,
                 pointHoverBackgroundColor: '#2563eb',
                 pointHoverBorderColor: '#ffffff',
-                pointHoverBorderWidth: 2,
+                pointHoverBorderWidth: 2.5,
               }
             ]
           },
           options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+              padding: { top: 10, right: 14, left: 2, bottom: 4 }
+            },
             interaction: {
               mode: 'index',
               intersect: false,
             },
             plugins: {
-              legend: {
-                display: true,
-                position: 'top',
-                align: 'end',
-                labels: {
-                  usePointStyle: true,
-                  pointStyle: 'circle',
-                  boxWidth: 8,
-                  boxHeight: 8,
-                  padding: 14,
-                  font: {
-                    size: 11,
-                    weight: 'bold',
-                    family: 'Inter, system-ui, sans-serif'
-                  },
-                  color: '#334155'
-                }
-              },
+              legend: { display: false },
               tooltip: {
                 enabled: true,
-                backgroundColor: '#0f172a',
+                backgroundColor: 'rgba(15, 23, 42, 0.94)',
                 titleColor: '#ffffff',
                 bodyColor: '#f1f5f9',
                 padding: 12,
-                cornerRadius: 8,
+                cornerRadius: 10,
                 boxPadding: 6,
+                usePointStyle: true,
                 callbacks: {
                   title: function(items) {
-                    return 'Date: ' + items[0].label;
+                    return items.length ? items[0].label : '';
                   },
                   label: function(context) {
-                    const datasetLabel = context.datasetIndex === 0 
-                      ? '🟢 Pickup Requests (Customer Demand)' 
-                      : '🔵 Completed Pickups (Vendor Fulfilment)';
-                    return datasetLabel + ': ' + context.parsed.y + ' orders';
+                    return ' ' + context.dataset.label + ': ' + context.parsed.y + ' orders';
                   },
                   afterBody: function(items) {
                     if (items.length >= 2) {
                       const req = items[0].parsed.y;
                       const comp = items[1].parsed.y;
                       const rate = req > 0 ? ((comp / req) * 100).toFixed(1) + '%' : '0.0%';
-                      return '— Fulfilment Rate: ' + rate;
+                      return '\nFulfilment Rate: ' + rate;
                     }
                     return '';
                   }
@@ -668,37 +433,181 @@
             },
             scales: {
               x: {
-                grid: {
-                  display: false
-                },
+                grid: { display: false },
+                border: { display: false },
                 ticks: {
                   color: '#64748b',
-                  font: {
-                    size: 11,
-                    weight: '600'
-                  }
+                  padding: 8,
+                  font: { size: 11, weight: '600', family: '"Plus Jakarta Sans", Inter, sans-serif' }
                 }
               },
               y: {
-                beginAtZero: true,
-                grace: '10%',
+                min: 0,
+                suggestedMax: 5,
+                border: { display: false, dash: [4, 4] },
                 grid: {
                   color: '#f1f5f9',
-                  borderDash: [4, 4]
                 },
                 ticks: {
                   stepSize: 1,
                   precision: 0,
+                  padding: 8,
                   color: '#64748b',
-                  font: {
-                    size: 11,
-                    weight: '600'
+                  font: { size: 11, weight: '600', family: '"JetBrains Mono", monospace' }
+                }
+              }
+            }
+          }
+        });
+
+        // Range switching logic (7D, 1M, 6M, 1Y)
+        const rangeButtons = document.querySelectorAll('.chart-range-btn');
+        function setChartRange(targetKey) {
+          const rData = ranges[targetKey];
+          if (!rData) return;
+
+          // Update active button styling
+          rangeButtons.forEach(function(btn) {
+            const isMatch = btn.getAttribute('data-range') === targetKey;
+            if (isMatch) {
+              btn.className = 'chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-bold transition-all duration-150 bg-white text-emerald-800 shadow-xs border border-emerald-200/70';
+            } else {
+              btn.className = 'chart-range-btn rounded-md px-2.5 py-1 text-[0.75rem] font-medium transition-all duration-150 text-slate-600 hover:text-slate-900';
+            }
+          });
+
+          // Adjust point radius for high data density (e.g. 1M has 30 points)
+          const pRadius = targetKey === '1m' ? 2.5 : 4.5;
+          const pHover = targetKey === '1m' ? 5.5 : 7.5;
+          activityChart.data.datasets.forEach(function(ds) {
+            ds.pointRadius = pRadius;
+            ds.pointHoverRadius = pHover;
+          });
+
+          // Update chart labels and series data
+          activityChart.data.labels = rData.labels;
+          activityChart.data.datasets[0].data = rData.requests;
+          activityChart.data.datasets[1].data = rData.completed;
+          activityChart.update('active');
+
+          // Update header badges and subtitle
+          const subEl = document.getElementById('activityChartSubtitle');
+          if (subEl && rData.subtitle) subEl.textContent = rData.subtitle;
+
+          const bReq = document.getElementById('badgeReqTotal');
+          if (bReq) bReq.textContent = rData.total_requests;
+
+          const bComp = document.getElementById('badgeCompTotal');
+          if (bComp) bComp.textContent = rData.total_completed;
+
+          // Update bottom summary cards
+          const statDemandLabel = document.getElementById('statDemandLabel');
+          if (statDemandLabel && rData.demand_badge_label) statDemandLabel.textContent = rData.demand_badge_label;
+
+          const statDemandTotal = document.getElementById('statDemandTotal');
+          if (statDemandTotal) statDemandTotal.textContent = rData.total_requests + ' requests';
+
+          const statDemandPeak = document.getElementById('statDemandPeak');
+          if (statDemandPeak) statDemandPeak.textContent = 'Peak: ' + rData.peak_requests + ' on ' + rData.peak_label;
+
+          const statFulfilmentRate = document.getElementById('statFulfilmentRate');
+          if (statFulfilmentRate) statFulfilmentRate.textContent = rData.completion_rate + '%';
+
+          const statFulfilmentCompleted = document.getElementById('statFulfilmentCompleted');
+          if (statFulfilmentCompleted) statFulfilmentCompleted.textContent = rData.total_completed + ' pickups completed';
+        }
+
+        rangeButtons.forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            const rk = btn.getAttribute('data-range');
+            setChartRange(rk);
+          });
+        });
+
+        // Initialize active range button style
+        if (initialRangeKey && ranges[initialRangeKey]) {
+          setChartRange(initialRangeKey);
+        }
+
+        // Interactive header toggle pills
+        document.querySelectorAll('[data-toggle-series]').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            const idx = parseInt(btn.getAttribute('data-toggle-series'), 10);
+            const meta = activityChart.getDatasetMeta(idx);
+            meta.hidden = !meta.hidden;
+            btn.classList.toggle('opacity-45', meta.hidden);
+            activityChart.update();
+          });
+        });
+      }
+
+      // 2. Dynamic Active-Order Pipeline Doughnut Chart
+      const pipeEl = document.getElementById('pipelineOrderChart');
+      if (pipeEl) {
+        const counts = {
+          assigned: {{ assigned_orders_count|default:"0" }},
+          pickup: {{ in_pickup_orders_count|default:"0" }},
+          published: {{ published_orders_count|default:"0" }},
+          negotiation: {{ negotiation_orders_count|default:"0" }},
+          billing: {{ billing_orders_count|default:"0" }},
+        };
+        const totalSegments = counts.assigned + counts.pickup + counts.published + counts.negotiation + counts.billing;
+
+        Object.keys(counts).forEach(function(key) {
+          const pctEl = document.querySelector('[data-pct-for="' + key + '"]');
+          if (pctEl) {
+            const pct = totalSegments > 0 ? Math.round((counts[key] / totalSegments) * 100) : 0;
+            pctEl.textContent = '(' + pct + '%)';
+          }
+        });
+
+        const segments = [
+          { label: 'Assigned', value: counts.assigned, color: '#0f9f86' },
+          { label: 'In Pickup', value: counts.pickup, color: '#0284c7' },
+          { label: 'Published', value: counts.published, color: '#f59e0b' },
+          { label: 'Negotiation', value: counts.negotiation, color: '#8b5cf6' },
+        ];
+        if (counts.billing > 0) {
+          segments.push({ label: 'Billing & Invoice', value: counts.billing, color: '#64748b' });
+        }
+
+        const hasData = totalSegments > 0;
+        new Chart(pipeEl, {
+          type: 'doughnut',
+          data: {
+            labels: hasData ? segments.map(s => s.label) : ['No active orders'],
+            datasets: [{
+              data: hasData ? segments.map(s => s.value) : [1],
+              backgroundColor: hasData ? segments.map(s => s.color) : ['#e2e8f0'],
+              borderWidth: 0,
+              borderRadius: hasData ? 6 : 0,
+              spacing: hasData ? 3 : 0,
+              hoverOffset: hasData ? 5 : 0,
+            }]
+          },
+          options: {
+            responsive: false,
+            maintainAspectRatio: true,
+            cutout: '74%',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                enabled: hasData,
+                backgroundColor: '#0f172a',
+                titleColor: '#ffffff',
+                bodyColor: '#f1f5f9',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: function(context) {
+                    const val = context.parsed;
+                    const pct = totalSegments > 0 ? ((val / totalSegments) * 100).toFixed(1) : '0.0';
+                    return ' ' + context.label + ': ' + val + ' (' + pct + '%)';
                   }
                 }
               }
             }
-          },
-          plugins: [lineMarkersPlugin]
+          }
         });
       }
     });

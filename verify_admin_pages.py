@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 from bazaarpe.models import (
     ScrapCategory, ScrapSubCategory, ServiceCity, ServiceZone, VendorProfile,
-    UserProfile, PickupOrder, UserAddress, LegalDocument,
+    UserProfile, PickupOrder, UserAddress,
     VendorBillingSetting, OrderReview, RefundRequest, PaymentTransaction, OrderInvoice,
     UserBankDetail,
 )
@@ -48,8 +48,6 @@ def run_verification():
         '/refunds.html',
         '/ratings.html',
         '/ledgers.html',
-        '/cms.html',
-        '/cms-edit.html',
         '/settings.html',
         '/requests.html',
         '/request-detail.html',
@@ -57,7 +55,7 @@ def run_verification():
         '/order-detail.html',
     ]
 
-    print("\n--- PHASE 1: TESTING GET REQUESTS FOR ALL 24 ADMIN URLS ---")
+    print("\n--- PHASE 1: TESTING GET REQUESTS FOR ALL ADMIN URLS ---")
     get_failures = []
     for page in pages_to_test:
         resp = client.get(page)
@@ -253,19 +251,8 @@ def run_verification():
     assert rev.is_approved_by_admin is True, "Review approval failed"
     print("  [PASS] Approve Review: Review ID", rev.id, "approved successfully")
 
-    # 8. CMS CRUD
-    print("8. CMS & Legal Documents:")
-    cms_resp = client.post('/admin/cms/save', {
-        'title': 'Test Guarantee Policy',
-        'document_type': 'TERMS',
-        'content': 'This is dynamic test content.'
-    }, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-    doc = LegalDocument.objects.filter(title='Test Guarantee Policy').first()
-    assert doc is not None, "CMS Document save failed"
-    print("  [PASS] Save CMS Document: Created document ID", doc.id, doc.title)
-
-    # 9. Clean-up Deletions CRUD
-    print("9. Clean-up Deletions CRUD:")
+    # 8. Clean-up Deletions CRUD
+    print("8. Clean-up Deletions CRUD:")
     del_cat_resp = client.post('/admin/categories/delete', {'category_id': str(cat.id)}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
     assert ScrapCategory.objects.filter(id=cat.id).count() == 0, "Category delete failed"
     print("  [PASS] Delete Category: Category removed")

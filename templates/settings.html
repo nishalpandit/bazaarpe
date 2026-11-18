@@ -68,30 +68,24 @@
 
     <div class="row g-3">
       <div class="col-12 col-xl-7">
-        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Commission & pricing</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
+        <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">Commission &amp; pricing</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
           <form class="space-y-4" method="post" action="/admin/settings/commission" data-admin-form>
             <div>
-      <label class="bm-label" for="f-commission_rate">Commission rate (%) <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <input class="bm-input" id="f-commission_rate" name="commission_rate" type="number" value="{{ current_setting.commission_percent|default:"2.00" }}" placeholder="" required inputmode="decimal" step="0.01" min="0" max="25">
+      <label class="bm-label" for="f-commission_rate">Admin commission rate (%) <span class="text-rose-600" aria-hidden="true">*</span></label>
+      <input class="bm-input" id="f-commission_rate" name="commission_rate" type="number" value="{{ current_setting.commission_percent|default:"3.00" }}" placeholder="" required inputmode="decimal" step="0.01" min="0" max="100">
     </div>
             <div>
       <label class="bm-label" for="f-commission_basis">Commission basis <span class="text-rose-600" aria-hidden="true">*</span></label>
-      <select class="bm-select" id="f-commission_basis" name="commission_basis" required ><option value="proposed_item_total" selected>Item amount</option><option value="final_weight_amount">Final weight amount</option><option value="gst_inclusive">GST-inclusive total</option><option value="gst_exclusive">GST-exclusive subtotal</option></select>
+      <select class="bm-select" id="f-commission_basis" name="commission_basis" required ><option value="ITEM_AMOUNT" selected>Gross item amount (Weight × Rate/kg)</option></select>
     </div>
             <div>
-      <label class="bm-label" for="f-commission_payer">Who pays commission</label>
-      <select class="bm-select" id="f-commission_payer" name="commission_payer" ><option value="vendor" selected>Vendor pays platform</option></select>
+      <label class="bm-label" for="f-commission_payer">Commission deduction flow</label>
+      <select class="bm-select" id="f-commission_payer" name="commission_payer" ><option value="user_payout_deduction" selected>Deducted from User Payout (Vendor pays gross, Admin takes %)</option></select>
     </div>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-      <label class="bm-label" for="f-gst_rate">GST rate (%)</label>
-      <input class="bm-input" id="f-gst_rate" name="gst_rate" type="text" value="18.00" placeholder="" >
-    </div>
-              <div>
+            <div>
       <label class="bm-label" for="f-min_payout">Minimum user payout (₹)</label>
-      <input class="bm-input" id="f-min_payout" name="min_payout" type="text" value="100" placeholder="" >
+      <input class="bm-input" id="f-min_payout" name="min_payout" type="number" value="{{ platform_config.min_payout_amount|default:"100.00" }}" placeholder="" min="0" step="0.01" inputmode="decimal">
     </div>
-            </div>
             <div class="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 pt-4">
       <div class="flex items-center gap-2"><button type="submit" class="bm-btn-primary"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5 5 10-11"/></svg> Save settings</button></div>
       <input type="hidden" name="_token" value="">
@@ -140,37 +134,9 @@
         </div>
       </div>
     </div>
-
-    <div class="mt-3">
-      <section class="bm-card "><div class="bm-card-hd"><div><h2 class="bm-card-title">System switches</h2></div><div class="flex flex-wrap items-center gap-2"></div></div><div class="bm-card-bd ">
-        <div class="space-y-3">
-          <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200/80 p-3">
-            <div><p class="text-[0.875rem] font-semibold text-ink-900">Admin purchase workflow</p>
-            <p class="text-[0.75rem] text-slate-500">Super Administrator can initiate direct material purchases when marketplace vendor matching is unavailable.</p></div>
-            <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Enabled for Super Admin</span>
-          </div>
-          <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200/80 p-3">
-            <div><p class="text-[0.875rem] font-semibold text-ink-900">Automatic zone classification</p>
-            <p class="text-[0.75rem] text-slate-500">Pincode to zone classification and manual management active across all operational cities.</p></div>
-            <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active (Manual &amp; API)</span>
-          </div>
-          <div class="flex items-start justify-between gap-3 rounded-lg border border-slate-200/80 p-3">
-            <div><p class="text-[0.875rem] font-semibold text-ink-900">Live vendor location tracking</p>
-            <p class="text-[0.75rem] text-slate-500">Order tracking with GPS coordinates and interactive external map navigation.</p></div>
-            <span class="bm-badge bg-emerald-50 text-emerald-700 ring-emerald-600/20"><span class="bm-dot"></span>Active – Map Links</span>
-          </div>
-        </div></div></section>
-    </div>
     </main>
     
-    <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
-      <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup & Vendor Marketplace</p>
-        <p class="flex items-center gap-3">
-          <a class="hover:text-brand-700" href="../docs/backend-integration.md">Backend integration</a>
-        </p>
-      </div>
-    </footer>
+    {% include 'includes/footer.html' %}
   </div>
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>
   <script src="/static/vendor/bootstrap.bundle.min.js"></script>

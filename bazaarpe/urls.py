@@ -15,6 +15,20 @@ urlpatterns = [
     path('signout', views.logout_view, name='signout_direct'),
     path('signout.html', views.logout_view, name='signout_html'),
 
+    # Public Legal, Privacy & App Compliance URLs (Google Play & Apple App Store)
+    path('privacy-policy/', views.privacy_policy_view, name='privacy_policy'),
+    path('privacy-policy', views.privacy_policy_view, name='privacy_policy_direct'),
+    path('privacy/', views.privacy_policy_view, name='privacy_short'),
+    path('privacy', views.privacy_policy_view, name='privacy_short_direct'),
+    path('privacy.html', views.privacy_policy_view, name='privacy_html'),
+    path('privacy-policy.html', views.privacy_policy_view, name='privacy_policy_html'),
+    path('account-deletion/', views.account_deletion_view, name='account_deletion'),
+    path('account-deletion', views.account_deletion_view, name='account_deletion_direct'),
+    path('delete-account/', views.account_deletion_view, name='delete_account'),
+    path('delete-account', views.account_deletion_view, name='delete_account_direct'),
+    path('delete-account.html', views.account_deletion_view, name='delete_account_html'),
+    path('account-deletion.html', views.account_deletion_view, name='account_deletion_html'),
+
     # Admin Operations Dashboard & Direct Templates
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('index.html', views.dashboard_view, name='index_html'),

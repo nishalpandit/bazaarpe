@@ -798,40 +798,64 @@ final_weight: 32.50
 response:
 {
   "success": true,
-  "message": "Sandbox payment created. Invoice remains unavailable until signature verification succeeds.",
+  "message": "Payment created. Invoice remains unavailable until payment verification succeeds.",
   "payment": {
     "payment_id": "pay_sbx_123456",
     "order_id": "ORD-2026-123456",
+    "gateway": "razorpay",
+    "razorpay_key_id": "rzp_test_your_key_id",
     "amount": 1584.0,
+    "amount_paise": 158400,
     "currency": "INR",
     "status": "CREATED",
     "item_amount": 1300.0,
     "gst_amount": 234.0,
-    "commission_rate": 0.0,
-    "commission_amount": 0.0,
-    "commission_tax_amount": 0.0,
-    "fixed_platform_fee": 50.0,
+    "gross_amount": 1584.0,
+    "commission_rate": 3.0,
+    "commission_amount": 47.52,
+    "user_payout_amount": 1536.48,
     "final_payable_amount": 1584.0
   }
 }
 
-API for Verify Vendor Payment
+API for Verify Vendor Payment (Razorpay Test / Live or Sandbox)
 url: http://127.0.0.1:8000/api/vendor/orders/ORD-2026-123456/payment/verify/
 method: POST
 
-params:
+params (Razorpay Checkout flow):
 Authorization: Bearer <token> (header)
-payment_id: pay_sbx_123456
-signature: payment-signature
+payment_id: pay_sbx_123456 (required - returned by /billing/)
+razorpay_payment_id: pay_TGCkTest123456 (required for Razorpay - returned by Razorpay SDK)
+razorpay_order_id: order_TGCkTest123456 (optional in test mode, required when RAZORPAY_KEY_SECRET is set)
+razorpay_signature: <razorpay_signature> (optional in test mode, required when RAZORPAY_KEY_SECRET is set)
+payment_method: upi (optional - e.g. upi, card, netbanking, wallet)
+gateway_response: {"method": "upi", "vpa": "success@razorpay"} (optional JSON object saved to DB)
 
 response:
 {
   "success": true,
   "message": "Payment verified and invoice generated.",
+  "payment": {
+    "payment_id": "pay_sbx_123456",
+    "gateway": "razorpay",
+    "status": "VERIFIED",
+    "verified_at": "2026-11-18T11:01:15+00:00",
+    "razorpay_payment_id": "pay_TGCkTest123456",
+    "razorpay_order_id": "order_TGCkTest123456"
+  },
   "invoice": {
     "invoice_number": "INV-2026-123456",
+    "order_id": "ORD-2026-123456",
+    "subtotal": 1300.0,
+    "gst_amount": 234.0,
+    "gross_amount": 1584.0,
+    "platform_fee": 47.52,
+    "commission_amount": 47.52,
+    "user_payout_amount": 1536.48,
+    "total_paid_by_vendor": 1584.0,
+    "payment_gateway_ref": "pay_TGCkTest123456",
     "payment_status": "PAID",
-    "total_paid_by_vendor": 1584.0
+    "paid_at": "2026-11-18T11:01:15+00:00"
   }
 }
 

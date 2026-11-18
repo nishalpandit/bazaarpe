@@ -2049,6 +2049,12 @@ def serialize_order(order, *, include_otp=False):
         'subcategory': order.subcategory.name if order.subcategory else None,
         'approx_weight': float(order.approx_weight),
         'approx_price': float(order.approx_price),
+        'product_value': float(order.product_value),
+        'gst_amount': float(order.gst_amount),
+        'gross_amount': float(order.gross_amount),
+        'commission_percent': float(order.commission_percent),
+        'commission_amount': float(order.commission_amount),
+        'payout_amount': float(order.payout_amount),
         'final_agreed_price': float(order.final_agreed_price) if order.final_agreed_price is not None else None,
         'final_weight': float(order.final_weight) if order.final_weight is not None else None,
         'final_amount': float(order.final_amount) if order.final_amount is not None else None,
@@ -2252,7 +2258,9 @@ def create_pickup_order_view(request):
             pickup_date=pickup_date,
             time_slot=time_slot,
             notes=str(request.data.get('notes', '')).strip(),
-            approx_price=breakdown['total_approx_price'],
+            approx_price=breakdown['gross_amount'],
+            commission_percent=breakdown['commission_percent'],
+            commission_amount=breakdown['commission_amount'],
         )
         for f in uploaded_files:
             PickupImage.objects.create(order=order, image=f.name, uploaded_file=f)
@@ -3022,12 +3030,13 @@ def vendor_billing_view(request, order_id):
             'message': 'No approved vendor commission/tax policy is configured. Production billing is blocked.',
             'billing_policy_required': True,
         }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    breakdown = order.subcategory.price_breakdown(final_weight)
-    commission_basis = breakdown['base_price'] if billing_policy.commission_basis == VendorBillingSetting.CommissionBasis.ITEM_AMOUNT else breakdown['total_approx_price']
-    commission_amount = money(commission_basis * billing_policy.commission_percent / Decimal('100'))
-    commission_tax = money(commission_amount * billing_policy.commission_tax_percent / Decimal('100'))
-    fixed_fee = money(billing_policy.fixed_platform_fee)
-    total_paid = money(breakdown['total_approx_price'] + commission_amount + commission_tax + fixed_fee)
+    breakdown = order.subcategory.price_breakdown(final_weight, commission_percent=billing_policy.commission_percent)
+    gross_amount = breakdown['gross_amount']
+    product_value = breakdown['product_value']
+    gst_amount = breakdown['gst_amount']
+    commission_amount = breakdown['commission_amount']
+    user_payout = breakdown['user_payout_amount']
+    total_paid = gross_amount
     try:
         with transaction.atomic():
             if order.payment_transactions.filter(status=PaymentTransaction.Status.VERIFIED).exists():
@@ -3035,20 +3044,38 @@ def vendor_billing_view(request, order_id):
             pending = order.payment_transactions.filter(status=PaymentTransaction.Status.CREATED).first()
             if pending:
                 return Response({'success': False, 'message': 'A pending payment already exists.', 'payment_id': pending.payment_id}, status=status.HTTP_409_CONFLICT)
+            razorpay_key = str(getattr(settings, 'RAZORPAY_KEY_ID', '')).strip()
+            gateway_name = 'razorpay' if razorpay_key else 'sandbox'
             payment = PaymentTransaction.objects.create(
                 order=order,
                 payment_id=f"pay_sbx_{secrets.token_hex(12)}",
+                gateway=gateway_name,
                 amount=total_paid,
-                item_amount=breakdown['base_price'],
-                gst_amount=breakdown['gst_amount'],
+                item_amount=product_value,
+                gst_amount=gst_amount,
                 commission_rate=billing_policy.commission_percent,
                 commission_amount=commission_amount,
-                commission_tax_amount=commission_tax,
-                fixed_platform_fee=fixed_fee,
+                commission_tax_amount=Decimal('0.00'),
+                fixed_platform_fee=Decimal('0.00'),
+                gateway_response={
+                    'key_id': razorpay_key,
+                    'test_mode': razorpay_key.startswith('rzp_test_'),
+                    'currency': 'INR',
+                },
             )
-            order.final_amount = breakdown['total_approx_price']
-            order.save(update_fields=['final_amount', 'updated_at'])
-            audit_event(request.user, 'VENDOR', 'PAYMENT_CREATED', order, metadata={'payment_id': payment.payment_id, 'amount': str(payment.amount)})
+            order.commission_percent = billing_policy.commission_percent
+            order.commission_amount = commission_amount
+            order.final_amount = user_payout
+            order.save(update_fields=['commission_percent', 'commission_amount', 'final_amount', 'updated_at'])
+            audit_event(request.user, 'VENDOR', 'PAYMENT_CREATED', order, metadata={
+                'payment_id': payment.payment_id,
+                'gateway': payment.gateway,
+                'amount': str(payment.amount),
+                'product_value': str(product_value),
+                'gst_amount': str(gst_amount),
+                'commission_amount': str(commission_amount),
+                'user_payout': str(user_payout),
+            })
     except IntegrityError:
         pending = order.payment_transactions.filter(status=PaymentTransaction.Status.CREATED).first()
         return Response({
@@ -3059,30 +3086,59 @@ def vendor_billing_view(request, order_id):
     signature = payment_signature(payment)
     payload = {
         'success': True,
-        'message': 'Sandbox payment created. Invoice remains unavailable until signature verification succeeds.',
-        'payment': {
-            'payment_id': payment.payment_id,
-            'order_id': order.order_id,
-            'amount': float(payment.amount),
-            'currency': 'INR',
-            'status': payment.status,
-            'item_amount': float(payment.item_amount),
-            'gst_amount': float(payment.gst_amount),
-            'commission_rate': float(payment.commission_rate),
-            'commission_amount': float(payment.commission_amount),
-            'commission_tax_amount': float(payment.commission_tax_amount),
-            'fixed_platform_fee': float(payment.fixed_platform_fee),
-            'final_payable_amount': float(payment.amount),
-        },
+        'message': 'Payment created. Invoice remains unavailable until payment verification succeeds.',
+        'payment': serialize_payment(payment),
     }
     if settings.DEBUG:
         payload['sandbox_test_signature'] = signature
     return Response(payload, status=status.HTTP_201_CREATED)
 
 
+def serialize_payment(payment):
+    gross_amount = money(payment.item_amount + payment.gst_amount)
+    user_payout = money(payment.amount - payment.commission_amount)
+    return {
+        'payment_id': payment.payment_id,
+        'order_id': payment.order.order_id,
+        'gateway': payment.gateway,
+        'razorpay_key_id': getattr(settings, 'RAZORPAY_KEY_ID', ''),
+        'amount': float(payment.amount),
+        'amount_paise': int(payment.amount * 100),
+        'currency': 'INR',
+        'status': payment.status,
+        'item_amount': float(payment.item_amount),
+        'gst_amount': float(payment.gst_amount),
+        'gross_amount': float(gross_amount),
+        'commission_rate': float(payment.commission_rate),
+        'commission_amount': float(payment.commission_amount),
+        'user_payout_amount': float(user_payout),
+        'final_payable_amount': float(payment.amount),
+    }
+
+
+def serialize_verified_payment(payment):
+    data = {
+        'payment_id': payment.payment_id,
+        'gateway': payment.gateway,
+        'status': payment.status,
+        'verified_at': payment.verified_at.isoformat() if payment.verified_at else None,
+    }
+    if payment.razorpay_payment_id:
+        data['razorpay_payment_id'] = payment.razorpay_payment_id
+    if payment.razorpay_order_id:
+        data['razorpay_order_id'] = payment.razorpay_order_id
+    return data
+
+
 def payment_signature(payment):
     secret = str(getattr(settings, 'PAYMENT_SANDBOX_SECRET', 'local-sandbox-secret')).encode()
     message = f'{payment.payment_id}|{payment.order.order_id}|{payment.amount:.2f}'.encode()
+    return hmac.new(secret, message, hashlib.sha256).hexdigest()
+
+
+def razorpay_payment_signature(razorpay_order_id, razorpay_payment_id):
+    secret = str(getattr(settings, 'RAZORPAY_KEY_SECRET', '')).strip().encode()
+    message = f'{razorpay_order_id}|{razorpay_payment_id}'.encode()
     return hmac.new(secret, message, hashlib.sha256).hexdigest()
 
 
@@ -3097,30 +3153,39 @@ def finalize_verified_payment(payment, signature):
         return getattr(order, 'invoice', None)
     if not order.subcategory or order.final_weight is None:
         raise ValueError('Final weight and subcategory are required.')
-    platform_fee = money(payment.commission_amount + payment.commission_tax_amount + payment.fixed_platform_fee)
-    expected_amount = money(payment.item_amount + payment.gst_amount + platform_fee)
+    platform_fee = money(payment.commission_amount)
+    expected_amount = money(payment.item_amount + payment.gst_amount)
     if payment.amount != expected_amount:
         raise ValueError('Stored payment amount does not match server-calculated payable amount.')
+    gateway_ref = payment.razorpay_payment_id or payment.payment_id
     invoice = OrderInvoice.objects.create(
         order=order,
         subtotal=payment.item_amount,
         gst_amount=payment.gst_amount,
         platform_fee=platform_fee,
         total_paid_by_vendor=expected_amount,
-        payment_gateway_ref=payment.payment_id,
+        payment_gateway_ref=gateway_ref,
         payment_status=OrderInvoice.PaymentStatus.PAID,
         paid_at=timezone.now(),
     )
     payment.status = PaymentTransaction.Status.VERIFIED
     payment.gateway_signature = signature
     payment.verified_at = timezone.now()
-    payment.save(update_fields=['status', 'gateway_signature', 'verified_at'])
+    payment.save(update_fields=[
+        'status', 'gateway', 'razorpay_payment_id', 'razorpay_order_id',
+        'gateway_signature', 'gateway_response', 'verified_at',
+    ])
     order.status = PickupOrder.Status.INVOICE_GENERATED
     order.save(update_fields=['status', 'updated_at'])
     create_notification(order.user, UserNotification.EventType.PAYMENT_VERIFIED, 'Vendor payment verified', f'Invoice {invoice.invoice_number} is available.', order)
     if order.assigned_vendor_id:
         create_notification(order.assigned_vendor, UserNotification.EventType.PAYMENT_VERIFIED, 'Platform payment verified', f'Invoice {invoice.invoice_number} is available.', order)
-    audit_event(order.assigned_vendor, 'VENDOR', 'PAYMENT_VERIFIED', order, metadata={'payment_id': payment.payment_id, 'invoice_number': invoice.invoice_number})
+    audit_event(order.assigned_vendor, 'VENDOR', 'PAYMENT_VERIFIED', order, metadata={
+        'payment_id': payment.payment_id,
+        'razorpay_payment_id': payment.razorpay_payment_id,
+        'gateway': payment.gateway,
+        'invoice_number': invoice.invoice_number,
+    })
     return invoice
 
 
@@ -3137,14 +3202,81 @@ def verify_vendor_payment_view(request, order_id):
     if not payment:
         return Response({'success': False, 'message': 'Payment not found for this order.'}, status=status.HTTP_404_NOT_FOUND)
     if payment.status == PaymentTransaction.Status.VERIFIED:
-        return Response({'success': True, 'message': 'Payment was already verified.', 'invoice': serialize_invoice(order.invoice)})
-    submitted = str(request.data.get('signature', '')).strip()
-    if not submitted or not hmac.compare_digest(submitted, payment_signature(payment)):
-        return Response({'success': False, 'message': 'Payment signature verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
-    with transaction.atomic():
-        payment = PaymentTransaction.objects.select_for_update().select_related('order__subcategory').get(pk=payment.pk)
-        invoice = finalize_verified_payment(payment, submitted)
-    return Response({'success': True, 'message': 'Payment verified and invoice generated.', 'invoice': serialize_invoice(invoice)})
+        return Response({
+            'success': True,
+            'message': 'Payment was already verified.',
+            'payment': serialize_verified_payment(payment),
+            'invoice': serialize_invoice(order.invoice),
+        })
+
+    razorpay_payment_id = str(request.data.get('razorpay_payment_id', '')).strip()
+    razorpay_order_id = str(request.data.get('razorpay_order_id', '')).strip()
+    razorpay_sig = str(request.data.get('razorpay_signature', '')).strip()
+    payment_method = str(request.data.get('payment_method', '')).strip()
+    raw_extra = request.data.get('gateway_response')
+    if isinstance(raw_extra, str):
+        try:
+            raw_extra = json.loads(raw_extra)
+        except (ValueError, TypeError):
+            raw_extra = {'raw': raw_extra}
+    elif not isinstance(raw_extra, dict):
+        raw_extra = {}
+
+    if razorpay_payment_id:
+        if not razorpay_payment_id.startswith('pay_'):
+            return Response({'success': False, 'message': 'Invalid razorpay_payment_id format. Must start with pay_.'}, status=status.HTTP_400_BAD_REQUEST)
+        if PaymentTransaction.objects.filter(razorpay_payment_id=razorpay_payment_id).exclude(pk=payment.pk).exists():
+            return Response({'success': False, 'message': 'This razorpay_payment_id is already linked to another payment.'}, status=status.HTTP_409_CONFLICT)
+
+        rzp_key = str(getattr(settings, 'RAZORPAY_KEY_ID', '')).strip()
+        rzp_secret = str(getattr(settings, 'RAZORPAY_KEY_SECRET', '')).strip()
+        if rzp_secret:
+            if not razorpay_order_id or not razorpay_sig:
+                return Response({'success': False, 'message': 'razorpay_order_id and razorpay_signature are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            expected_sig = razorpay_payment_signature(razorpay_order_id, razorpay_payment_id)
+            if not hmac.compare_digest(razorpay_sig, expected_sig):
+                return Response({'success': False, 'message': 'Razorpay signature verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+            effective_signature = razorpay_sig
+            verified_via = 'razorpay_hmac'
+        elif rzp_key.startswith('rzp_test_'):
+            effective_signature = razorpay_sig or 'razorpay_test_verified'
+            verified_via = 'razorpay_test_mode'
+        else:
+            return Response({'success': False, 'message': 'Razorpay secret key is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        with transaction.atomic():
+            payment = PaymentTransaction.objects.select_for_update().select_related('order__subcategory').get(pk=payment.pk)
+            payment.gateway = 'razorpay'
+            payment.razorpay_payment_id = razorpay_payment_id
+            payment.razorpay_order_id = razorpay_order_id
+            merged_resp = dict(payment.gateway_response or {})
+            merged_resp.update({
+                'key_id': rzp_key,
+                'test_mode': rzp_key.startswith('rzp_test_'),
+                'verified_via': verified_via,
+                'razorpay_payment_id': razorpay_payment_id,
+                'razorpay_order_id': razorpay_order_id,
+            })
+            if payment_method:
+                merged_resp['payment_method'] = payment_method
+            if raw_extra:
+                merged_resp['client_payload'] = raw_extra
+            payment.gateway_response = merged_resp
+            invoice = finalize_verified_payment(payment, effective_signature)
+    else:
+        submitted = str(request.data.get('signature', '')).strip()
+        if not submitted or not hmac.compare_digest(submitted, payment_signature(payment)):
+            return Response({'success': False, 'message': 'Payment signature verification failed.'}, status=status.HTTP_400_BAD_REQUEST)
+        with transaction.atomic():
+            payment = PaymentTransaction.objects.select_for_update().select_related('order__subcategory').get(pk=payment.pk)
+            invoice = finalize_verified_payment(payment, submitted)
+
+    return Response({
+        'success': True,
+        'message': 'Payment verified and invoice generated.',
+        'payment': serialize_verified_payment(payment),
+        'invoice': serialize_invoice(invoice),
+    })
 
 
 @api_view(['POST'])
@@ -3189,7 +3321,10 @@ def serialize_invoice(invoice):
         'order_id': invoice.order.order_id,
         'subtotal': float(invoice.subtotal),
         'gst_amount': float(invoice.gst_amount),
+        'gross_amount': float(invoice.total_paid_by_vendor),
         'platform_fee': float(invoice.platform_fee),
+        'commission_amount': float(invoice.platform_fee),
+        'user_payout_amount': float(invoice.user_payout_amount),
         'total_paid_by_vendor': float(invoice.total_paid_by_vendor),
         'payment_gateway_ref': invoice.payment_gateway_ref,
         'payment_status': invoice.payment_status,

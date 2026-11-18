@@ -231,8 +231,8 @@
                       <tr>
                         <th scope="col" style="width: 200px;">Subcategory</th>
                         <th scope="col">Parent Category</th>
-                        <th scope="col">Scrap Buying Rate</th>
-                        <th scope="col">GST &amp; Min</th>
+                        <th scope="col">Scrap Buying Rate (Incl. GST)</th>
+                        <th scope="col">GST &amp; Min Weight</th>
                         <th scope="col">Status</th>
                         <th scope="col" class="text-right" style="width: 140px;">Actions</th>
                       </tr>
@@ -281,7 +281,7 @@
                           </button>
                         </td>
                         <td class="py-2.5">
-                          <span class="text-xs font-mono text-slate-600">{{ sub.gst_percent }}% GST · Min {{ sub.min_weight_kg }}kg</span>
+                          <span class="text-xs font-mono text-slate-600">{{ sub.gst_percent }}% GST · Min {{ sub.min_weight_kg }} kg</span>
                         </td>
                         <td class="py-2.5">
                           {% if sub.is_active %}
@@ -419,18 +419,18 @@
               </div>
               <div class="rounded-xl bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/80 p-3.5 space-y-1.5">
                 <label class="bm-label text-emerald-950 font-bold" for="modalAddSub-f-rate">
-                  Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
+                  Scrap Rate (₹ / kg · GST Included) <span class="text-rose-600">*</span>
                 </label>
                 <div class="relative mt-1">
                   <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-lg select-none">₹</span>
                   <input class="bm-input pl-8 font-mono font-bold text-slate-900 text-base bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="modalAddSub-f-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="e.g. 180.00" required>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-3.5">
+              <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="bm-label font-semibold" for="modalAddSub-f-gst">GST (%)</label>
+                  <label class="bm-label font-semibold" for="modalAddSub-f-gst">Included GST (%)</label>
                   <div class="relative mt-1">
-                    <input class="bm-input font-mono" id="modalAddSub-f-gst" name="gst_percent" type="number" step="0.01" min="0" value="18.00" placeholder="18.00">
+                    <input class="bm-input font-mono" id="modalAddSub-f-gst" name="gst_percent" type="number" step="0.01" min="0" max="100" value="18.00" placeholder="18.00">
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
                   </div>
                 </div>
@@ -488,18 +488,18 @@
               </div>
               <div class="rounded-xl bg-gradient-to-br from-emerald-50/90 to-teal-50/60 border border-emerald-200/90 p-4 space-y-2">
                 <label class="bm-label text-emerald-950 font-bold" for="editSub-rate">
-                  Scrap Rate (₹ / kg) <span class="text-rose-600">*</span>
+                  Scrap Rate (₹ / kg · GST Included) <span class="text-rose-600">*</span>
                 </label>
                 <div class="relative mt-1">
                   <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-emerald-700 font-bold text-xl select-none">₹</span>
                   <input class="bm-input pl-8 font-mono font-bold text-emerald-900 text-lg bg-white border-emerald-300 focus:border-emerald-600 focus:ring-emerald-500/20" id="editSub-rate" name="rate_per_kg" type="number" step="0.01" min="0" placeholder="0.00" required>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-3.5">
+              <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="bm-label font-semibold" for="editSub-gst">GST (%)</label>
+                  <label class="bm-label font-semibold" for="editSub-gst">Included GST (%)</label>
                   <div class="relative mt-1">
-                    <input class="bm-input font-mono" id="editSub-gst" name="gst_percent" type="number" step="0.01" min="0" placeholder="18.00">
+                    <input class="bm-input font-mono" id="editSub-gst" name="gst_percent" type="number" step="0.01" min="0" max="100" placeholder="18.00">
                     <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 font-semibold text-xs select-none">%</span>
                   </div>
                 </div>
@@ -535,11 +535,7 @@
       </div>
     </main>
     
-    <footer class="mt-8 border-t border-slate-200/70 px-3 py-4 text-[0.75rem] text-slate-400 sm:px-5">
-      <div class="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <p>© Bazaarpe Admin · Scrap Pickup &amp; Vendor Marketplace</p>
-      </div>
-    </footer>
+    {% include 'includes/footer.html' %}
   </div>
 
   <div class="fixed bottom-4 left-1/2 z-[60] hidden w-[92vw] max-w-[34rem] -translate-x-1/2" data-toast-root aria-live="polite"></div>

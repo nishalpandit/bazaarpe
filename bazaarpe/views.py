@@ -347,8 +347,6 @@ PAGES = {
     'index': 'index.html',
     'dashboard': 'index.html',
     'categories': 'categories.html',
-    'cms': 'cms.html',
-    'cms-edit': 'cms-edit.html',
     'invoice-detail': 'invoice-detail.html',
     'invoices': 'invoices.html',
     'kyc': 'kyc.html',
@@ -369,6 +367,177 @@ PAGES = {
     'vendor-edit': 'vendor-edit.html',
     'vendors': 'vendors.html',
 }
+
+
+def compute_marketplace_activity_ranges(today):
+    """
+    Computes aggregated pickup requests and completed orders across multiple time ranges:
+    - 7d: 7 daily intervals
+    - 1m: 30 daily intervals
+    - 6m: 6 monthly intervals
+    - 1y: 12 monthly intervals
+    """
+    import datetime
+    completed_statuses = [PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT]
+
+    # --- 1. Daily Series (7d & 1m / 30 days) ---
+    start_30d = today - timedelta(days=29)
+    daily_orders = PickupOrder.objects.filter(created_at__date__gte=start_30d)
+    req_counts_daily = dict(
+        daily_orders.values('created_at__date').annotate(cnt=Count('id')).values_list('created_at__date', 'cnt')
+    )
+
+    comp_orders_30d = PickupOrder.objects.filter(
+        status__in=completed_statuses,
+        updated_at__date__gte=start_30d
+    )
+    comp_counts_daily = {}
+    for ord_obj in comp_orders_30d:
+        dt = ord_obj.pickup_otp_verified_at.date() if ord_obj.pickup_otp_verified_at else ord_obj.updated_at.date()
+        if dt >= start_30d:
+            comp_counts_daily[dt] = comp_counts_daily.get(dt, 0) + 1
+
+    # 7D
+    labels_7d = []
+    reqs_7d = []
+    comps_7d = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        labels_7d.append(day.strftime('%d %b'))
+        reqs_7d.append(req_counts_daily.get(day, 0))
+        comps_7d.append(comp_counts_daily.get(day, 0))
+
+    tot_req_7d = sum(reqs_7d)
+    tot_comp_7d = sum(comps_7d)
+    peak_7d = max(reqs_7d) if reqs_7d else 0
+    peak_idx_7d = reqs_7d.index(peak_7d) if peak_7d > 0 else -1
+
+    # 1M (30 Days)
+    labels_1m = []
+    reqs_1m = []
+    comps_1m = []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        labels_1m.append(day.strftime('%d %b'))
+        reqs_1m.append(req_counts_daily.get(day, 0))
+        comps_1m.append(comp_counts_daily.get(day, 0))
+
+    tot_req_1m = sum(reqs_1m)
+    tot_comp_1m = sum(comps_1m)
+    peak_1m = max(reqs_1m) if reqs_1m else 0
+    peak_idx_1m = reqs_1m.index(peak_1m) if peak_1m > 0 else -1
+
+    # --- 2. Monthly Series (6m & 1y) ---
+    months_12 = []
+    cur_y = today.year
+    cur_m = today.month
+    for idx in range(11, -1, -1):
+        m_offset = cur_m - 1 - idx
+        y = cur_y + (m_offset // 12)
+        m = (m_offset % 12) + 1
+        months_12.append((y, m))
+
+    reqs_by_month = {}
+    comps_by_month = {}
+    for (y, m) in months_12:
+        m_req = PickupOrder.objects.filter(created_at__year=y, created_at__month=m).count()
+        m_comp = PickupOrder.objects.filter(
+            status__in=completed_statuses
+        ).filter(
+            Q(pickup_otp_verified_at__year=y, pickup_otp_verified_at__month=m) |
+            Q(pickup_otp_verified_at__isnull=True, updated_at__year=y, updated_at__month=m)
+        ).count()
+        reqs_by_month[(y, m)] = m_req
+        comps_by_month[(y, m)] = m_comp
+
+    # 6M
+    labels_6m = []
+    reqs_6m = []
+    comps_6m = []
+    for (y, m) in months_12[-6:]:
+        m_dt = datetime.date(y, m, 1)
+        labels_6m.append(m_dt.strftime('%b %y'))
+        reqs_6m.append(reqs_by_month.get((y, m), 0))
+        comps_6m.append(comps_by_month.get((y, m), 0))
+
+    tot_req_6m = sum(reqs_6m)
+    tot_comp_6m = sum(comps_6m)
+    peak_6m = max(reqs_6m) if reqs_6m else 0
+    peak_idx_6m = reqs_6m.index(peak_6m) if peak_6m > 0 else -1
+
+    # 1Y
+    labels_1y = []
+    reqs_1y = []
+    comps_1y = []
+    for (y, m) in months_12:
+        m_dt = datetime.date(y, m, 1)
+        labels_1y.append(m_dt.strftime('%b %y'))
+        reqs_1y.append(reqs_by_month.get((y, m), 0))
+        comps_1y.append(comps_by_month.get((y, m), 0))
+
+    tot_req_1y = sum(reqs_1y)
+    tot_comp_1y = sum(comps_1y)
+    peak_1y = max(reqs_1y) if reqs_1y else 0
+    peak_idx_1y = reqs_1y.index(peak_1y) if peak_1y > 0 else -1
+
+    return {
+        '7d': {
+            'range_key': '7d',
+            'range_title': 'Last 7 Days',
+            'labels': labels_7d,
+            'requests': reqs_7d,
+            'completed': comps_7d,
+            'total_requests': tot_req_7d,
+            'total_completed': tot_comp_7d,
+            'completion_rate': round((tot_comp_7d / tot_req_7d * 100), 1) if tot_req_7d > 0 else 0.0,
+            'peak_label': labels_7d[peak_idx_7d] if peak_idx_7d >= 0 else 'Today',
+            'peak_requests': peak_7d,
+            'subtitle': 'Customer pickup requests vs. vendor completed pickups (last 7 days)',
+            'demand_badge_label': '7-Day Demand',
+        },
+        '1m': {
+            'range_key': '1m',
+            'range_title': 'Last 30 Days (1 Month)',
+            'labels': labels_1m,
+            'requests': reqs_1m,
+            'completed': comps_1m,
+            'total_requests': tot_req_1m,
+            'total_completed': tot_comp_1m,
+            'completion_rate': round((tot_comp_1m / tot_req_1m * 100), 1) if tot_req_1m > 0 else 0.0,
+            'peak_label': labels_1m[peak_idx_1m] if peak_idx_1m >= 0 else 'This Month',
+            'peak_requests': peak_1m,
+            'subtitle': 'Customer pickup requests vs. vendor completed pickups (last 30 days)',
+            'demand_badge_label': '30-Day Demand',
+        },
+        '6m': {
+            'range_key': '6m',
+            'range_title': 'Last 6 Months',
+            'labels': labels_6m,
+            'requests': reqs_6m,
+            'completed': comps_6m,
+            'total_requests': tot_req_6m,
+            'total_completed': tot_comp_6m,
+            'completion_rate': round((tot_comp_6m / tot_req_6m * 100), 1) if tot_req_6m > 0 else 0.0,
+            'peak_label': labels_6m[peak_idx_6m] if peak_idx_6m >= 0 else 'This Period',
+            'peak_requests': peak_6m,
+            'subtitle': 'Customer pickup requests vs. vendor completed pickups (last 6 months)',
+            'demand_badge_label': '6-Month Demand',
+        },
+        '1y': {
+            'range_key': '1y',
+            'range_title': 'Last 12 Months (1 Year)',
+            'labels': labels_1y,
+            'requests': reqs_1y,
+            'completed': comps_1y,
+            'total_requests': tot_req_1y,
+            'total_completed': tot_comp_1y,
+            'completion_rate': round((tot_comp_1y / tot_req_1y * 100), 1) if tot_req_1y > 0 else 0.0,
+            'peak_label': labels_1y[peak_idx_1y] if peak_idx_1y >= 0 else 'This Year',
+            'peak_requests': peak_1y,
+            'subtitle': 'Customer pickup requests vs. vendor completed pickups (last 12 months)',
+            'demand_badge_label': '1-Year Demand',
+        },
+    }
 
 
 @full_admin_required
@@ -403,6 +572,7 @@ def dashboard_view(request):
     in_pickup_orders_count = order_period.filter(status__in=[PickupOrder.Status.PICKUP_IN_PROGRESS, PickupOrder.Status.VENDOR_ON_THE_WAY, PickupOrder.Status.REACHED_LOCATION]).count()
     published_orders_count = order_period.filter(status=PickupOrder.Status.SEARCHING_VENDOR).count()
     negotiation_orders_count = order_period.filter(status__in=[PickupOrder.Status.NEGOTIATION_PENDING, PickupOrder.Status.ADMIN_NEGOTIATION]).count()
+    billing_orders_count = order_period.filter(status__in=[PickupOrder.Status.OTP_VERIFIED, PickupOrder.Status.PAYMENT_COMPLETED, PickupOrder.Status.INVOICE_GENERATED]).count()
 
     vendor_collections = payment_period.filter(status=PaymentTransaction.Status.VERIFIED).aggregate(t=Sum('amount'))['t'] or Decimal('0.00')
     payouts_recorded = order_period.filter(payout_status=PickupOrder.PayoutStatus.DISBURSED).aggregate(t=Sum('final_amount'))['t'] or Decimal('0.00')
@@ -433,36 +603,22 @@ def dashboard_view(request):
     unaccepted_count = unaccepted_orders_qs.count()
     unaccepted_orders = list(unaccepted_orders_qs[:5])
 
-    # Dynamic 7-day marketplace activity time-series
+    # Dynamic marketplace activity time-series across multiple ranges (7D, 1M, 6M, 1Y)
     today = timezone.now().date()
-    activity_labels = []
-    activity_requests = []
-    activity_completed = []
+    activity_ranges = compute_marketplace_activity_ranges(today)
+    active_range_key = request.GET.get('chart_range', '7d').lower()
+    if active_range_key not in activity_ranges:
+        active_range_key = '7d'
+    cur_range = activity_ranges[active_range_key]
 
-    for i in range(6, -1, -1):
-        day = today - timedelta(days=i)
-        activity_labels.append(day.strftime('%d %b'))
-        req_count = PickupOrder.objects.filter(created_at__date=day).count()
-        comp_count = PickupOrder.objects.filter(
-            status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT],
-            pickup_otp_verified_at__date=day
-        ).count()
-        if comp_count == 0:
-            comp_count = PickupOrder.objects.filter(
-                status__in=[PickupOrder.Status.COMPLETED, PickupOrder.Status.USER_REVIEW, PickupOrder.Status.USER_PAYOUT],
-                pickup_otp_verified_at__isnull=True,
-                updated_at__date=day
-            ).count()
-        activity_requests.append(req_count)
-        activity_completed.append(comp_count)
-
-    weekly_requests_total = sum(activity_requests)
-    weekly_completed_total = sum(activity_completed)
-    completion_rate_pct = round((weekly_completed_total / weekly_requests_total * 100), 1) if weekly_requests_total > 0 else 0.0
-
-    peak_day_requests = max(activity_requests) if activity_requests else 0
-    peak_idx = activity_requests.index(peak_day_requests) if peak_day_requests > 0 else -1
-    peak_day_label = activity_labels[peak_idx] if peak_idx >= 0 else 'Today'
+    activity_labels = cur_range['labels']
+    activity_requests = cur_range['requests']
+    activity_completed = cur_range['completed']
+    weekly_requests_total = cur_range['total_requests']
+    weekly_completed_total = cur_range['total_completed']
+    completion_rate_pct = cur_range['completion_rate']
+    peak_day_label = cur_range['peak_label']
+    peak_day_requests = cur_range['peak_requests']
 
     ctx = admin_context(
         request,
@@ -478,6 +634,7 @@ def dashboard_view(request):
         in_pickup_orders_count=in_pickup_orders_count,
         published_orders_count=published_orders_count,
         negotiation_orders_count=negotiation_orders_count,
+        billing_orders_count=billing_orders_count,
         vendor_collections=vendor_collections,
         payouts_recorded=payouts_recorded,
         commission_earned=commission_earned,
@@ -497,6 +654,8 @@ def dashboard_view(request):
         recent_orders=recent_orders,
         unaccepted_orders=unaccepted_orders,
         unaccepted_count=unaccepted_count,
+        activity_ranges_json=json.dumps(activity_ranges),
+        active_chart_range=active_range_key,
         activity_labels_json=json.dumps(activity_labels),
         activity_requests_json=json.dumps(activity_requests),
         activity_completed_json=json.dumps(activity_completed),
@@ -514,6 +673,90 @@ def dashboard_view(request):
     return render(request, 'index.html', ctx)
 
 
+def privacy_policy_view(request):
+    """
+    Public Privacy Policy page for Bazaarpe users, vendors, and app store compliance.
+    Accessible without authentication.
+    """
+    context = {
+        'company_name': 'Bazaarpe',
+        'contact_name': 'Tabrez Aalam',
+        'contact_email': 'aalamhum2@gmail.com',
+        'contact_phone': '+91 85499 99223',
+        'last_updated': '13 November 2026',
+        'app_version': '2.1.0',
+    }
+    return render(request, 'privacy_policy.html', context)
+
+
+def account_deletion_view(request):
+    """
+    Public Account Deletion and User Data Removal Request page.
+    Complies with Google Play and Apple App Store user data deletion policies.
+    Accessible without authentication so users who uninstalled can still request data purge.
+    """
+    success_submission = False
+    submission_ticket = None
+    form_error = None
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        email = request.POST.get('email', '').strip()
+        account_type = request.POST.get('account_type', 'Customer').strip()
+        reason = request.POST.get('reason', '').strip()
+        confirmation = request.POST.get('confirm_deletion')
+
+        clean_digits = ''.join(ch for ch in phone if ch.isdigit())[-10:] if phone else ''
+        if not clean_digits and not email:
+            form_error = 'Please provide either your 10-digit registered mobile number or registered email address.'
+        elif not confirmation:
+            form_error = 'Please acknowledge the data purge notice by ticking the confirmation box.'
+        else:
+            import uuid
+            ticket_hash = uuid.uuid4().hex[:8].upper()
+            submission_ticket = f"DEL-2026-{ticket_hash}"
+
+            user_match = None
+            if clean_digits:
+                user_match = User.objects.filter(username=clean_digits).first()
+                if not user_match:
+                    profile = UserProfile.objects.filter(phone=clean_digits).first()
+                    if profile:
+                        user_match = profile.user
+            if not user_match and email:
+                user_match = User.objects.filter(email=email).first()
+
+            MarketplaceAuditLog.objects.create(
+                actor=user_match,
+                actor_role=account_type.upper(),
+                action='ACCOUNT_DELETION_REQUESTED',
+                entity_type='User',
+                entity_id=str(user_match.id) if user_match else (clean_digits or email),
+                metadata={
+                    'ticket': submission_ticket,
+                    'full_name': full_name,
+                    'phone': phone,
+                    'email': email,
+                    'account_type': account_type,
+                    'reason': reason,
+                    'submitted_ip': request.META.get('REMOTE_ADDR', ''),
+                }
+            )
+            success_submission = True
+
+    context = {
+        'company_name': 'Bazaarpe',
+        'contact_name': 'Tabrez Aalam',
+        'contact_email': 'aalamhum2@gmail.com',
+        'contact_phone': '+91 85499 99223',
+        'success_submission': success_submission,
+        'submission_ticket': submission_ticket,
+        'form_error': form_error,
+    }
+    return render(request, 'account_deletion.html', context)
+
+
 def page_view(request, page_name):
     """Renders any admin page dynamically with live database models."""
     clean_name = page_name.replace('.html', '').strip('/')
@@ -522,6 +765,11 @@ def page_view(request, page_name):
         if request.user.is_authenticated:
             logout(request)
         return redirect('login')
+
+    if clean_name in ('privacy', 'privacy-policy', 'privacy_policy'):
+        return privacy_policy_view(request)
+    if clean_name in ('account-deletion', 'account_deletion', 'delete-account', 'delete_account', 'deletion-request'):
+        return account_deletion_view(request)
 
     if not request.user.is_authenticated:
         return redirect_to_login(request.get_full_path(), login_url='login')
@@ -1022,7 +1270,8 @@ def page_view(request, page_name):
 
         if q:
             payments_qs = payments_qs.filter(
-                Q(payment_id__icontains=q) | Q(order__order_id__icontains=q) |
+                Q(payment_id__icontains=q) | Q(razorpay_payment_id__icontains=q) |
+                Q(razorpay_order_id__icontains=q) | Q(order__order_id__icontains=q) |
                 Q(gateway_signature__icontains=q) | Q(order__assigned_vendor_name__icontains=q)
             )
 
@@ -1107,7 +1356,7 @@ def page_view(request, page_name):
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="bazaarpe_invoices.csv"'
             writer = csv.writer(response)
-            writer.writerow(['Invoice Number', 'Order ID', 'Vendor', 'Subtotal', 'GST', 'Platform Fee', 'Total', 'Payment Status', 'Paid At'])
+            writer.writerow(['Invoice Number', 'Order ID', 'Vendor', 'Product Value', 'Included GST', 'Gross Scrap Value', 'Admin Commission', 'Net User Payout', 'Total Paid by Vendor', 'Payment Status', 'Paid At'])
             for inv in invoices_qs:
                 writer.writerow([
                     inv.invoice_number,
@@ -1115,7 +1364,9 @@ def page_view(request, page_name):
                     inv.order.assigned_vendor_name if inv.order else '',
                     inv.subtotal,
                     inv.gst_amount,
+                    inv.gross_amount,
                     inv.platform_fee,
+                    inv.user_payout_amount,
                     inv.total_paid_by_vendor,
                     inv.payment_status,
                     inv.paid_at.strftime('%Y-%m-%d %H:%M') if inv.paid_at else ''
@@ -1340,10 +1591,10 @@ def page_view(request, page_name):
                 'date': o.updated_at.strftime('%Y-%m-%d') if o.updated_at else '',
                 'reference': o.order_id,
                 'order_id': o.order_id,
-                'description': f"Payable created on scrap pickup completion ({o.category.name if o.category else 'Scrap'})",
+                'description': f"Net payout on pickup completion ({o.category.name if o.category else 'Scrap'})",
                 'debit': None,
-                'credit': o.final_amount or o.final_agreed_price or o.approx_price,
-                'balance': o.final_amount or o.final_agreed_price or o.approx_price,
+                'credit': o.payout_amount,
+                'balance': o.payout_amount,
             })
             if o.payout_status == PickupOrder.PayoutStatus.DISBURSED:
                 user_ledger_entries.append({
@@ -1351,7 +1602,7 @@ def page_view(request, page_name):
                     'reference': o.payout_reference or f"STL-{o.id}",
                     'order_id': o.order_id,
                     'description': f"Settlement payout recorded ({o.payout_method or 'Bank Transfer'})",
-                    'debit': o.final_amount or o.final_agreed_price or o.approx_price,
+                    'debit': o.payout_amount,
                     'credit': None,
                     'balance': Decimal('0.00'),
                 })
@@ -1371,7 +1622,7 @@ def page_view(request, page_name):
                     'date': p.created_at.strftime('%Y-%m-%d') if p.created_at else '',
                     'reference': inv.invoice_number,
                     'order_id': p.order.order_id,
-                    'description': f"Invoice raised: scrap ₹{inv.subtotal} + commission & fees",
+                    'description': f"Invoice raised: ₹{inv.total_paid_by_vendor} (Product ₹{inv.subtotal} + GST ₹{inv.gst_amount} · Admin commission: ₹{inv.platform_fee})",
                     'debit': inv.total_paid_by_vendor,
                     'credit': None,
                     'balance': inv.total_paid_by_vendor,
@@ -1420,31 +1671,6 @@ def page_view(request, page_name):
             vendor_paginator=vendor_paginator,
             vendor_query_string=vendor_query_string,
             current_party=party,
-        ))
-
-    # 15. CMS & CONTENT
-    if clean_name == 'cms':
-        documents = LegalDocument.objects.all().order_by('-published_at')
-        page_num = request.GET.get('page', 1)
-        page_size = int(request.GET.get('page_size', 8))
-        paginator = Paginator(documents, page_size)
-        page_obj = paginator.get_page(page_num)
-        return render(request, 'cms.html', admin_context(
-            request,
-            page_name=clean_name,
-            documents=page_obj.object_list,
-            page_obj=page_obj,
-            paginator=paginator,
-            total_documents=documents.count(),
-        ))
-
-    if clean_name == 'cms-edit':
-        doc_id = request.GET.get('id')
-        doc = None
-        if doc_id:
-            doc = LegalDocument.objects.filter(id=doc_id).first()
-        return render(request, 'cms-edit.html', admin_context(
-            request, page_name=clean_name, doc=doc,
         ))
 
     # 16. PLATFORM SETTINGS
@@ -1855,7 +2081,7 @@ def page_view(request, page_name):
 def admin_action_view(request, action_path):
     """
     Handles administrative actions submitted to /admin/<path>.
-    Full administrator CRUD for Users, Vendors, Orders, Categories, Locations, KYC, Settings, and CMS.
+    Full administrator CRUD for Users, Vendors, Orders, Categories, Locations, KYC, and Settings.
     """
     action = action_path.strip('/')
     is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.content_type == 'application/json'
@@ -2572,7 +2798,7 @@ def admin_action_view(request, action_path):
                         sub.category = new_cat
                 sub.save()
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub.name}' updated. Scrap rate set to ₹{sub.rate_per_kg}/kg."})
+                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub.name}' updated. Scrap rate set to ₹{sub.rate_per_kg}/kg (incl. {sub.gst_percent}% GST)."})
                 return redirect('/categories.html')
 
             cat_id = data.get('category_id') or data.get('category')
@@ -2591,7 +2817,7 @@ def admin_action_view(request, action_path):
                 )
                 action_word = "created" if created else "updated"
                 if is_ajax:
-                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub_name}' {action_word} with rate ₹{rate}/kg."})
+                    return JsonResponse({'success': True, 'message': f"Subcategory '{sub_name}' {action_word} with rate ₹{rate}/kg (incl. {gst}% GST)."})
             return redirect('/categories.html')
 
         if 'categories' in action and 'delete' in action:
@@ -2755,26 +2981,40 @@ def admin_action_view(request, action_path):
         # 13. PLATFORM SETTINGS (COMMISSION & DEADLINES)
         # -------------------------------------------------------------
         if action.startswith('settings/commission'):
-            rate = Decimal(str(data.get('commission_rate') or '2.00'))
-            basis = str(data.get('commission_basis', 'ITEM_AMOUNT')).upper()
-            if 'FINAL' in basis:
-                basis_enum = VendorBillingSetting.CommissionBasis.ITEM_AMOUNT
-            elif 'GST' in basis:
-                basis_enum = VendorBillingSetting.CommissionBasis.GST_INCLUSIVE
-            else:
-                basis_enum = VendorBillingSetting.CommissionBasis.ITEM_AMOUNT
+            try:
+                rate = Decimal(str(data.get('commission_rate') or '3.00'))
+                if rate < 0 or rate > 100:
+                    raise ValueError
+            except (InvalidOperation, TypeError, ValueError):
+                return JsonResponse({'success': False, 'message': 'Commission rate must be between 0% and 100%.'}, status=400)
+            basis_enum = VendorBillingSetting.CommissionBasis.ITEM_AMOUNT
+
+            min_payout_raw = data.get('min_payout')
+            config = PlatformConfiguration.current()
+            if min_payout_raw not in (None, ''):
+                try:
+                    min_payout_val = Decimal(str(min_payout_raw).strip())
+                    if min_payout_val < 0:
+                        raise ValueError
+                except (InvalidOperation, TypeError, ValueError):
+                    return JsonResponse({'success': False, 'message': 'Minimum user payout must be zero or positive.'}, status=400)
+                config.min_payout_amount = min_payout_val
+                config.updated_by = request.user
+                config.save()
 
             VendorBillingSetting.objects.filter(is_active=True).update(is_active=False)
             setting = VendorBillingSetting.objects.create(
                 commission_percent=rate,
+                commission_tax_percent=Decimal('0.00'),
+                fixed_platform_fee=Decimal('0.00'),
                 commission_basis=basis_enum,
                 is_approved=True,
                 is_active=True,
                 effective_from=timezone.now(),
             )
-            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='COMMISSION_POLICY_UPDATED', entity_type='VendorBillingSetting', entity_id=str(setting.id), metadata={'rate': str(rate), 'basis': basis_enum})
+            MarketplaceAuditLog.objects.create(actor=request.user, actor_role='ADMIN', action='COMMISSION_POLICY_UPDATED', entity_type='VendorBillingSetting', entity_id=str(setting.id), metadata={'rate': str(rate), 'basis': basis_enum, 'min_payout_amount': str(config.min_payout_amount)})
             if is_ajax:
-                return JsonResponse({'success': True, 'message': f"Commission updated to {rate}%."})
+                return JsonResponse({'success': True, 'message': f"Commission updated to {rate}% (Min payout ₹{config.min_payout_amount})."})
             return redirect('/settings.html')
 
         if action.startswith('settings/deadlines'):
@@ -2812,61 +3052,6 @@ def admin_action_view(request, action_path):
             if is_ajax:
                 return JsonResponse({'success': True, 'message': 'Settlement and refund windows saved.'})
             return redirect('/settings.html')
-
-        # -------------------------------------------------------------
-        # 14. CMS (CONTENT MANAGEMENT)
-        # -------------------------------------------------------------
-        if action.startswith('cms/save') or action.startswith('cms/create'):
-            doc_id = data.get('id')
-            title = str(data.get('title', '')).strip() or 'Notice'
-            doc_type = str(data.get('type') or data.get('document_type', 'TERMS')).upper()
-            content = str(data.get('content', '')).strip() or 'Content body.'
-            version = str(data.get('version', '1.0')).strip()
-
-            type_map = {
-                'TERMS': LegalDocument.DocumentType.TERMS,
-                'PRIVACY': LegalDocument.DocumentType.PRIVACY,
-                'FAQ': LegalDocument.DocumentType.FAQ,
-                'STATIC': LegalDocument.DocumentType.STATIC,
-                'HELP': LegalDocument.DocumentType.FAQ,
-            }
-            dtype = type_map.get(doc_type, LegalDocument.DocumentType.STATIC)
-            if doc_id and str(doc_id).isdigit():
-                doc = LegalDocument.objects.filter(id=int(doc_id)).first()
-                if doc:
-                    doc.title = title
-                    doc.content = content
-                    doc.version = version
-                    doc.document_type = dtype
-                    doc.is_active = str(data.get('status', 'published')).lower() == 'published'
-                    doc.save()
-            else:
-                doc = LegalDocument.objects.filter(document_type=dtype, version=version).first()
-                if doc:
-                    doc.title = title
-                    doc.content = content
-                    doc.is_active = str(data.get('status', 'published')).lower() == 'published'
-                    doc.save()
-                else:
-                    LegalDocument.objects.create(
-                        title=title,
-                        document_type=dtype,
-                        content=content,
-                        version=version,
-                        is_active=str(data.get('status', 'published')).lower() == 'published',
-                    )
-            if is_ajax:
-                return JsonResponse({'success': True, 'message': f"Content page '{title}' saved."})
-            return redirect('/cms.html')
-
-        if 'cms' in action and 'delete' in action:
-            item_name = data.get('item_name', '')
-            doc = LegalDocument.objects.filter(title__icontains=item_name).first()
-            if doc:
-                doc.delete()
-            if is_ajax:
-                return JsonResponse({'success': True, 'message': 'Content page deleted.'})
-            return redirect('/cms.html')
 
         # -------------------------------------------------------------
         # 15. USER CRUD

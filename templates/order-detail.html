@@ -247,9 +247,9 @@
           </div>
 
           <div class="bg-emerald-50/70 border border-emerald-200/90 rounded p-2 flex flex-col justify-between">
-            <span class="text-[10px] uppercase tracking-wider font-semibold text-emerald-700">Agreed Payout</span>
+            <span class="text-[10px] uppercase tracking-wider font-semibold text-emerald-700">Customer Payout</span>
             <div class="flex items-baseline justify-between mt-0.5">
-              <span class="font-mono text-sm font-bold text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</span>
+              <span class="font-mono text-sm font-bold text-emerald-900">₹{{ pickup_order.payout_amount|default:"0.00" }}</span>
               {% if rate_per_kg %}
                 <span class="text-[10px] text-emerald-700 font-medium">₹{{ rate_per_kg }}/kg</span>
               {% endif %}
@@ -702,21 +702,21 @@
                 <div>
                   <span class="text-[10px] uppercase font-bold text-emerald-800 tracking-wider block">Customer Payout (Seller Receives)</span>
                   <div class="flex items-baseline gap-2 mt-1">
-                    <span class="font-mono text-xl font-black text-emerald-900">₹{{ pickup_order.final_agreed_price|default:pickup_order.approx_price|default:"0.00" }}</span>
+                    <span class="font-mono text-xl font-black text-emerald-900">₹{{ pickup_order.payout_amount|default:"0.00" }}</span>
                     <span class="text-[11px] text-emerald-700 font-medium">(Net credited)</span>
                   </div>
                 </div>
                 <p class="text-[11px] text-emerald-800/80 mt-2 pt-2 border-t border-emerald-200 flex items-center gap-1">
                   <i class="ph-bold ph-check-circle text-emerald-600"></i>
-                  Final price calculated &amp; agreed for pickup.
+                  Gross ₹{{ pickup_order.gross_amount|default:"0.00" }} − Admin Commission ₹{{ pickup_order.commission_amount|default:"0.00" }} ({{ pickup_order.commission_percent|default:"0" }}%).
                 </p>
               </div>
 
-              <!-- Box 2: Platform Tax Invoice -->
+              <!-- Box 2: Platform Invoice -->
               <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between">
                 <div>
                   <div class="flex items-center justify-between">
-                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Platform Tax Invoice</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Platform Invoice</span>
                     {% if pickup_order.invoice %}
                       <span class="text-[9px] font-semibold font-mono text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">#{{ pickup_order.invoice.invoice_number }}</span>
                     {% else %}
@@ -725,14 +725,14 @@
                   </div>
                   <p class="text-xs font-medium text-slate-600 mt-2 leading-relaxed">
                     {% if pickup_order.invoice %}
-                      Total Paid by Vendor: <strong>₹{{ pickup_order.invoice.total_paid_by_vendor }}</strong> (Platform Fee: ₹{{ pickup_order.invoice.platform_fee }})
+                      Vendor Paid: <strong>₹{{ pickup_order.invoice.total_paid_by_vendor }}</strong> (Product ₹{{ pickup_order.invoice.subtotal }} + GST ₹{{ pickup_order.invoice.gst_amount }}) · Admin Commission: <strong>₹{{ pickup_order.invoice.platform_fee }}</strong>
                     {% else %}
                       Invoice generates automatically upon pickup completion and weighment confirmation.
                     {% endif %}
                   </p>
                 </div>
                 <div class="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
-                  <span class="text-slate-400 text-[11px]">Tax Split: CGST (9%) + SGST (9%)</span>
+                  <span class="text-slate-400 text-[11px]">Incl. {{ pickup_order.subcategory.gst_percent|default:"18" }}% GST (₹{{ pickup_order.gst_amount|default:"0.00" }}) · Payout ₹{{ pickup_order.payout_amount|default:"0.00" }}</span>
                   {% if pickup_order.invoice %}
                     <a href="invoice-detail.html?order_id={{ pickup_order.order_id }}" class="font-sans font-semibold text-emerald-700 hover:underline flex items-center gap-0.5">
                       <span>View Invoice</span>
@@ -801,6 +801,7 @@
       </div>
     {% endif %}
     </main>
+    {% include 'includes/footer.html' %}
   </div>
 
   <!-- Interactive Lightbox Modal for Proof Photos -->
